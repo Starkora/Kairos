@@ -17,12 +17,19 @@ function getUserInfoFromToken() {
   }
 }
 
-export default function Sidebar() {
+export default function Sidebar({ className = 'sidebar', onNavigate }) {
   const { email, name } = getUserInfoFromToken();
   return (
-    <aside className="sidebar" style={{position: 'relative', display: 'flex', flexDirection: 'column', height: '100vh'}}>
+    <aside className={className} style={{position: 'relative', display: 'flex', flexDirection: 'column', height: '100vh'}}>
       <h2 style={{margin: '32px 0 24px 0'}}>Kairos</h2>
-      <nav style={{flex: 1}}>
+      <nav style={{flex: 1}}
+        onClick={(e) => {
+          const target = e.target;
+          if (target && target.closest('a') && typeof onNavigate === 'function') {
+            onNavigate();
+          }
+        }}
+      >
         <NavLink to="/" end>Dashboard</NavLink>
         <NavLink to="/registro">Registro</NavLink>
         <NavLink to="/cuentas">Cuentas</NavLink>

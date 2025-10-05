@@ -91,3 +91,84 @@ body {
   flex-direction: column;
   gap: 24px;
 }
+
+/* Utilidades generales responsive */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Hamburguesa para móviles */
+.hamburger {
+  display: none;
+  background: transparent;
+  border: none;
+  padding: 8px;
+  margin-right: 12px;
+  cursor: pointer;
+}
+.hamburger .bar {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: #fff;
+  margin: 5px 0;
+  transition: 0.3s ease;
+}
+
+/* Overlay para cuando el sidebar está abierto en móvil */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 15;
+}
+
+/* Estados del sidebar en móviles */
+.sidebar {
+  transition: transform 0.25s ease-out;
+}
+.sidebar.mobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  transform: translateX(-100%);
+  width: 80%;
+  max-width: 300px;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+.sidebar.mobile.open {
+  transform: translateX(0);
+}
+
+/* Breakpoints */
+@media (max-width: 1200px) {
+  .main-content { padding: 24px; }
+}
+
+@media (max-width: 992px) {
+  .sidebar { min-width: 200px; width: 200px; }
+  .main-content { padding: 20px; }
+}
+
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+  .hamburger { display: inline-block; }
+  /* Sidebar se vuelve drawer */
+  .sidebar { height: 100vh; }
+  .sidebar h2 { margin-top: 20px; }
+  .sidebar nav a { font-size: 1rem; padding: 14px 24px; }
+
+  /* Usamos variante .mobile para controlar el drawer */
+  .sidebar:not(.open) { pointer-events: none; }
+  .main-content {
+    height: auto;
+    padding: 16px;
+  }
+  .flex-row { flex-wrap: wrap; gap: 16px; }
+}

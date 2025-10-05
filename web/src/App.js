@@ -46,6 +46,8 @@ function AppWrapper() {
 
 export default function App() {
   const [userInfo, setUserInfo] = useState(getUserInfoFromToken());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Escuchar cambios en el token (login/logout) en otras pestañas
   useEffect(() => {
@@ -59,14 +61,22 @@ export default function App() {
   // Función para refrescar usuario tras login/logout en la misma pestaña
   const refreshUser = () => setUserInfo(getUserInfoFromToken());
 
+  // Detectar móvil por ancho de ventana y reaccionar a resize
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   return (
     <Router>
-      <AppRoutes email={userInfo.email} name={userInfo.name} refreshUser={refreshUser} />
+      <AppRoutes email={userInfo.email} name={userInfo.name} refreshUser={refreshUser} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} isMobile={isMobile} />
     </Router>
   );
 }
 
-function AppRoutes({ email, name, refreshUser }) {
+function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMobile }) {
   const navigate = useNavigate();
   // Función para redirigir tras login
   const handleLogin = () => {
@@ -92,7 +102,8 @@ function AppRoutes({ email, name, refreshUser }) {
         element={
           isLoggedIn() ? (
             <div className="app-layout">
-              <Sidebar />
+              {/* Sidebar: añade clases para móvil */}
+              <Sidebar className={`sidebar ${isMobile ? 'mobile' : ''} ${sidebarOpen ? 'open' : ''}`} onNavigate={() => setSidebarOpen(false)} />
               <div style={{flex: 1, display: 'flex', flexDirection: 'column', height: '100vh'}}>
                 {/* Navbar superior */}
                 <div style={{
@@ -107,6 +118,12 @@ function AppRoutes({ email, name, refreshUser }) {
                   position: 'sticky',
                   top: 0
                 }}>
+                  {/* Botón hamburguesa en móvil */}
+                  <button className="hamburger" aria-label="Abrir menú" onClick={() => setSidebarOpen(v => !v)}>
+                    <span className="bar" />
+                    <span className="bar" />
+                    <span className="bar" />
+                  </button>
                   {(name || email) && (
                     <div style={{
                       display: 'flex',
@@ -129,6 +146,10 @@ function AppRoutes({ email, name, refreshUser }) {
                     </div>
                   )}
                 </div>
+                {/* Backdrop cuando el menú está abierto en móvil */}
+                {sidebarOpen && (
+                  <div className="backdrop" onClick={() => setSidebarOpen(false)} />
+                )}
                 <main className="main-content" style={{height: 'calc(100vh - 64px)'}}>
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
