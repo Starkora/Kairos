@@ -1,0 +1,478 @@
+import React from 'react';
+import API_BASE from '../utils/apiBase';
+import Swal from 'sweetalert2';
+import { getToken } from '../utils/auth';
+
+export default function Categorias() {
+  // Categorías de ingreso/egreso
+  const [categorias, setCategorias] = React.useState([]);
+  const [form, setForm] = React.useState({ nombre: '', tipo: 'ingreso' });
+  const [loading, setLoading] = React.useState(true);
+  // Categoría de cuenta
+  const [formCuenta, setFormCuenta] = React.useState({ nombre: '' });
+  const [loadingCuenta, setLoadingCuenta] = React.useState(false);
+  const [categoriasCuenta, setCategoriasCuenta] = React.useState([]);
+  const [loadingTablaCuenta, setLoadingTablaCuenta] = React.useState(true);
+  // Obtener categorías de cuenta al cargar
+  React.useEffect(() => {
+  fetch(`${API_BASE}/api/categorias-cuenta`, {
+      headers: {
+        'Authorization': 'Bearer ' + getToken()
+      }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('No autorizado');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) setCategoriasCuenta(data);
+        else setCategoriasCuenta([]);
+        setLoadingTablaCuenta(false);
+      })
+      .catch(() => {
+        setCategoriasCuenta([]);
+        setLoadingTablaCuenta(false);
+      });
+  }, []);
+
+  React.useEffect(() => {
+  fetch(`${API_BASE}/api/categorias?plataforma=web`, {
+      headers: {
+        'Authorization': 'Bearer ' + getToken()
+      }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('No autorizado');
+        return res.json();
+      })
+      .then(data => {
+        console.log('Datos recibidos en GET /api/categorias:', data); // Depuración
+        if (Array.isArray(data)) setCategorias(data);
+        else setCategorias([]);
+        setLoading(false);
+      })
+      .catch(() => {
+        setCategorias([]);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleChange = e => {
+    const { name, value } = e.target;
+    setForm(f => ({ ...f, [name]: value }));
+    console.log('Estado del formulario actualizado:', form); // Depuración
+  };
+  const handleSubmit = async e => {
+    e.preventDefault();
+    if (!form.nombre || !form.tipo) {
+      Swal.fire({ icon: 'warning', title: 'Campos requeridos', text: 'Debes ingresar un nombre y seleccionar un tipo.' });
+      return;
+    }
+    const result = await Swal.fire({
+      title: '¿Agregar esta categoría?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, agregar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#6c4fa1',
+    });
+    if (result.isConfirmed) {
+      setLoading(true);
+      console.log('Datos enviados en POST /api/categorias:', { ...form, plataforma: 'web' }); // Depuración
+  const res = await fetch(`${API_BASE}/api/categorias`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + getToken()
+        },
+        body: JSON.stringify({ ...form, plataforma: 'web' })
+      });
+      setLoading(false);
+      if (res.ok) {
+        Swal.fire({ icon: 'success', title: 'Categoría agregada', showConfirmButton: false, timer: 1200 });
+        setForm({ nombre: '', tipo: 'ingreso' });
+        // Refrescar tabla
+        setLoading(true);
+  fetch(`${API_BASE}/api/categorias?plataforma=web`, {
+          headers: {
+            'Authorization': 'Bearer ' + getToken()
+          }
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('No autorizado');
+            return res.json();
+          })
+          .then(data => {
+            if (Array.isArray(data)) setCategorias(data);
+            else setCategorias([]);
+            setLoading(false);
+          })
+          .catch(() => {
+            setCategorias([]);
+            setLoading(false);
+          });
+      } else {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo agregar la categoría.' });
+      }
+    }
+  };
+
+  // Formulario de categoría de cuenta
+  const handleChangeCuenta = e => {
+    const { name, value } = e.target;
+    setFormCuenta(f => ({ ...f, [name]: value }));
+  };
+  const handleSubmitCuenta = async e => {
+    e.preventDefault();
+    if (!formCuenta.nombre) {
+      Swal.fire({ icon: 'warning', title: 'Nombre requerido', text: 'Debes ingresar un nombre de categoría de cuenta.' });
+      return;
+    }
+    const result = await Swal.fire({
+      title: '¿Agregar esta categoría de cuenta?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, agregar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#6c4fa1',
+    });
+    if (result.isConfirmed) {
+      setLoadingCuenta(true);
+  const res = await fetch(`${API_BASE}/api/categorias-cuenta`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + getToken()
+        },
+        body: JSON.stringify(formCuenta)
+      });
+      setLoadingCuenta(false);
+      if (res.ok) {
+        Swal.fire({ icon: 'success', title: 'Categoría de cuenta agregada', showConfirmButton: false, timer: 1200 });
+        setFormCuenta({ nombre: '' });
+        // Refrescar tabla
+        setLoadingTablaCuenta(true);
+  fetch(`${API_BASE}/api/categorias-cuenta`, {
+          headers: {
+            'Authorization': 'Bearer ' + getToken()
+          }
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('No autorizado');
+            return res.json();
+          })
+          .then(data => {
+            if (Array.isArray(data)) setCategoriasCuenta(data);
+            else setCategoriasCuenta([]);
+            setLoadingTablaCuenta(false);
+          })
+          .catch(() => {
+            setCategoriasCuenta([]);
+            setLoadingTablaCuenta(false);
+          });
+      } else {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo agregar la categoría de cuenta.' });
+      }
+    }
+  };
+
+  const handleEdit = (id) => {
+    const categoria = categorias.find(c => c.id === id);
+    if (!categoria) return;
+    Swal.fire({
+      title: 'Editar categoría',
+      html: `<input id='nombre' class='swal2-input' value='${categoria.nombre}' placeholder='Nombre'>
+             <select id='tipo' class='swal2-input'>
+               <option value='ingreso' ${categoria.tipo === 'ingreso' ? 'selected' : ''}>Ingreso</option>
+               <option value='egreso' ${categoria.tipo === 'egreso' ? 'selected' : ''}>Egreso</option>
+             </select>`,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const nombre = document.getElementById('nombre').value;
+        const tipo = document.getElementById('tipo').value;
+        return { nombre, tipo };
+      }
+    }).then(result => {
+      if (result.isConfirmed) {
+        fetch(`/api/categorias/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + getToken()
+          },
+          body: JSON.stringify({ ...result.value, plataforma: 'web' })
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('No autorizado');
+            return res.json();
+          })
+          .then(() => {
+            Swal.fire({ icon: 'success', title: 'Categoría actualizada', showConfirmButton: false, timer: 1200 });
+            setCategorias(prev => prev.map(c => c.id === id ? { ...c, ...result.value } : c));
+          })
+          .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message }));
+      }
+    });
+  };
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: '¿Eliminar categoría?',
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f44336',
+    }).then(result => {
+      if (result.isConfirmed) {
+        fetch(`/api/categorias/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': 'Bearer ' + getToken()
+          }
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('No autorizado');
+            return res.json();
+          })
+          .then(() => {
+            Swal.fire({ icon: 'success', title: 'Categoría eliminada', showConfirmButton: false, timer: 1200 });
+            setCategorias(prev => prev.filter(c => c.id !== id));
+          })
+          .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message }));
+      }
+    });
+  };
+
+  const handleEditCuenta = (id) => {
+    const categoria = categoriasCuenta.find(c => c.id === id);
+    if (!categoria) return;
+    Swal.fire({
+      title: 'Editar categoría de cuenta',
+      html: `<input id='nombre' class='swal2-input' value='${categoria.nombre}' placeholder='Nombre'>`,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const nombre = document.getElementById('nombre').value;
+        return { nombre };
+      }
+    }).then(result => {
+      if (result.isConfirmed) {
+        fetch(`/api/categorias-cuenta/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + getToken()
+          },
+          body: JSON.stringify(result.value)
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('No autorizado');
+            return res.json();
+          })
+          .then(() => {
+            Swal.fire({ icon: 'success', title: 'Categoría de cuenta actualizada', showConfirmButton: false, timer: 1200 });
+            setCategoriasCuenta(prev => prev.map(c => c.id === id ? { ...c, ...result.value } : c));
+          })
+          .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message }));
+      }
+    });
+  };
+
+  const handleDeleteCuenta = (id) => {
+    Swal.fire({
+      title: '¿Eliminar categoría de cuenta?',
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f44336',
+    }).then(result => {
+      if (result.isConfirmed) {
+        fetch(`/api/categorias-cuenta/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': 'Bearer ' + getToken()
+          }
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('No autorizado');
+            return res.json();
+          })
+          .then(() => {
+            Swal.fire({ icon: 'success', title: 'Categoría de cuenta eliminada', showConfirmButton: false, timer: 1200 });
+            setCategoriasCuenta(prev => prev.filter(c => c.id !== id));
+          })
+          .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message }));
+      }
+    });
+  };
+
+  const buttonStyle = {
+    // ya no se usa para acciones; mantenido temporalmente por compatibilidad
+  };
+
+  const buttonDangerStyle = {
+    // ya no se usa para acciones; mantenido temporalmente por compatibilidad
+  };
+
+  const buttonContainerStyle = {
+    display: 'inline-flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  };
+
+  return (
+    <div style={{ maxWidth: 600, margin: '32px auto', background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #eee', padding: 32 }}>
+      {/* Bloque de Categorías ingreso/egreso */}
+      <div style={{ marginBottom: 48 }}>
+        <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: '#222' }}>Categorías</h2>
+        <div style={{ background: '#f7f7fa', borderRadius: 10, padding: 24, marginBottom: 32 }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 12, marginBottom: 24, alignItems: 'center' }}>
+            <input
+              type="text"
+              name="nombre"
+              placeholder="Nombre de la categoría"
+              value={form.nombre}
+              onChange={handleChange}
+              required
+              style={{ flex: 2, padding: 8, borderRadius: 6 }}
+            />
+            <select
+              name="tipo"
+              value={form.tipo}
+              onChange={handleChange}
+              style={{ flex: 1, padding: 8, borderRadius: 6 }}
+            >
+              <option value="ingreso">Ingreso</option>
+              <option value="egreso">Egreso</option>
+            </select>
+            <button type="submit" style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600 }}>
+              Agregar
+            </button>
+          </form>
+        </div>
+        <div style={{ background: '#f7f7fa', borderRadius: 10, padding: 24 }}>
+          {loading ? (
+            <div>Cargando...</div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
+              <thead>
+                <tr style={{ background: '#f7f7fa' }}>
+                  <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
+                  <th style={{ textAlign: 'left', padding: 8 }}>Tipo</th>
+                  <th style={{ textAlign: 'center', padding: 8 }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(Array.isArray(categorias) ? categorias : []).map(cat => (
+                  <tr key={cat.id} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ fontWeight: 600, padding: 8 }}>{cat.nombre}</td>
+                    <td style={{ padding: 8 }}>{cat.tipo}</td>
+                    <td style={{ textAlign: 'center', padding: 8 }}>
+                      <div style={buttonContainerStyle}>
+                        <button onClick={() => handleEdit(cat.id)}
+                          style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
+                          aria-label="Editar" title="Editar">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c4fa1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9"/>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                          </svg>
+                        </button>
+                        <button onClick={() => handleDelete(cat.id)}
+                          style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
+                          aria-label="Eliminar" title="Eliminar">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f44336" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            <line x1="10" y1="11" x2="10" y2="17"/>
+                            <line x1="14" y1="11" x2="14" y2="17"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {/* Bloque de Categoría de Cuenta */}
+      <div>
+        <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: '#222' }}>Categoría de Cuenta</h2>
+        <div style={{ background: '#f7f7fa', borderRadius: 10, padding: 24, marginBottom: 32 }}>
+          <form onSubmit={handleSubmitCuenta} style={{ display: 'flex', gap: 12, marginBottom: 0, alignItems: 'center' }}>
+            <input
+              type="text"
+              name="nombre"
+              placeholder="Nombre de la categoría de cuenta"
+              value={formCuenta.nombre}
+              onChange={handleChangeCuenta}
+              required
+              style={{ flex: 2, padding: 8, borderRadius: 6 }}
+            />
+            <button type="submit" style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600 }}>
+              Agregar Categoría de Cuenta
+            </button>
+          </form>
+          {loadingCuenta && <div style={{ marginTop: 8 }}>Guardando...</div>}
+        </div>
+        {/* Tabla de categorías de cuenta */}
+        <div style={{ background: '#f7f7fa', borderRadius: 10, padding: 24 }}>
+          {loadingTablaCuenta ? (
+            <div>Cargando...</div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
+              <thead>
+                <tr style={{ background: '#f7f7fa' }}>
+                  <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
+                  <th style={{ textAlign: 'left', padding: 8 }}>Fecha de creación</th>
+                  <th style={{ textAlign: 'center', padding: 8 }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(Array.isArray(categoriasCuenta) ? categoriasCuenta : []).map(cat => (
+                  <tr key={cat.id} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ fontWeight: 600, padding: 8 }}>{cat.nombre}</td>
+                    <td style={{ padding: 8 }}>{cat.created_at ? cat.created_at.substring(0, 10) : ''}</td>
+                    <td style={{ textAlign: 'center', padding: 8 }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <button onClick={() => handleEditCuenta(cat.id)}
+                          style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
+                          aria-label="Editar" title="Editar">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c4fa1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9"/>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                          </svg>
+                        </button>
+                        <button onClick={() => handleDeleteCuenta(cat.id)}
+                          style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
+                          aria-label="Eliminar" title="Eliminar">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f44336" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            <line x1="10" y1="11" x2="10" y2="17"/>
+                            <line x1="14" y1="11" x2="14" y2="17"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+      {/* Tooltips nativos via title en los botones */}
+    </div>
+  );
+}

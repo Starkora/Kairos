@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: kairos-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node index.js
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      # Variables mínimas, completa en el panel si prefieres no hardcodear aquí
+      - key: PORT
+        value: 3002
+      - key: WEB_ORIGIN
+        value: https://TU_APP_WEB.vercel.app
+      - key: DATABASE_URL
+        value: mysql://USER:PASSWORD@HOST:4000/kairos
+      - key: DB_SSL
+        value: "true"
+      # Si usas CA en base64, pégala y elimina la siguiente línea de comentario
+      # - key: DB_SSL_CA_B64
+      #   value: |
+      #     <BASE64_CA>
+      - key: JWT_SECRET
+        generateValue: true
+      # Opcionales
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        value: no-reply@tudominio.com
+      - key: REDIS_URL
+        sync: false
+      - key: CAPTCHA_ENABLED
+        value: "false"

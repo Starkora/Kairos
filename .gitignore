@@ -1,0 +1,51 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Env files
+.env
+.env.*
+!.env.sample
+backend/.env
+backend/.env.*
+!backend/.env.sample
+web/.env
+web/.env.*
+!web/.env.sample
+
+# Logs
+logs/
+*.log
+backend/logs/
+
+# Build outputs
+web/build/
+desktop/dist/
+desktop/build/
+dist/
+coverage/
+
+# Editor/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Expo/React Native
+KariosMobile/.expo/
+KariosMobile/.expo-shared/
+KariosMobile/android/app/build/
+KariosMobile/android/build/
+KariosMobile/ios/build/
+KariosMobile/ios/Pods/
+
+# Misc secrets/keys
+*.pem
+*.key
+
+# Tooling
+.vercel/
+.netlify/
+.render/
