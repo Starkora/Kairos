@@ -165,24 +165,11 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                   </Routes>
                 </main>
                 {process.env.REACT_APP_SHOW_API_BADGE === 'true' && <ApiEndpointBadge />} 
-                {/* Controles fijos: desktop separados, móvil combinados en esquina inferior derecha */}
-                {!isMobile && (
-                  <button onClick={handleLogout} style={{position:'fixed', left:16, bottom:16, background:'#6C4AB6', color:'#fff', border:'none', borderRadius:20, padding:'10px 28px', fontWeight:600, fontSize:'1rem', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', zIndex: 10}}>
-                    <span style={{marginRight:8, fontSize:'1.1em'}}>⎋</span> Cerrar sesión
-                  </button>
-                )}
-                {!isMobile && (
-                  <a href="/acercade" style={{position:'fixed', right:16, bottom:16, color:'#6C4AB6', textDecoration:'underline', fontWeight:600}}>Acerca de</a>
-                )}
-
-                {isMobile && !sidebarOpen && (
-                  <div style={{position:'fixed', right:16, bottom:16, display:'flex', gap:8, zIndex:10}}>
-                    <a href="/acercade" style={{background:'#fff', color:'#6C4AB6', border:'1px solid #6C4AB6', borderRadius:20, padding:'10px 16px', fontWeight:600, textDecoration:'none'}}>Acerca de</a>
-                    <button onClick={handleLogout} style={{background:'#6C4AB6', color:'#fff', border:'none', borderRadius:20, padding:'10px 20px', fontWeight:600, fontSize:'1rem', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}>
-                      <span style={{marginRight:8, fontSize:'1.1em'}}>⎋</span> Cerrar sesión
-                    </button>
-                  </div>
-                )}
+                {/* Controles fijos: siempre en esquinas */}
+                <button onClick={handleLogout} style={{position:'fixed', left:16, bottom:16, background:'#6C4AB6', color:'#fff', border:'none', borderRadius:20, padding:'10px 28px', fontWeight:600, fontSize:'1rem', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', zIndex: 10, display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex'}}>
+                  <span style={{marginRight:8, fontSize:'1.1em'}}>⎋</span> Cerrar sesión
+                </button>
+                <a href="/acercade" style={{position:'fixed', right:16, bottom:16, color:'#6C4AB6', textDecoration:'underline', fontWeight:600, background:'#fff', padding:'8px 12px', borderRadius:16, boxShadow:'0 2px 8px rgba(0,0,0,0.04)', display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex'}}>Acerca de</a>
               </div>
             </div>
           ) : (
