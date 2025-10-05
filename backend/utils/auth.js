@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'kairos_secret';
+const Usuario = require('../models/usuario');
 
-module.exports = (req, res, next) => {
+module.exports = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   if (process.env.DEBUG_AUTH === 'true') console.log('Authorization header presente:', !!authHeader);
 
@@ -12,7 +13,22 @@ module.exports = (req, res, next) => {
   if (!token) return res.status(401).json({ error: 'Token inválido' });
   try {
     const user = jwt.verify(token, JWT_SECRET);
-  if (process.env.DEBUG_AUTH === 'true') console.log('Token decodificado (sin imprimir datos sensibles)');
+    if (process.env.DEBUG_AUTH === 'true') console.log('Token decodificado (sin imprimir datos sensibles)');
+
+    // Compatibilidad: si el token no trae id pero sí email, intentar obtener el id desde la BD
+    if (!user.id && user.email) {
+      if (process.env.DEBUG_AUTH === 'true') console.log('Falta id en token; buscando id por email');
+      try {
+        const rows = await Usuario.findByEmail(String(user.email).trim());
+        const found = Array.isArray(rows) ? rows[0] : null;
+        if (found && found.id) {
+          user.id = found.id;
+          if (process.env.DEBUG_AUTH === 'true') console.log('ID recuperado por email');
+        }
+      } catch (e) {
+        if (process.env.DEBUG_AUTH === 'true') console.log('Error buscando usuario por email:', e && e.message);
+      }
+    }
 
     if (!user.id) {
       return res.status(401).json({ error: 'Token inválido: falta el ID del usuario' });
