@@ -128,6 +128,10 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                     <span className="bar" />
                     <span className="bar" />
                   </button>
+                  {/* Enlace a Acerca de para móviles (lado derecho) */}
+                  {isMobile && (
+                    <a href="/acercade" style={{ marginLeft: 'auto', color: '#fff', textDecoration: 'underline', fontWeight: 600 }}>Acerca de</a>
+                  )}
                   {(name || email) && (
                     <div style={{
                       display: 'flex',
@@ -137,7 +141,7 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                       borderRadius: 32,
                       padding: '6px 24px 6px 32px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                      marginLeft: 'auto',
+                      marginLeft: isMobile ? 12 : 'auto',
                       marginRight: '24px'
                     }}>
                       <span style={{fontSize: '1.1rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', letterSpacing: 0.2}}>{name || email}</span>
@@ -164,13 +168,15 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                     <Route path="/micuenta" element={<MiCuenta />} />
                   </Routes>
                 </main>
-                {process.env.REACT_APP_SHOW_API_BADGE === 'true' && <ApiEndpointBadge />}
+                {process.env.REACT_APP_SHOW_API_BADGE === 'true' && <ApiEndpointBadge />} 
                 {/* Botón de logout personalizado (ocultar si drawer abierto en móvil) */}
                 <button onClick={handleLogout} style={{position:'fixed', left:16, bottom:16, background:'#6C4AB6', color:'#fff', border:'none', borderRadius:20, padding:'10px 28px', fontWeight:600, fontSize:'1rem', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex', zIndex: 10}}>
                   <span style={{marginRight:8, fontSize:'1.1em'}}>⎋</span> Cerrar sesión
                 </button>
-                {/* Enlace a Acerca de */}
-                <a href="/acercade" style={{position:'fixed', right:16, bottom:16, color:'#6C4AB6', textDecoration:'underline', fontWeight:600}}>Acerca de</a>
+                {/* Enlace a Acerca de: mostrar fijo solo en desktop, en mobile integrarlo en el topbar o menú */}
+                {!isMobile && (
+                  <a href="/acercade" style={{position:'fixed', right:16, bottom:16, color:'#6C4AB6', textDecoration:'underline', fontWeight:600}}>Acerca de</a>
+                )}
               </div>
             </div>
           ) : (

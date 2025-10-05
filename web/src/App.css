@@ -92,6 +92,23 @@ body {
   gap: 24px;
 }
 
+/* Cuentas: formulario y tabla responsive */
+.accounts-card { background: var(--color-card); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 24px; }
+.accounts-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 16px;
+  align-items: center;
+}
+.table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 992px) {
+  .accounts-form { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .accounts-form { grid-template-columns: 1fr; }
+}
+
 /* Utilidades generales responsive */
 img, video, canvas, svg {
   max-width: 100%;

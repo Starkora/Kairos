@@ -225,17 +225,9 @@ export default function Cuentas() {
   };
 
   return (
-  <div style={{ maxWidth: 700, margin: '40px auto', background: '#fff', borderRadius: 16, boxShadow: '0 4px 16px #eee', padding: '40px 40px 32px 40px' }}>
+  <div className="card accounts-card" style={{ maxWidth: 700, margin: '24px auto' }}>
       <h1 style={{ marginBottom: 24 }}>Cuentas</h1>
-      <form onSubmit={handleSubmit} 
-        style={{ 
-          display: 'grid', 
-          gridTemplateColumns: '2fr 1fr 1fr 1fr', 
-          gap: 24, 
-          marginBottom: 24, 
-          alignItems: 'center', 
-          width: '100%' 
-        }}>
+      <form onSubmit={handleSubmit} className="accounts-form" style={{ width: '100%', marginBottom: 24 }}>
         <input
           type="text"
           name="nombre"
@@ -243,7 +235,7 @@ export default function Cuentas() {
           value={form.nombre}
           onChange={handleChange}
           required
-          style={{ width: '100%', padding: 8, borderRadius: 6 }}
+          style={{ width: '100%', padding: 8, borderRadius: 6, minWidth: 0 }}
         />
         <input
           type="number"
@@ -253,14 +245,14 @@ export default function Cuentas() {
           onChange={handleChange}
           required
           min="0"
-          style={{ width: '100%', padding: 8, borderRadius: 6 }}
+          style={{ width: '100%', padding: 8, borderRadius: 6, minWidth: 0 }}
         />
         <select
           name="tipo"
           value={form.tipo}
           onChange={handleChange}
           required
-          style={{ width: '100%', padding: 8, borderRadius: 6 }}
+          style={{ width: '100%', padding: 8, borderRadius: 6, minWidth: 0 }}
         >
           {tiposCuenta.map((tipo) => (
             <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
@@ -275,12 +267,14 @@ export default function Cuentas() {
             padding: '8px 0', 
             fontWeight: 600, 
             height: 40, 
-            width: '100%' 
+            width: '100%',
+            minWidth: 0
           }}>
           Agregar
         </button>
       </form>
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
+      <div className="table-responsive">
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12, minWidth: 520 }}>
         <thead>
           <tr style={{ background: '#f7f7fa' }}>
             <th style={{ textAlign: 'left', padding: 8 }}>Cuenta</th>
@@ -319,7 +313,8 @@ export default function Cuentas() {
             </tr>
           ))}
         </tbody>
-      </table>
+  </table>
+  </div>
       {editing && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={closeEdit}>
           <div style={{ background:'#fff', borderRadius:12, padding:20, width: 420 }} onClick={(e)=>e.stopPropagation()}>
