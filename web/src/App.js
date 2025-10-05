@@ -128,10 +128,6 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                     <span className="bar" />
                     <span className="bar" />
                   </button>
-                  {/* Enlace a Acerca de para móviles (lado derecho) */}
-                  {isMobile && (
-                    <a href="/acercade" style={{ marginLeft: 'auto', color: '#fff', textDecoration: 'underline', fontWeight: 600 }}>Acerca de</a>
-                  )}
                   {(name || email) && (
                     <div style={{
                       display: 'flex',
@@ -141,7 +137,7 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                       borderRadius: 32,
                       padding: '6px 24px 6px 32px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                      marginLeft: isMobile ? 12 : 'auto',
+                      marginLeft: 'auto',
                       marginRight: '24px'
                     }}>
                       <span style={{fontSize: '1.1rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', letterSpacing: 0.2}}>{name || email}</span>
@@ -169,13 +165,23 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                   </Routes>
                 </main>
                 {process.env.REACT_APP_SHOW_API_BADGE === 'true' && <ApiEndpointBadge />} 
-                {/* Botón de logout personalizado (ocultar si drawer abierto en móvil) */}
-                <button onClick={handleLogout} style={{position:'fixed', left:16, bottom:16, background:'#6C4AB6', color:'#fff', border:'none', borderRadius:20, padding:'10px 28px', fontWeight:600, fontSize:'1rem', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex', zIndex: 10}}>
-                  <span style={{marginRight:8, fontSize:'1.1em'}}>⎋</span> Cerrar sesión
-                </button>
-                {/* Enlace a Acerca de: mostrar fijo solo en desktop, en mobile integrarlo en el topbar o menú */}
+                {/* Controles fijos: desktop separados, móvil combinados en esquina inferior derecha */}
+                {!isMobile && (
+                  <button onClick={handleLogout} style={{position:'fixed', left:16, bottom:16, background:'#6C4AB6', color:'#fff', border:'none', borderRadius:20, padding:'10px 28px', fontWeight:600, fontSize:'1rem', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', zIndex: 10}}>
+                    <span style={{marginRight:8, fontSize:'1.1em'}}>⎋</span> Cerrar sesión
+                  </button>
+                )}
                 {!isMobile && (
                   <a href="/acercade" style={{position:'fixed', right:16, bottom:16, color:'#6C4AB6', textDecoration:'underline', fontWeight:600}}>Acerca de</a>
+                )}
+
+                {isMobile && !sidebarOpen && (
+                  <div style={{position:'fixed', right:16, bottom:16, display:'flex', gap:8, zIndex:10}}>
+                    <a href="/acercade" style={{background:'#fff', color:'#6C4AB6', border:'1px solid #6C4AB6', borderRadius:20, padding:'10px 16px', fontWeight:600, textDecoration:'none'}}>Acerca de</a>
+                    <button onClick={handleLogout} style={{background:'#6C4AB6', color:'#fff', border:'none', borderRadius:20, padding:'10px 20px', fontWeight:600, fontSize:'1rem', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}>
+                      <span style={{marginRight:8, fontSize:'1.1em'}}>⎋</span> Cerrar sesión
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
