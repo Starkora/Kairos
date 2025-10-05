@@ -273,8 +273,8 @@ export default function Cuentas() {
           Agregar
         </button>
       </form>
-      <div className="table-responsive">
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12, minWidth: 520 }}>
+  <div className="table-responsive">
+  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
         <thead>
           <tr style={{ background: '#f7f7fa' }}>
             <th style={{ textAlign: 'left', padding: 8 }}>Cuenta</th>
