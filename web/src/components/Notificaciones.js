@@ -190,7 +190,7 @@ export default function Notificaciones() {
   }, []);
 
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
+    <div className="card" style={{ padding: 20, maxWidth: 700, margin: '0 auto' }}>
       <h1 style={{ textAlign: 'center', color: '#6C4AB6' }}>Notificaciones</h1>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
         <button
@@ -211,8 +211,9 @@ export default function Notificaciones() {
           Agregar Notificación
         </button>
       </div>
-      <h2 style={{ textAlign: 'center', color: '#6C4AB6', marginTop: '40px' }}>Notificaciones Configuradas</h2>
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+  <h2 style={{ textAlign: 'center', color: '#6C4AB6', marginTop: 24 }}>Notificaciones Configuradas</h2>
+  <div className="table-responsive">
+  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
         <thead>
           <tr>
             <th style={{ border: '1px solid #ccc', padding: '10px' }}>Frecuencia</th>
@@ -258,7 +259,8 @@ export default function Notificaciones() {
             </tr>
           )}
         </tbody>
-      </table>
+  </table>
+  </div>
       {/* Popup Agregar */}
       {isAdding && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 999 }}>
