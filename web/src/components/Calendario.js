@@ -109,9 +109,9 @@ export default function Calendario() {
   };
 
   return (
-    <div style={{ maxWidth: 1100, margin: '32px auto', background: '#f7f7fa', borderRadius: 24, boxShadow: '0 4px 24px #1a1a2a44', padding: 48, color: '#222' }}>
-      <h1 style={{ marginBottom: 16, fontWeight: 800, fontSize: 32, letterSpacing: 1 }}>Calendario de Movimientos</h1>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+    <div className="card calendar-card" style={{ color: '#222' }}>
+      <h1 className="calendar-title">Calendario de Movimientos</h1>
+      <div className="calendar-actions" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <button
           type="button"
           onClick={handleExport}
@@ -162,8 +162,8 @@ export default function Calendario() {
           </div>
         </div>
       )}
-      <div style={{ display: 'flex', gap: 48, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: 380 }}>
+      <div className="calendar-layout">
+        <div className="calendar-left">
           <Calendar
             onChange={setValue}
             value={value}
@@ -174,7 +174,7 @@ export default function Calendario() {
             className={`big-light-calendar ${exportMode ? 'export-mode' : ''}`}
           />
         </div>
-        <div style={{ flex: 2, minWidth: 340 }}>
+        <div className="calendar-right">
           <h2 style={{ fontSize: 22, marginBottom: 18, fontWeight: 700, color: '#222' }}>
             Movimientos del {fechaSeleccionada.split('-').reverse().join('/')}
           </h2>
@@ -217,6 +217,7 @@ export default function Calendario() {
           font-size: 1.3rem;
           box-shadow: 0 2px 12px #0002;
           border: none;
+          width: 100%;
         }
         .big-light-calendar.export-mode {
           box-shadow: 0 0 0 3px #f9a825 inset, 0 2px 12px #0002;
