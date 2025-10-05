@@ -258,42 +258,36 @@ export default function DeudasMetas() {
   };
 
   return (
-    <div style={{ maxWidth: 900, margin: '32px auto', background: '#fff', borderRadius: 18, boxShadow: '0 2px 12px #0002', padding: 32 }}>
-      <h1 style={{ fontWeight: 800, fontSize: 28, marginBottom: 24 }}>Deudas y Metas</h1>
-      <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+    <div className="card debts-card">
+      <h1 className="debts-title">Deudas y Metas</h1>
+      <div className="debts-tabs" style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
         <button onClick={() => setTab('deudas')} style={{ background: tab === 'deudas' ? '#6c4fa1' : '#eee', color: tab === 'deudas' ? '#fff' : '#222', border: 'none', borderRadius: 8, padding: '8px 24px', fontWeight: 600 }}>Deudas</button>
         <button onClick={() => setTab('metas')} style={{ background: tab === 'metas' ? '#6c4fa1' : '#eee', color: tab === 'metas' ? '#fff' : '#222', border: 'none', borderRadius: 8, padding: '8px 24px', fontWeight: 600 }}>Metas</button>
       </div>
-      <div style={{ marginBottom: 24 }}>
-        {/* Ajustar el ancho del contenedor blanco para alinear los inputs y labels */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '10px', width: '100%' }}>
-          <input type="text" placeholder="Descripción" value={nueva.descripcion} onChange={e => setNueva({ ...nueva, descripcion: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', width: '150px' }} />
-          <input type="number" placeholder="Monto" value={nueva.monto} onChange={e => setNueva({ ...nueva, monto: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', width: '120px' }} />
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '120px', marginTop: '-24px' }}>
-            <label htmlFor="fecha_inicio" style={{ fontSize: '12px', color: '#555', marginBottom: '4px' }}>Fecha inicio</label>
-            <input id="fecha_inicio" type="date" value={nueva.fecha_inicio} onChange={e => setNueva({ ...nueva, fecha_inicio: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%' }} />
-          </div>
-          {nueva.tipo === 'meta' && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '120px', marginTop: '-24px' }}>
-              <label htmlFor="fecha_objetivo" style={{ fontSize: '12px', color: '#555', marginBottom: '4px' }}>Fecha objetivo</label>
-              <input id="fecha_objetivo" type="date" value={nueva.fecha_vencimiento} onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%' }} />
-            </div>
-          )}
-          {nueva.tipo === 'deuda' && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '120px', marginTop: '-24px' }}>
-              <label htmlFor="fecha_vencimiento" style={{ fontSize: '12px', color: '#555', marginBottom: '4px' }}>Fecha vencimiento</label>
-              <input id="fecha_vencimiento" type="date" value={nueva.fecha_vencimiento} onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%' }} />
-            </div>
-          )}
-          <select value={nueva.tipo} onChange={e => setNueva({ ...nueva, tipo: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '120px', backgroundColor: '#f9f9f9' }}>
-            <option value="deuda">Deuda</option>
-            <option value="meta">Meta</option>
-          </select>
+      <div className="debts-form">
+        <input type="text" placeholder="Descripción" value={nueva.descripcion} onChange={e => setNueva({ ...nueva, descripcion: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', width: '100%', minWidth: 0 }} />
+        <input type="number" placeholder="Monto" value={nueva.monto} onChange={e => setNueva({ ...nueva, monto: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', width: '100%', minWidth: 0 }} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', minWidth: 0 }}>
+          <label htmlFor="fecha_inicio" style={{ fontSize: '12px', color: '#555', marginBottom: '4px' }}>Fecha inicio</label>
+          <input id="fecha_inicio" type="date" value={nueva.fecha_inicio} onChange={e => setNueva({ ...nueva, fecha_inicio: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%' }} />
         </div>
-      </div>
-      {/* Separar el botón Agregar */}
-      <div style={{ marginTop: '10px' }}>
-        <button onClick={handleAdd} style={{ backgroundColor: 'green', color: 'white', padding: '10px', borderRadius: '5px' }}>Agregar</button>
+        {nueva.tipo === 'meta' && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', minWidth: 0 }}>
+            <label htmlFor="fecha_objetivo" style={{ fontSize: '12px', color: '#555', marginBottom: '4px' }}>Fecha objetivo</label>
+            <input id="fecha_objetivo" type="date" value={nueva.fecha_vencimiento} onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%' }} />
+          </div>
+        )}
+        {nueva.tipo === 'deuda' && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', minWidth: 0 }}>
+            <label htmlFor="fecha_vencimiento" style={{ fontSize: '12px', color: '#555', marginBottom: '4px' }}>Fecha vencimiento</label>
+            <input id="fecha_vencimiento" type="date" value={nueva.fecha_vencimiento} onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%' }} />
+          </div>
+        )}
+        <select value={nueva.tipo} onChange={e => setNueva({ ...nueva, tipo: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%', backgroundColor: '#f9f9f9', minWidth: 0 }}>
+          <option value="deuda">Deuda</option>
+          <option value="meta">Meta</option>
+        </select>
+        <button onClick={handleAdd} style={{ backgroundColor: 'green', color: 'white', padding: '10px', borderRadius: '5px', border: 'none' }}>Agregar</button>
       </div>
       {tab === 'deudas' ? (
         <div>
@@ -301,7 +295,7 @@ export default function DeudasMetas() {
           {deudas.length === 0 && <div style={{ color: '#888' }}>No tienes deudas registradas.</div>}
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {deudas.map(d => (
-              <li key={d.id} style={{ background: '#fff3e0', marginBottom: 14, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px #0001' }}>
+              <li key={d.id} style={{ background: '#fff3e0', marginBottom: 14, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px #0001', flexWrap: 'wrap', gap: 12 }}>
                 <div>
                   <div style={{ fontWeight: 700 }}>{d.descripcion}</div>
                   <div style={{ fontSize: 15, color: '#888' }}>
@@ -310,7 +304,7 @@ export default function DeudasMetas() {
                     {d.fecha_vencimiento && <span>Vence: {new Date(d.fecha_vencimiento).toLocaleDateString()}</span>}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <input type="number" min={1} max={(d.monto ?? d.monto_total ?? 0) - (d.pagado ?? d.monto_pagado ?? 0)} placeholder="Pago" style={{ width: 80, marginRight: 8, borderRadius: 6, border: '1px solid #ccc', padding: 4 }} id={`pago-deuda-${d.id}`} disabled={(parseFloat(d.pagado ?? d.monto_pagado ?? 0) >= parseFloat(d.monto ?? d.monto_total ?? 0))} />
                   <button
                     onClick={() => {
@@ -366,7 +360,7 @@ export default function DeudasMetas() {
           {metas.length === 0 && <div style={{ color: '#888' }}>No tienes metas registradas.</div>}
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {metas.map(m => (
-              <li key={m.id} style={{ background: '#e3f2fd', marginBottom: 14, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px #0001' }}>
+              <li key={m.id} style={{ background: '#e3f2fd', marginBottom: 14, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px #0001', flexWrap: 'wrap', gap: 12 }}>
                 <div>
                   <div style={{ fontWeight: 700 }}>{m.descripcion}</div>
                   <div style={{ fontSize: 15, color: '#888' }}>
@@ -375,7 +369,7 @@ export default function DeudasMetas() {
                     {m.fecha_objetivo && <span>Objetivo: {new Date(m.fecha_objetivo).toLocaleDateString()} </span>}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <input type="number" min={1} max={(m.monto_objetivo || 0) - (m.monto_ahorrado || 0)} placeholder="Aportar" style={{ width: 80, marginRight: 8, borderRadius: 6, border: '1px solid #ccc', padding: 4 }} id={`pago-meta-${m.id}`} disabled={(parseFloat(m.pagado ?? m.monto_ahorrado ?? 0) >= parseFloat(m.monto_objetivo ?? 0))} />
                   <button
                     onClick={() => {

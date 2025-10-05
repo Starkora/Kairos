@@ -129,6 +129,13 @@ html, body, #root { max-width: 100%; }
   .calendar-layout { grid-template-columns: 1fr; }
 }
 
+/* Deudas y Metas */
+.debts-card { max-width: 900px; margin: 24px auto; background: #fff; border-radius: 18px; box-shadow: 0 2px 12px #0002; padding: 24px; }
+.debts-title { font-weight: 800; font-size: 28px; margin: 0 0 16px 0; }
+.debts-form { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 12px; align-items: end; margin-bottom: 12px; }
+@media (max-width: 992px) { .debts-form { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 768px) { .debts-form { grid-template-columns: 1fr; } }
+
 /* Utilidades generales responsive */
 img, video, canvas, svg {
   max-width: 100%;
