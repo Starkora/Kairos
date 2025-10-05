@@ -11,12 +11,10 @@ services:
       - key: NODE_VERSION
         value: 18
       # Variables mínimas, completa en el panel si prefieres no hardcodear aquí
-      - key: PORT
-        value: 3002
       - key: WEB_ORIGIN
-        value: https://TU_APP_WEB.vercel.app
+        value: ""
       - key: DATABASE_URL
-        value: mysql://USER:PASSWORD@HOST:4000/kairos
+        value: ""
       - key: DB_SSL
         value: "true"
       # Si usas CA en base64, pégala y elimina la siguiente línea de comentario

@@ -77,20 +77,20 @@ const session = require('express-session');
 const Redis = require('ioredis');
 // Eliminamos connect-redis y usamos un store personalizado para evitar incompatibilidades de versiones
 
-// Permitir conexión mediante REDIS_URL (Upstash u otros). Si no hay URL y se desea, usar MemoryStore.
+// Permitir conexión mediante REDIS_URL (Upstash u otros). Si NO hay URL, usar MemoryStore sin intentar localhost.
 const redisUrl = process.env.REDIS_URL || process.env.UPSTASH_REDIS_URL;
 let redisClient = null;
 if (redisUrl) {
   redisClient = new Redis(redisUrl, {
     // Upstash usa TLS (rediss) y autenticación por URL; ioredis lo maneja automáticamente
     tls: redisUrl.startsWith('rediss://') ? {} : undefined,
+    // Evitar bucles de reintentos/colas cuando hay problemas de red
+    retryStrategy: () => null,
+    maxRetriesPerRequest: 1,
+    enableOfflineQueue: false,
   });
 } else {
-  try {
-    redisClient = new Redis(); // localhost por defecto
-  } catch (e) {
-    console.warn('[session] Redis no disponible, se usará MemoryStore');
-  }
+  console.warn('[session] REDIS_URL no definido. Usando MemoryStore para sesiones.');
 }
 
 // Logs de conexión a Redis para depurar
@@ -147,7 +147,7 @@ let store = null;
 if (redisClient) {
   store = new CustomRedisStore(redisClient, { prefix: 'sess:', ttl: 60 * 15 });
 } else {
-  // Fallback MemoryStore SOLO para entornos sin Redis (no recomendado en producción multi instancia)
+  // Fallback MemoryStore para entornos sin Redis (no recomendado en multi-instancia)
   store = new session.MemoryStore();
 }
 
