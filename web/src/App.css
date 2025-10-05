@@ -136,6 +136,11 @@ html, body, #root { max-width: 100%; }
 @media (max-width: 992px) { .debts-form { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 768px) { .debts-form { grid-template-columns: 1fr; } }
 
+/* Categorías */
+.categories-card { max-width: 700px; margin: 24px auto; padding: 24px; }
+.categories-form { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; align-items: center; }
+@media (max-width: 768px) { .categories-form { grid-template-columns: 1fr; } }
+
 /* Utilidades generales responsive */
 img, video, canvas, svg {
   max-width: 100%;

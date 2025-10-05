@@ -329,12 +329,12 @@ export default function Categorias() {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: '32px auto', background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #eee', padding: 32 }}>
+    <div className="card categories-card">
       {/* Bloque de Categorías ingreso/egreso */}
       <div style={{ marginBottom: 48 }}>
         <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: '#222' }}>Categorías</h2>
         <div style={{ background: '#f7f7fa', borderRadius: 10, padding: 24, marginBottom: 32 }}>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 12, marginBottom: 24, alignItems: 'center' }}>
+          <form onSubmit={handleSubmit} className="categories-form" style={{ marginBottom: 24 }}>
             <input
               type="text"
               name="nombre"
@@ -342,18 +342,18 @@ export default function Categorias() {
               value={form.nombre}
               onChange={handleChange}
               required
-              style={{ flex: 2, padding: 8, borderRadius: 6 }}
+              style={{ padding: 8, borderRadius: 6, width: '100%', minWidth: 0 }}
             />
             <select
               name="tipo"
               value={form.tipo}
               onChange={handleChange}
-              style={{ flex: 1, padding: 8, borderRadius: 6 }}
+              style={{ padding: 8, borderRadius: 6, width: '100%', minWidth: 0 }}
             >
               <option value="ingreso">Ingreso</option>
               <option value="egreso">Egreso</option>
             </select>
-            <button type="submit" style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600 }}>
+            <button type="submit" style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600, width: '100%' }}>
               Agregar
             </button>
           </form>
@@ -362,7 +362,7 @@ export default function Categorias() {
           {loading ? (
             <div>Cargando...</div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
+            <div className="table-responsive"><table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
                 <tr style={{ background: '#f7f7fa' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
@@ -400,7 +400,7 @@ export default function Categorias() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
       </div>
@@ -409,7 +409,7 @@ export default function Categorias() {
       <div>
         <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: '#222' }}>Categoría de Cuenta</h2>
         <div style={{ background: '#f7f7fa', borderRadius: 10, padding: 24, marginBottom: 32 }}>
-          <form onSubmit={handleSubmitCuenta} style={{ display: 'flex', gap: 12, marginBottom: 0, alignItems: 'center' }}>
+          <form onSubmit={handleSubmitCuenta} className="categories-form" style={{ marginBottom: 0 }}>
             <input
               type="text"
               name="nombre"
@@ -417,9 +417,9 @@ export default function Categorias() {
               value={formCuenta.nombre}
               onChange={handleChangeCuenta}
               required
-              style={{ flex: 2, padding: 8, borderRadius: 6 }}
+              style={{ padding: 8, borderRadius: 6, width: '100%', minWidth: 0 }}
             />
-            <button type="submit" style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600 }}>
+            <button type="submit" style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600, width: '100%' }}>
               Agregar Categoría de Cuenta
             </button>
           </form>
@@ -430,7 +430,7 @@ export default function Categorias() {
           {loadingTablaCuenta ? (
             <div>Cargando...</div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
+            <div className="table-responsive"><table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
                 <tr style={{ background: '#f7f7fa' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
@@ -468,7 +468,7 @@ export default function Categorias() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
       </div>
