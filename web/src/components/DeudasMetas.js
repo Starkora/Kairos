@@ -153,13 +153,31 @@ export default function DeudasMetas() {
         return;
       }
 
+      const fmtDate = (v) => {
+        if (!v) return '';
+        try {
+          const d = new Date(v);
+          if (isNaN(d.getTime())) {
+            // Si ya viene como YYYY-MM-DD o cadena similar, tomar primeros 10
+            return String(v).slice(0, 10);
+          }
+          return d.toISOString().slice(0, 10);
+        } catch {
+          return '';
+        }
+      };
+      const vDescripcion = item.descripcion || '';
+      const vMonto = tipo === 'deuda' ? (item.monto_total ?? '') : (item.monto_objetivo ?? '');
+      const vFechaInicio = fmtDate(item.fecha_inicio);
+      const vFechaFin = tipo === 'deuda' ? fmtDate(item.fecha_vencimiento) : fmtDate(item.fecha_objetivo);
+
       const { value: formValues } = await Swal.fire({
         title: `Editar ${tipo === 'deuda' ? 'Deuda' : 'Meta'}`,
         html:
-          `<input id="swal-descripcion" class="swal2-input" placeholder="Descripción" value="${item.descripcion}" />` +
-          `<input id="swal-monto" type="number" class="swal2-input" placeholder="Monto" value="${tipo === 'deuda' ? item.monto_total : item.monto_objetivo}" />` +
-          `<input id="swal-fecha-inicio" type="date" class="swal2-input" value="${item.fecha_inicio || ''}" />` +
-          `<input id="swal-fecha-vencimiento" type="date" class="swal2-input" value="${tipo === 'deuda' ? item.fecha_vencimiento || '' : item.fecha_objetivo || ''}" />`,
+          `<input id="swal-descripcion" class="swal2-input" placeholder="Descripción" value="${vDescripcion}" />` +
+          `<input id="swal-monto" type="number" step="0.01" class="swal2-input" placeholder="Monto" value="${vMonto}" />` +
+          `<input id="swal-fecha-inicio" type="date" class="swal2-input" value="${vFechaInicio}" />` +
+          `<input id="swal-fecha-vencimiento" type="date" class="swal2-input" value="${vFechaFin}" />`,
         focusConfirm: false,
         preConfirm: () => {
           return {
