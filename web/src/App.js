@@ -104,7 +104,11 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
             <div className="app-layout">
               {/* Sidebar: añade clases para móvil */}
               <Sidebar className={`sidebar ${isMobile ? 'mobile' : ''} ${sidebarOpen ? 'open' : ''}`} onNavigate={() => setSidebarOpen(false)} />
-              <div style={{flex: 1, display: 'flex', flexDirection: 'column', height: '100vh'}}>
+              {/* Backdrop como hermano para evitar superposiciones raras */}
+              {isMobile && sidebarOpen && (
+                <div className="backdrop" onClick={() => setSidebarOpen(false)} />
+              )}
+              <div style={{flex: 1, display: 'flex', flexDirection: 'column', height: isMobile ? 'auto' : '100vh'}}>
                 {/* Navbar superior */}
                 <div style={{
                   width: '100%',
@@ -146,11 +150,7 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                     </div>
                   )}
                 </div>
-                {/* Backdrop cuando el menú está abierto en móvil */}
-                {sidebarOpen && (
-                  <div className="backdrop" onClick={() => setSidebarOpen(false)} />
-                )}
-                <main className="main-content" style={{height: 'calc(100vh - 64px)'}}>
+                <main className="main-content" style={{height: isMobile ? 'auto' : 'calc(100vh - 64px)'}}>
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/registro" element={<Registro />} />
@@ -165,8 +165,8 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                   </Routes>
                 </main>
                 {process.env.REACT_APP_SHOW_API_BADGE === 'true' && <ApiEndpointBadge />}
-                {/* Botón de logout personalizado */}
-                <button onClick={handleLogout} style={{position:'fixed', left:16, bottom:16, background:'#6C4AB6', color:'#fff', border:'none', borderRadius:20, padding:'10px 28px', fontWeight:600, fontSize:'1rem', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}>
+                {/* Botón de logout personalizado (ocultar si drawer abierto en móvil) */}
+                <button onClick={handleLogout} style={{position:'fixed', left:16, bottom:16, background:'#6C4AB6', color:'#fff', border:'none', borderRadius:20, padding:'10px 28px', fontWeight:600, fontSize:'1rem', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex', zIndex: 10}}>
                   <span style={{marginRight:8, fontSize:'1.1em'}}>⎋</span> Cerrar sesión
                 </button>
                 {/* Enlace a Acerca de */}

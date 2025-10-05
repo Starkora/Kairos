@@ -20,7 +20,7 @@ function getUserInfoFromToken() {
 export default function Sidebar({ className = 'sidebar', onNavigate }) {
   const { email, name } = getUserInfoFromToken();
   return (
-    <aside className={className} style={{position: 'relative', display: 'flex', flexDirection: 'column', height: '100vh'}}>
+    <aside className={className} style={{ display: 'flex', flexDirection: 'column' }}>
       <h2 style={{margin: '32px 0 24px 0'}}>Kairos</h2>
       <nav style={{flex: 1}}
         onClick={(e) => {
