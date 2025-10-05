@@ -10,6 +10,9 @@
   --color-text: #222;
 }
 
+/* Asegurar que padding/border no provoquen desbordes */
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
   background: var(--color-bg);
   color: var(--color-text);
@@ -196,5 +199,7 @@ img, video, canvas, svg {
     height: auto;
     padding: 16px;
   }
+  /* Botones fijos: evitar que causen overflow en móviles muy estrechos */
+  .fixed-bottom-btn { max-width: calc(100vw - 48px); white-space: nowrap; }
   .flex-row { flex-wrap: wrap; gap: 16px; }
 }

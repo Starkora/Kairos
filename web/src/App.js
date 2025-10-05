@@ -138,9 +138,10 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                       padding: '6px 24px 6px 32px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                       marginLeft: 'auto',
-                      marginRight: '24px'
+                      marginRight: '24px',
+                      minWidth: 0
                     }}>
-                      <span style={{fontSize: '1.1rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', letterSpacing: 0.2}}>{name || email}</span>
+                      <span style={{fontSize: '1.1rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', letterSpacing: 0.2, overflow:'hidden', textOverflow:'ellipsis', maxWidth:'60vw'}}>{name || email}</span>
                       <span style={{fontSize: '1.7rem', color: '#fff', display: 'flex', alignItems: 'center'}}>
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
                           <circle cx="12" cy="8" r="4" fill="#fff" fillOpacity="1"/>
@@ -166,10 +167,10 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                 </main>
                 {process.env.REACT_APP_SHOW_API_BADGE === 'true' && <ApiEndpointBadge />} 
                 {/* Controles fijos: siempre en esquinas */}
-                <button onClick={handleLogout} style={{position:'fixed', left:16, bottom:16, background:'#6C4AB6', color:'#fff', border:'none', borderRadius:20, padding:'10px 28px', fontWeight:600, fontSize:'1rem', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', zIndex: 10, display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex'}}>
+                <button onClick={handleLogout} className="fixed-bottom-btn" style={{position:'fixed', left:16, bottom:16, background:'#6C4AB6', color:'#fff', border:'none', borderRadius:20, padding:'10px 28px', fontWeight:600, fontSize:'1rem', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', zIndex: 10, display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex'}}>
                   <span style={{marginRight:8, fontSize:'1.1em'}}>⎋</span> Cerrar sesión
                 </button>
-                <a href="/acercade" style={{position:'fixed', right:16, bottom:16, color:'#6C4AB6', textDecoration:'underline', fontWeight:600, background:'#fff', padding:'8px 12px', borderRadius:16, boxShadow:'0 2px 8px rgba(0,0,0,0.04)', display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex'}}>Acerca de</a>
+                <a href="/acercade" className="fixed-bottom-btn" style={{position:'fixed', right:16, bottom:16, color:'#6C4AB6', textDecoration:'underline', fontWeight:600, background:'#fff', padding:'8px 12px', borderRadius:16, boxShadow:'0 2px 8px rgba(0,0,0,0.04)', display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex'}}>Acerca de</a>
               </div>
             </div>
           ) : (
