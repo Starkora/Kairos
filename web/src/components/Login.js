@@ -238,7 +238,7 @@ const Login = ({ onLogin }) => {
       const data = await res.json();
       if (res.ok && data.success) {
         setLoading(false);
-        Swal.fire('¡Registro confirmado!', 'Tu cuenta ha sido activada. Ahora puedes iniciar sesión.', 'success');
+  Swal.fire('¡Registro confirmado!', 'Tu cuenta ha sido activada. Ahora solo falta que el administrador apruebe tu cuenta para iniciar sesión.', 'success');
         setShowRegister(false);
         setRegistroEnviado(false);
   setNombre(''); setApellido(''); setCorreo(''); setTelefono(''); setRegPassword(''); setRegPassword2(''); setCodigo('');
