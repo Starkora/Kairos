@@ -18,6 +18,7 @@ import { isLoggedIn, getToken } from './utils/auth';
 import MiCuenta from './components/MiCuenta';
 import ApiEndpointBadge from './components/ApiEndpointBadge';
 import AdminUsuariosPendientes from './components/AdminUsuariosPendientes.jsx';
+import API_BASE from './utils/apiBase';
 
 function getUserInfoFromToken() {
   const token = getToken();
@@ -27,6 +28,7 @@ function getUserInfoFromToken() {
     return {
       email: payload.email || '',
       name: payload.name || '',
+      rol: payload.rol || undefined,
     };
   } catch {
     return {};
@@ -164,7 +166,7 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                     <Route path="/categorias" element={<Categorias />} />
                     <Route path="/categorias-cuenta" element={<CategoriasCuenta />} />
                     <Route path="/micuenta" element={<MiCuenta />} />
-                    <Route path="/admin/usuarios-pendientes" element={<AdminUsuariosPendientes />} />
+                    <Route path="/admin/usuarios-pendientes" element={<AdminOnly><AdminUsuariosPendientes /></AdminOnly>} />
                   </Routes>
                 </main>
                 {process.env.REACT_APP_SHOW_API_BADGE === 'true' && <ApiEndpointBadge />} 
@@ -182,5 +184,57 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
       />
     </Routes>
   );
+}
+
+// Guard de ruta para admin: verifica rol en JWT y, si falta, consulta /api/usuarios
+function AdminOnly({ children }) {
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      navigate('/login', { replace: true });
+      return;
+    }
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const rol = payload && payload.rol;
+      if (rol === 'admin') {
+        setAllowed(true);
+        setChecking(false);
+        return;
+      }
+    } catch {}
+
+    // Si no hay rol en el token o no es admin, consultar backend
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/usuarios`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error('auth');
+        const data = await res.json();
+        const u = Array.isArray(data) ? (data[0] || {}) : (data || {});
+        if (String(u.rol || '').toLowerCase() === 'admin') {
+          setAllowed(true);
+        } else {
+          navigate('/', { replace: true });
+          return;
+        }
+      } catch (e) {
+        navigate('/', { replace: true });
+        return;
+      } finally {
+        setChecking(false);
+      }
+    })();
+  }, [navigate]);
+
+  if (checking) {
+    return <div style={{padding:24}}>Verificando permisos…</div>;
+  }
+  return allowed ? children : null;
 }
 
