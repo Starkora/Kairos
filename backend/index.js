@@ -17,7 +17,13 @@ const db = require('./db');
 const app = express();
 let PORT = Number(process.env.PORT) || 3001;
 
+const adminRoutes = require('./routes/admin');
 app.set('trust proxy', 1);
+
+// Advertencia: JWT_SECRET por defecto en producción
+if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'kairos_secret')) {
+  console.warn('[seguridad] JWT_SECRET no está configurado en producción; usa un valor fuerte en las variables de entorno.');
+}
 
 // Middleware CORS
 const cors = require('cors');
@@ -316,6 +322,7 @@ app.use('/api/usuarios', usuariosRouter);
 app.use('/api/usuarios/google', googleAuthRouter); // /api/usuarios/google
 app.use('/api/deudas', deudasRouter);
 app.use('/api/metas', metasRouter);
+app.use('/api/admin', adminRoutes);
 app.use('/api', notificacionesController);
 
 // Ruta de prueba

@@ -38,16 +38,21 @@ exports.loginGoogle = async (req, res) => {
         password: '',
         verificado: 1,
         nombre,
-        apellido
+        apellido,
+        rol: 'user',
+        aprobado: 0,
       });
-      user = { id: result.insertId, email, numero: googleId, verificado: 1, nombre, apellido };
+      user = { id: result.insertId, email, numero: googleId, verificado: 1, nombre, apellido, rol: 'user', aprobado: 0 };
     } else {
       console.log('Usuario ya existe');
     }
 
     const nombreToken = user.nombre || nombre || '';
     const apellidoToken = user.apellido || apellido || '';
-    const token = jwt.sign({ id: user.id, email: user.email, name: (nombreToken + ' ' + apellidoToken).trim() }, process.env.JWT_SECRET || 'kairos_secret', { expiresIn: '7d' });
+    if (user.aprobado === 0) {
+      return res.status(403).json({ code: 'ACCOUNT_NOT_APPROVED', message: 'Tu cuenta aún no ha sido aprobada por un administrador.' });
+    }
+    const token = jwt.sign({ id: user.id, email: user.email, name: (nombreToken + ' ' + apellidoToken).trim(), rol: user.rol || 'user', aprobado: user.aprobado }, process.env.JWT_SECRET || 'kairos_secret', { expiresIn: '7d' });
 
     // Opcional: setear cookie de sesión basada en JWT para facilitar credenciales cross-site
     res.cookie && res.cookie('kairos_token', token, {
@@ -57,7 +62,7 @@ exports.loginGoogle = async (req, res) => {
       maxAge: 1000 * 60 * 60 * 24 * 7
     });
 
-    return res.json({ token });
+  return res.json({ token, user: { id: user.id, email: user.email, nombre: nombreToken, apellido: apellidoToken, rol: user.rol || 'user', aprobado: user.aprobado } });
   } catch (e) {
     console.log('Error al verificar token de Google:', e);
     return res.status(401).json({ message: 'Token de Google inválido' });

@@ -12,7 +12,7 @@ module.exports = async (req, res, next) => {
 
   if (!token) return res.status(401).json({ error: 'Token inválido' });
   try {
-    const user = jwt.verify(token, JWT_SECRET);
+  const user = jwt.verify(token, JWT_SECRET);
     if (process.env.DEBUG_AUTH === 'true') console.log('Token decodificado (sin imprimir datos sensibles)');
 
     // Compatibilidad: si el token no trae id pero sí email, intentar obtener el id desde la BD
@@ -32,6 +32,20 @@ module.exports = async (req, res, next) => {
 
     if (!user.id) {
       return res.status(401).json({ error: 'Token inválido: falta el ID del usuario' });
+    }
+
+    // Completar datos faltantes del usuario (rol/aprobado) si no vienen en el token
+    if (user && (user.rol === undefined || user.aprobado === undefined)) {
+      try {
+        const rows = await Usuario.findById(user.id);
+        const dbUser = Array.isArray(rows) ? rows[0] : null;
+        if (dbUser) {
+          if (user.rol === undefined) user.rol = dbUser.rol || 'user';
+          if (user.aprobado === undefined) user.aprobado = dbUser.aprobado;
+        }
+      } catch (e) {
+        if (process.env.DEBUG_AUTH === 'true') console.log('No se pudo completar rol/aprobado desde BD:', e && e.message);
+      }
     }
 
     req.user = user;

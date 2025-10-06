@@ -17,6 +17,7 @@ import LogoutButton from './components/LogoutButton';
 import { isLoggedIn, getToken } from './utils/auth';
 import MiCuenta from './components/MiCuenta';
 import ApiEndpointBadge from './components/ApiEndpointBadge';
+import AdminUsuariosPendientes from './components/AdminUsuariosPendientes.jsx';
 
 function getUserInfoFromToken() {
   const token = getToken();
@@ -163,6 +164,7 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                     <Route path="/categorias" element={<Categorias />} />
                     <Route path="/categorias-cuenta" element={<CategoriasCuenta />} />
                     <Route path="/micuenta" element={<MiCuenta />} />
+                    <Route path="/admin/usuarios-pendientes" element={<AdminUsuariosPendientes />} />
                   </Routes>
                 </main>
                 {process.env.REACT_APP_SHOW_API_BADGE === 'true' && <ApiEndpointBadge />} 

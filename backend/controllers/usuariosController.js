@@ -13,7 +13,7 @@ const getUserInfo = async (req, res) => {
     const usuarioId = req.user.id; // Obtener el ID del usuario autenticado
     console.log('ID del usuario autenticado:', usuarioId); // Log para depuración
     console.log('Ejecutando consulta SQL para obtener datos del usuario');
-    const [usuario] = await db.query('SELECT email, numero AS telefono, nombre, apellido FROM usuarios WHERE id = ?', [usuarioId]);
+  const [usuario] = await db.query('SELECT email, numero AS telefono, nombre, apellido, rol, aprobado FROM usuarios WHERE id = ?', [usuarioId]);
     console.log('Resultado de la consulta SQL:', usuario); // Log para depuración
 
     if (!usuario) {
@@ -288,8 +288,8 @@ const verify = async (req, res) => {
 
     // Insertar en usuarios definitivo
     const [ins] = await db.query(
-      'INSERT INTO usuarios (email, password, nombre, apellido, numero, verificado, plataforma) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [p.email, p.password, p.nombre || '', p.apellido || '', p.numero || '', 1, p.plataforma || 'web']
+      'INSERT INTO usuarios (email, password, nombre, apellido, numero, verificado, plataforma, rol, aprobado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [p.email, p.password, p.nombre || '', p.apellido || '', p.numero || '', 1, p.plataforma || 'web', 'user', 0]
     );
 
     await UsuarioPendiente.deleteByEmail(p.email);
@@ -339,11 +339,35 @@ const login = async (req, res) => {
       return res.status(403).json({ code: 'ACCOUNT_UNVERIFIED', message: 'Cuenta no verificada. Revisa tu correo para confirmar el registro.' });
     }
 
+    // Bloquear acceso si requiere aprobación y aún no está aprobado
+    if (user.aprobado === 0) {
+      return res.status(403).json({ code: 'ACCOUNT_NOT_APPROVED', message: 'Tu cuenta aún no ha sido aprobada por un administrador.' });
+    }
+
     const nombreToken = (user.nombre || '').trim();
     const apellidoToken = (user.apellido || '').trim();
-    const token = jwt.sign({ id: user.id, email: user.email, name: (nombreToken + ' ' + apellidoToken).trim() }, JWT_SECRET, { expiresIn: '7d' });
+    const payload = {
+      id: user.id,
+      email: user.email,
+      name: (nombreToken + ' ' + apellidoToken).trim(),
+      rol: user.rol || 'user',
+      aprobado: user.aprobado !== undefined ? user.aprobado : 1,
+    };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 
-  return res.json({ success: true, token, id: user.id, user: { id: user.id, email: user.email, nombre: user.nombre, apellido: user.apellido } });
+    return res.json({
+      success: true,
+      token,
+      id: user.id,
+      user: {
+        id: user.id,
+        email: user.email,
+        nombre: user.nombre,
+        apellido: user.apellido,
+        rol: user.rol || 'user',
+        aprobado: user.aprobado !== undefined ? user.aprobado : 1,
+      },
+    });
   } catch (err) {
     console.error('Error en login:', err);
     return res.status(500).json({ message: 'Error interno en login' });

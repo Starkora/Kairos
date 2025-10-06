@@ -3,8 +3,18 @@ const db = require('../db');
 const Usuario = {
   create: async (usuario) => {
     const [result] = await db.query(
-      'INSERT INTO usuarios (email, numero, password, verificado, plataforma) VALUES (?, ?, ?, ?, ?)',
-      [usuario.email, usuario.numero, usuario.password, usuario.verificado, usuario.plataforma || 'web']
+      'INSERT INTO usuarios (email, numero, password, verificado, plataforma, nombre, apellido, rol, aprobado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        usuario.email,
+        usuario.numero,
+        usuario.password,
+        usuario.verificado,
+        usuario.plataforma || 'web',
+        usuario.nombre || '',
+        usuario.apellido || '',
+        usuario.rol || 'user',
+        typeof usuario.aprobado === 'number' ? usuario.aprobado : 0,
+      ]
     );
     return { id: result.insertId };
   },

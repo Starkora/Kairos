@@ -11,6 +11,7 @@ function getUserInfoFromToken() {
     return {
       email: payload.email || '',
       name: payload.name || '',
+      rol: payload.rol || 'user'
     };
   } catch {
     return {};
@@ -18,7 +19,7 @@ function getUserInfoFromToken() {
 }
 
 export default function Sidebar({ className = 'sidebar', onNavigate }) {
-  const { email, name } = getUserInfoFromToken();
+  const { email, name, rol } = getUserInfoFromToken();
   return (
     <aside className={className} style={{ display: 'flex', flexDirection: 'column' }}>
       <h2 style={{margin: '32px 0 24px 0'}}>Kairos</h2>
@@ -39,6 +40,12 @@ export default function Sidebar({ className = 'sidebar', onNavigate }) {
         <NavLink to="/notificaciones">Notificaciones</NavLink>
         <NavLink to="/micuenta">Mi Cuenta</NavLink>
         <NavLink to="/acercade">Acerca de</NavLink>
+        {rol === 'admin' && (
+          <>
+            <hr />
+            <NavLink to="/admin/usuarios-pendientes">Admin: Usuarios pendientes</NavLink>
+          </>
+        )}
       </nav>
       {isLoggedIn() && (
         <div style={{ width: '100%', textAlign: 'center', marginBottom: 40 }}>
