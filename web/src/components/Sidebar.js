@@ -1,6 +1,8 @@
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import LogoutButton from './LogoutButton';
 import { isLoggedIn, getToken } from '../utils/auth';
+import API_BASE from '../utils/apiBase';
 
 
 function getUserInfoFromToken() {
@@ -19,7 +21,34 @@ function getUserInfoFromToken() {
 }
 
 export default function Sidebar({ className = 'sidebar', onNavigate }) {
-  const { email, name, rol } = getUserInfoFromToken();
+  const initial = getUserInfoFromToken();
+  const [email] = useState(initial.email);
+  const [name] = useState(initial.name);
+  const [rol, setRol] = useState(initial.rol || 'user');
+
+  // Completar rol desde backend si el token no lo trae o para mantenerlo sincronizado
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    // Si ya es admin por token, no hace falta pedirlo; igual, para sincronizar, podemos pedirlo una vez
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/usuarios`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        // data puede ser array o objeto según el controlador
+        const u = Array.isArray(data) ? (data[0] || {}) : (data || {});
+        if (u.rol) setRol(u.rol);
+      } catch (_) {
+        // Ignorar errores de red
+      }
+    })();
+    return () => controller.abort();
+  }, []);
   return (
     <aside className={className} style={{ display: 'flex', flexDirection: 'column' }}>
       <h2 style={{margin: '32px 0 24px 0'}}>Kairos</h2>
