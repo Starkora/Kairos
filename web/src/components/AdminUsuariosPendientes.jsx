@@ -100,7 +100,7 @@ export default function AdminUsuariosPendientes() {
                 <td>{u.plataforma || '-'}</td>
                 <td>{u.creado_en || '-'}</td>
                 <td>
-                  <button onClick={() => aprobar(u.id)} className="btn btn-primary">Aprobar</button>
+                  <button onClick={() => aprobar(u.id)} className="btn btn-success btn-sm">Aprobar</button>
                 </td>
               </tr>
             ))}
@@ -108,7 +108,7 @@ export default function AdminUsuariosPendientes() {
         </table>
       </div>
       <div style={{marginTop:16}}>
-        <button onClick={fetchPendientes} className="btn">Refrescar</button>
+        <button onClick={fetchPendientes} className="btn btn-primary">Refrescar</button>
       </div>
     </div>
   );
