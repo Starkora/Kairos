@@ -6,6 +6,8 @@ export default function AdminUsuariosPendientes() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [usuarios, setUsuarios] = useState([]);
+  const [busyIds, setBusyIds] = useState(new Set());
+  const [toast, setToast] = useState(null); // { type: 'success'|'error'|'info', msg }
   const token = getToken();
   const [query, setQuery] = useState('');
 
@@ -30,6 +32,7 @@ export default function AdminUsuariosPendientes() {
 
   const aprobar = async (id) => {
     try {
+      setBusyIds(prev => new Set(prev).add(id));
       const res = await fetch(`${API_BASE}/api/admin/users/${id}/approve`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
@@ -38,9 +41,12 @@ export default function AdminUsuariosPendientes() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `Error ${res.status}`);
       }
+      setToast({ type: 'success', msg: 'Usuario aprobado correctamente' });
       await fetchPendientes();
     } catch (e) {
-      alert(e.message);
+      setToast({ type: 'error', msg: e.message || 'Error al aprobar usuario' });
+    } finally {
+      setBusyIds(prev => { const n = new Set(prev); n.delete(id); return n; });
     }
   };
 
@@ -60,6 +66,10 @@ export default function AdminUsuariosPendientes() {
   return (
     <div className="card centered-card" style={{maxWidth: 900}}>
       <h2>Usuarios pendientes de aprobación</h2>
+      {toast && (
+        <div className={`alert ${toast.type === 'error' ? 'error' : ''}`}
+          onAnimationEnd={() => setToast(null)}>{toast.msg}</div>
+      )}
       <div style={{display:'flex', gap:12, alignItems:'center', marginBottom:12}}>
         <input
           type="text"
@@ -100,7 +110,9 @@ export default function AdminUsuariosPendientes() {
                 <td>{u.plataforma || '-'}</td>
                 <td>{u.creado_en || '-'}</td>
                 <td>
-                  <button onClick={() => aprobar(u.id)} className="btn btn-success btn-sm">Aprobar</button>
+                  <button onClick={() => aprobar(u.id)} className="btn btn-success btn-sm" disabled={busyIds.has(u.id)}>
+                    {busyIds.has(u.id) ? 'Aprobando…' : 'Aprobar'}
+                  </button>
                 </td>
               </tr>
             ))}
@@ -108,7 +120,9 @@ export default function AdminUsuariosPendientes() {
         </table>
       </div>
       <div style={{marginTop:16}}>
-        <button onClick={fetchPendientes} className="btn btn-primary">Refrescar</button>
+        <button onClick={fetchPendientes} className="btn btn-primary" disabled={loading}>
+          {loading ? 'Cargando…' : 'Refrescar'}
+        </button>
       </div>
     </div>
   );
