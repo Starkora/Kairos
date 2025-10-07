@@ -388,6 +388,16 @@ const Login = ({ onLogin }) => {
                   fontSize: '1rem'
                 }}
               />
+              {CAPTCHA_ENABLED && CAPTCHA_PROVIDER === 'recaptcha' && RECAPTCHA_VERSION === 'v2' && (
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={RECAPTCHA_SITE_KEY}
+                    onChange={(tok) => setCaptchaTokenV2(tok)}
+                    onExpired={() => setCaptchaTokenV2(null)}
+                  />
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={loading}
@@ -406,6 +416,11 @@ const Login = ({ onLogin }) => {
                 {loading ? 'Ingresando...' : 'Ingresar'}
               </button>
             </form>
+            {CAPTCHA_ENABLED && CAPTCHA_PROVIDER === 'recaptcha' && RECAPTCHA_VERSION === 'v2' && (
+              <p style={{ marginTop: 12, fontSize: 11, color: '#999', textAlign: 'center' }}>
+                Este sitio está protegido por reCAPTCHA y se aplican la <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">Política de Privacidad</a> y los <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer">Términos de Servicio</a> de Google.
+              </p>
+            )}
             <GoogleAuthButton onLogin={onLogin} />
             <div style={{ textAlign: 'center', marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <button onClick={() => setShowRegister(true)} style={{ background: 'none', border: 'none', color: '#6C4AB6', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
