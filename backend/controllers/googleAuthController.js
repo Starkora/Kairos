@@ -2,13 +2,15 @@ const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
 
-// Toma el Client ID de entorno o usa el del móvil como fallback para mantener consistencia
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '351324441687-bqb2j82dv7kbqki50c4b9dib3ajpge2a.apps.googleusercontent.com';
-if (!process.env.GOOGLE_CLIENT_ID) {
-  console.warn('[googleAuth] GOOGLE_CLIENT_ID no está definido en .env; usando fallback hardcodeado. Configúralo para producción.');
+// Permitir múltiples audiencias (client IDs) para validar idToken, separados por comas.
+// Preferimos el Client ID de tipo Web como fallback seguro.
+const RAW_GOOGLE_IDS = process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || '351324441687-39sdmfov119bqa28d703aqodo181jpih.apps.googleusercontent.com';
+const GOOGLE_AUDIENCES = String(RAW_GOOGLE_IDS).split(',').map(s => s.trim()).filter(Boolean);
+if (!process.env.GOOGLE_CLIENT_ID && !process.env.GOOGLE_CLIENT_IDS) {
+  console.warn('[googleAuth] GOOGLE_CLIENT_ID/GOOGLE_CLIENT_IDS no está definido; usando fallback hardcodeado (Web Client ID). Configura la variable de entorno en producción.');
 }
-const client = new OAuth2Client(GOOGLE_CLIENT_ID);
-console.log('[googleAuth] GOOGLE_CLIENT_ID en uso:', GOOGLE_CLIENT_ID);
+const client = new OAuth2Client(GOOGLE_AUDIENCES[0]);
+console.log('[googleAuth] GOOGLE_AUDIENCES en uso:', GOOGLE_AUDIENCES);
 
 // POST /api/usuarios/google
 exports.loginGoogle = async (req, res) => {
@@ -26,7 +28,7 @@ exports.loginGoogle = async (req, res) => {
   }
 
   try {
-    console.log('[googleAuth] requiredAudience (GOOGLE_CLIENT_ID) en request:', GOOGLE_CLIENT_ID);
+  console.log('[googleAuth] requiredAudiences (GOOGLE_AUDIENCES) en request:', GOOGLE_AUDIENCES);
     // Decodificar payload del idToken para inspeccionar 'aud', 'iss', etc. (solo logs, sin validar)
     try {
       const parts = String(credential).split('.');
@@ -41,8 +43,8 @@ exports.loginGoogle = async (req, res) => {
           email: payloadPreview.email,
           sub: payloadPreview.sub,
         });
-        if (payloadPreview && payloadPreview.aud && payloadPreview.aud !== GOOGLE_CLIENT_ID) {
-          console.warn('[googleAuth] WARNING: aud del token no coincide con GOOGLE_CLIENT_ID');
+        if (payloadPreview && payloadPreview.aud && !GOOGLE_AUDIENCES.includes(payloadPreview.aud)) {
+          console.warn('[googleAuth] WARNING: aud del token no está en GOOGLE_AUDIENCES permitidos');
         }
       } else {
         console.warn('[googleAuth] idToken no tiene 3 partes');
@@ -51,8 +53,19 @@ exports.loginGoogle = async (req, res) => {
       console.warn('[googleAuth] No se pudo decodificar idToken localmente:', decErr && decErr.message);
     }
 
-    const ticket = await client.verifyIdToken({ idToken: credential, audience: GOOGLE_CLIENT_ID });
-    const payload = ticket.getPayload();
+    // Intentar validar contra cualquiera de las audiencias permitidas
+    let payload = null;
+    let lastErr = null;
+    for (const aud of GOOGLE_AUDIENCES) {
+      try {
+        const ticket = await client.verifyIdToken({ idToken: credential, audience: aud });
+        payload = ticket.getPayload();
+        break;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    if (!payload) throw lastErr || new Error('Wrong recipient, payload audience not allowed');
     console.log('Payload de Google:', { email: payload.email, sub: payload.sub });
     const email = payload.email;
     const nombre = payload.given_name || '';
