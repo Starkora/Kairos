@@ -1,20 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
 import GoogleAuthButton from './GoogleAuthButton';
 import API_BASE from '../utils/apiBase';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const Login = ({ onLogin }) => {
-  // CAPTCHA config (reCAPTCHA v3)
+  // CAPTCHA config (v2 visible o v3 invisible)
   const CAPTCHA_ENABLED = String(process.env.REACT_APP_CAPTCHA_ENABLED || '').toLowerCase() === 'true';
   const CAPTCHA_PROVIDER = (process.env.REACT_APP_CAPTCHA_PROVIDER || 'recaptcha').toLowerCase();
   const RECAPTCHA_SITE_KEY = process.env.REACT_APP_RECAPTCHA_SITE_KEY || '';
+  const RECAPTCHA_VERSION = (process.env.REACT_APP_RECAPTCHA_VERSION || 'v3').toLowerCase(); // 'v2' | 'v3'
   const [captchaReady, setCaptchaReady] = useState(false);
+  const recaptchaRef = useRef(null);
+  const [captchaTokenV2, setCaptchaTokenV2] = useState(null);
 
   // Carga dinámica del script de reCAPTCHA v3 cuando está habilitado
   useEffect(() => {
     if (!CAPTCHA_ENABLED) return;
-    if (CAPTCHA_PROVIDER !== 'recaptcha') return; // actualmente soportamos recaptcha v3 en el frontend
+    if (CAPTCHA_PROVIDER !== 'recaptcha') return;
     if (!RECAPTCHA_SITE_KEY) return;
+    if (RECAPTCHA_VERSION !== 'v3') return; // solo carga script si es v3
     if (window.grecaptcha) {
       setCaptchaReady(true);
       return;
@@ -32,12 +37,16 @@ const Login = ({ onLogin }) => {
       setCaptchaReady(false);
     };
     document.body.appendChild(script);
-  }, [CAPTCHA_ENABLED, CAPTCHA_PROVIDER, RECAPTCHA_SITE_KEY]);
+  }, [CAPTCHA_ENABLED, CAPTCHA_PROVIDER, RECAPTCHA_SITE_KEY, RECAPTCHA_VERSION]);
 
   const getRecaptchaToken = async (action) => {
     if (!CAPTCHA_ENABLED) return null;
     if (CAPTCHA_PROVIDER !== 'recaptcha') return null;
     if (!RECAPTCHA_SITE_KEY) return null;
+    if (RECAPTCHA_VERSION === 'v2') {
+      // En v2 usamos el token del widget visible
+      return captchaTokenV2;
+    }
     // Espera a que grecaptcha esté listo
     const ensureReady = () => new Promise((resolve) => {
       const tryReady = () => {
@@ -85,7 +94,16 @@ const Login = ({ onLogin }) => {
       // Obtener token de CAPTCHA si está habilitado
       let captchaToken = null;
       if (CAPTCHA_ENABLED) {
-        captchaToken = await getRecaptchaToken('login');
+        if (RECAPTCHA_VERSION === 'v2') {
+          if (!captchaTokenV2) {
+            Swal.fire('CAPTCHA', 'Marca el reCAPTCHA antes de continuar.', 'info');
+            setLoading(false);
+            return;
+          }
+          captchaToken = captchaTokenV2;
+        } else {
+          captchaToken = await getRecaptchaToken('login');
+        }
       }
       const res = await fetch(`${API_BASE}/api/usuarios/login`, {
         method: 'POST',
@@ -174,7 +192,16 @@ const Login = ({ onLogin }) => {
       // Obtener token de CAPTCHA si está habilitado
       let captchaToken = null;
       if (CAPTCHA_ENABLED) {
-        captchaToken = await getRecaptchaToken('register');
+        if (RECAPTCHA_VERSION === 'v2') {
+          if (!captchaTokenV2) {
+            Swal.fire('CAPTCHA', 'Marca el reCAPTCHA antes de registrarte.', 'info');
+            setLoading(false);
+            return;
+          }
+          captchaToken = captchaTokenV2;
+        } else {
+          captchaToken = await getRecaptchaToken('register');
+        }
       }
       const res = await fetch(`${API_BASE}/api/usuarios/register`, {
         method: 'POST',
@@ -444,6 +471,16 @@ const Login = ({ onLogin }) => {
                 <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: '#6C4AB6', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
                   {loading ? 'Registrando...' : 'Registrarme'}
                 </button>
+                {CAPTCHA_ENABLED && CAPTCHA_PROVIDER === 'recaptcha' && RECAPTCHA_VERSION === 'v2' && (
+                  <div style={{ marginTop: 8, display: 'flex', justifyContent: 'center' }}>
+                    <ReCAPTCHA
+                      ref={recaptchaRef}
+                      sitekey={RECAPTCHA_SITE_KEY}
+                      onChange={(tok) => setCaptchaTokenV2(tok)}
+                      onExpired={() => setCaptchaTokenV2(null)}
+                    />
+                  </div>
+                )}
                 <button type="button" onClick={() => setShowRegister(false)} style={{ background: 'none', border: 'none', color: '#6C4AB6', fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>Volver a iniciar sesión</button>
               </form>
             ) : (
