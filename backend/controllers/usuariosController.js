@@ -13,14 +13,14 @@ const getUserInfo = async (req, res) => {
     const usuarioId = req.user.id; // Obtener el ID del usuario autenticado
     console.log('ID del usuario autenticado:', usuarioId); // Log para depuración
     console.log('Ejecutando consulta SQL para obtener datos del usuario');
-  const [usuario] = await db.query('SELECT email, numero AS telefono, nombre, apellido, rol, aprobado FROM usuarios WHERE id = ?', [usuarioId]);
-    console.log('Resultado de la consulta SQL:', usuario); // Log para depuración
+    const [rows] = await db.query('SELECT email, numero AS telefono, nombre, apellido, rol, aprobado FROM usuarios WHERE id = ?', [usuarioId]);
+    console.log('Resultado de la consulta SQL:', rows); // Log para depuración
 
-    if (!usuario) {
+    if (!Array.isArray(rows) || rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    res.json(usuario);
+    res.json(rows[0]);
   } catch (error) {
     console.error('Error al obtener información del usuario:', error);
     res.status(500).json({ error: 'Error al obtener información del usuario' });
@@ -33,6 +33,7 @@ const enviarCodigoVerificacion = async (req, res) => {
     console.log('Usuario en enviarCodigoVerificacion:', req.user); // Log para depuración
 
     const usuarioId = req.user.id; // Obtener el ID del usuario autenticado
+    const { metodo = 'correo' } = req.body || {}; // 'correo' | 'telefono'
     const resultado = await db.query('SELECT email, nombre, apellido, numero AS telefono FROM usuarios WHERE id = ?', [usuarioId]);
 
     console.log('Resultado de la consulta SQL:', resultado); // Log detallado del resultado
@@ -44,13 +45,20 @@ const enviarCodigoVerificacion = async (req, res) => {
 
     const usuario = resultado[0][0]; // Acceder al primer objeto del arreglo anidado
 
-    if (!usuario.email) {
-      console.error('Correo del usuario no encontrado o inválido:', usuario);
-      return res.status(404).json({ error: 'Correo del usuario no encontrado o inválido' });
+    const email = (usuario.email || '').trim();
+    const telDigits = String(usuario.telefono || '').replace(/\D/g, '');
+    if (metodo === 'telefono') {
+      if (telDigits.length !== 9) {
+        console.error('Teléfono del usuario no válido:', usuario);
+        return res.status(400).json({ error: 'Teléfono del usuario inválido o no configurado (requiere 9 dígitos)' });
+      }
+    } else {
+      if (!email) {
+        console.error('Correo del usuario no encontrado o inválido:', usuario);
+        return res.status(404).json({ error: 'Correo del usuario no encontrado o inválido' });
+      }
+      console.log(`Correo válido encontrado: ${email}`);
     }
-
-    const email = usuario.email.trim(); // Asegurarse de que el correo esté limpio
-    console.log(`Correo válido encontrado: ${email}`); // Log para confirmar el correo
 
     const codigo = crypto.randomInt(100000, 999999).toString();
     console.log(`Código generado: ${codigo}`); // Log para confirmar el código
@@ -70,15 +78,25 @@ const enviarCodigoVerificacion = async (req, res) => {
     });
     console.log('Estado de req.session después de asignar el código:', req.session); // Log para depuración
 
-    // Enviar el código al correo
-    console.log(`Enviando código ${codigo} al correo ${email}`); // Log para depuración
-    await mailer.sendMail({
-      to: email,
-      subject: 'Código de verificación',
-      text: `Tu código de verificación es: ${codigo}`
-    });
+    // Enviar el código por el medio seleccionado
+    if (metodo === 'telefono') {
+      console.log(`Enviando código ${codigo} por SMS al ${telDigits}`);
+      try {
+        await sms.sendSMS(telDigits, `Tu código de verificación es: ${codigo}`);
+      } catch (e) {
+        console.error('Error al enviar SMS:', e);
+        return res.status(500).json({ error: 'No se pudo enviar el SMS' });
+      }
+    } else {
+      console.log(`Enviando código ${codigo} al correo ${email}`); // Log para depuración
+      await mailer.sendMail({
+        to: email,
+        subject: 'Código de verificación',
+        text: `Tu código de verificación es: ${codigo}`
+      });
+    }
 
-    res.status(200).json({ message: 'Código enviado exitosamente. Por favor revisa tu correo.' });
+    res.status(200).json({ message: `Código enviado exitosamente por ${metodo === 'telefono' ? 'SMS' : 'correo'}.` });
   } catch (error) {
     console.error('Error al enviar código de verificación:', error);
     res.status(500).json({ error: 'Error al enviar código de verificación' });
@@ -158,7 +176,8 @@ const verificarCodigoYGuardar = async (req, res) => {
 // Método para registrar un nuevo usuario (envía código de confirmación)
 const register = async (req, res) => {
   try {
-    const { email, password, nombre, apellido, telefono, numero, plataforma, confirmMethod = 'correo' } = req.body || {};
+  const { email, password, nombre, apellido, telefono, numero, plataforma, confirmMethod = 'correo' } = req.body || {};
+  const plat = (plataforma || 'web').toLowerCase();
 
     // Validar datos requeridos
     const emailTrimmed = (email || '').trim();
@@ -190,8 +209,8 @@ const register = async (req, res) => {
     }
 
     // Verificar si el usuario ya existe (mensajes diferenciados)
-    const [emailRows] = await db.query('SELECT id FROM usuarios WHERE email = ?', [emailTrimmed]);
-  const [phoneRows] = await db.query('SELECT id FROM usuarios WHERE numero = ?', [telefonoDigits]);
+    const [emailRows] = await db.query('SELECT id FROM usuarios WHERE email = ? AND plataforma = ?', [emailTrimmed, plat]);
+    const [phoneRows] = await db.query('SELECT id FROM usuarios WHERE numero = ? AND plataforma = ?', [telefonoDigits, plat]);
     if (Array.isArray(emailRows) && emailRows.length > 0 && Array.isArray(phoneRows) && phoneRows.length > 0) {
       return res.status(409).json({ code: 'EMAIL_AND_PHONE_IN_USE', message: 'El correo y el número de teléfono ya están en uso' });
     }
@@ -222,7 +241,7 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Limpiar pendientes previos del mismo email para evitar múltiples entradas
-    try { await UsuarioPendiente.deleteByEmail(emailTrimmed); } catch (_) {}
+  try { await UsuarioPendiente.deleteByEmail(emailTrimmed, plat); } catch (_) {}
 
     // Hash del código (evitar guardar OTP en claro)
     const codigoHash = await bcrypt.hash(codigo, 10);
@@ -236,7 +255,7 @@ const register = async (req, res) => {
       codigo: codigoHash,
       metodo: confirmMethod === 'telefono' ? 'sms' : 'correo',
       expires,
-      plataforma: plataforma || 'web'
+      plataforma: plat
     });
 
     // Enviar código por el método elegido
@@ -260,7 +279,8 @@ const register = async (req, res) => {
 // Verificar código de registro y crear usuario definitivo
 const verify = async (req, res) => {
   try {
-    const { email, codigo } = req.body || {};
+    const { email, codigo, plataforma } = req.body || {};
+    const plat = (plataforma || 'web').toLowerCase();
     if (!email || !codigo) {
       return res.status(400).json({ message: 'Email y código son requeridos' });
     }
@@ -269,7 +289,8 @@ const verify = async (req, res) => {
     if (!Array.isArray(pendings) || pendings.length === 0) {
       return res.status(404).json({ code: 'NO_PENDING', message: 'No hay registro pendiente para este correo' });
     }
-    const p = pendings[0];
+    // Preferir el pendiente de la plataforma indicada
+    let p = pendings.find((row) => String((row.plataforma || 'web')).toLowerCase() === plat) || pendings[0];
     const provided = String(codigo).trim();
     const seemsHashed = typeof p.codigo === 'string' && /^\$2[aby]?\$\d{2}\$/.test(p.codigo);
     let match = false;
@@ -282,14 +303,14 @@ const verify = async (req, res) => {
       return res.status(400).json({ code: 'INVALID_CODE', message: 'Código incorrecto' });
     }
     if (p.expires && Number(p.expires) < Date.now()) {
-      await UsuarioPendiente.deleteByEmail(p.email);
+  await UsuarioPendiente.deleteByEmail(p.email, p.plataforma || 'web');
       return res.status(400).json({ code: 'CODE_EXPIRED', message: 'El código ha expirado, vuelve a registrarte' });
     }
 
     // Insertar en usuarios definitivo
     const [ins] = await db.query(
       'INSERT INTO usuarios (email, password, nombre, apellido, numero, verificado, plataforma, rol, aprobado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [p.email, p.password, p.nombre || '', p.apellido || '', p.numero || '', 1, p.plataforma || 'web', 'user', 0]
+      [p.email, p.password, p.nombre || '', p.apellido || '', p.numero || '', 1, (p.plataforma || 'web'), 'user', 0]
     );
 
     await UsuarioPendiente.deleteByEmail(p.email);

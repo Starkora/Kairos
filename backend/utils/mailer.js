@@ -1,5 +1,5 @@
 const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
 
 async function sendMail({ to, subject, text }) {
   if (typeof to !== 'string' || !to.trim()) {
@@ -7,8 +7,15 @@ async function sendMail({ to, subject, text }) {
   }
 
   const from = process.env.MAIL_FROM;
-  if (typeof from !== 'string' || !from.trim()) {
-    throw new Error('El campo `from` debe ser un correo electrónico válido y configurado en las variables de entorno.');
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const allowDevFallback = process.env.ALLOW_DEV_MAIL_FALLBACK === 'true' || process.env.NODE_ENV !== 'production';
+  if ((typeof from !== 'string' || !from.trim()) || !apiKey) {
+    if (allowDevFallback) {
+      console.warn('[mailer] Falta configuración de SendGrid/Mail From. Simulando envío (DEV).');
+      console.log(`[mailer][SIMULATED] To: ${to} | Subject: ${subject} | Text: ${text}`);
+      return { simulated: true };
+    }
+    throw new Error('Configuración de correo incompleta: falta MAIL_FROM o SENDGRID_API_KEY');
   }
 
   console.log(`Intentando enviar correo a ${to} con asunto: ${subject}`); // Log para depuración

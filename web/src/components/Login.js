@@ -120,6 +120,8 @@ const Login = ({ onLogin }) => {
         } else if (res.status === 403) {
           if (data && data.code === 'ACCOUNT_UNVERIFIED') {
             Swal.fire('Cuenta no verificada', data.message || 'Revisa tu correo para confirmar el registro.', 'info');
+          } else if (data && data.code === 'ACCOUNT_NOT_APPROVED') {
+            Swal.fire('Cuenta registrada', 'Tu cuenta fue registrada correctamente. Falta la aprobación del administrador para iniciar sesión.', 'info');
           } else {
             Swal.fire('Acceso denegado', data.message || 'No tienes permisos para acceder.', 'info');
           }

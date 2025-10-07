@@ -26,8 +26,15 @@ exports.create = async (req, res) => {
   const { cuenta_id, tipo, monto, descripcion, fecha, categoria_id } = req.body;
 
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
-  if (!cuenta_id || !tipo || !monto || !fecha) {
-    return res.status(400).json({ error: 'Faltan campos requeridos' });
+  // Validación detallada de campos requeridos + logging para depurar
+  const missing = [];
+  if (!cuenta_id) missing.push('cuenta_id');
+  if (!tipo) missing.push('tipo');
+  if (!monto) missing.push('monto');
+  if (!fecha) missing.push('fecha');
+  if (missing.length) {
+    console.warn('[transacciones.create] Faltan campos requeridos:', missing, 'Payload recibido:', req.body);
+    return res.status(400).json({ error: 'Faltan campos requeridos', missing, receivedKeys: Object.keys(req.body || {}) });
   }
 
   const db = require('../db');

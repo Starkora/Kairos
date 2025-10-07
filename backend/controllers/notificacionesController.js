@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const sgMail = require('@sendgrid/mail');
 const mailer = require('../utils/mailer');
+const sms = require('../utils/sms');
 const auth = require('../utils/auth');
 const db = require('../db');
 const cron = require('node-cron');
@@ -56,7 +57,7 @@ function isDue(notificacion, nowLocal) {
 
 async function fetchNotificacionesConEmail() {
   const [rows] = await db.query(
-    `SELECT n.*, u.email AS usuario_email
+    `SELECT n.*, u.email AS usuario_email, u.numero AS usuario_telefono
      FROM notificaciones n
      JOIN usuarios u ON u.id = n.usuario_id`
   );
@@ -68,18 +69,27 @@ async function workerTick() {
   try {
     const list = await fetchNotificacionesConEmail();
     for (const n of list) {
-      if (!n || n.medio !== 'correo') continue; // por ahora solo correo
+      if (!n) continue;
       if (!isDue(n, now)) continue;
       const key = buildSlotKey(now, n.id);
       if (sentTracker.has(key)) continue; // ya enviado en este minuto
       try {
-        if (!n.usuario_email) { console.error('Notificación sin email:', n.id); continue; }
-        await mailer.sendMail({
-          to: n.usuario_email,
-          subject: 'Recordatorio de Notificación',
-          text: 'Hola, recuerda anotar tus ingresos y egresos del día para ser un ahorrador pro.'
-        });
-        console.log(`[Notificaciones] Enviado correo a ${n.usuario_email} (notif ${n.id})`);
+        if (n.medio === 'correo') {
+          if (!n.usuario_email) { console.error('Notificación sin email:', n.id); continue; }
+          await mailer.sendMail({
+            to: n.usuario_email,
+            subject: 'Recordatorio de Notificación',
+            text: 'Hola, recuerda anotar tus ingresos y egresos del día para ser un ahorrador pro.'
+          });
+          console.log(`[Notificaciones] Enviado correo a ${n.usuario_email} (notif ${n.id})`);
+        } else if (n.medio === 'sms') {
+          if (!n.usuario_telefono) { console.error('Notificación sin teléfono:', n.id); continue; }
+          await sms.sendSMS(String(n.usuario_telefono), 'Kairos: recuerda registrar tus ingresos y egresos del día.');
+          console.log(`[Notificaciones] Enviado SMS a ${n.usuario_telefono} (notif ${n.id})`);
+        } else {
+          // Medio no soportado actualmente
+          continue;
+        }
         sentTracker.set(key, Date.now());
       } catch (err) {
         console.error('[Notificaciones] Error al enviar:', err && err.response ? err.response.body : err);

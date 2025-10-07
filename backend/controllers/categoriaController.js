@@ -40,6 +40,9 @@ exports.create = async (req, res) => {
     const result = await Categoria.create({ usuario_id, nombre, tipo, plataforma });
     res.status(201).json({ message: 'Categoría creada', id: result.id });
   } catch (err) {
+    if (err && (err.code === 'ER_DUP_ENTRY' || /Duplicate entry/i.test(err.message || ''))) {
+      return res.status(409).json({ code: 'DUPLICATE_CATEGORY', message: 'Ya existe una categoría con ese nombre.' });
+    }
     res.status(500).json({ error: err.message });
   }
 };
@@ -56,6 +59,9 @@ exports.update = async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Categoría no encontrada' });
     res.json({ message: 'Categoría actualizada' });
   } catch (err) {
+    if (err && (err.code === 'ER_DUP_ENTRY' || /Duplicate entry/i.test(err.message || ''))) {
+      return res.status(409).json({ code: 'DUPLICATE_CATEGORY', message: 'Ya existe una categoría con ese nombre.' });
+    }
     res.status(500).json({ error: err.message });
   }
 };

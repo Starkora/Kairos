@@ -13,7 +13,7 @@ const GoogleAuthButton = ({ onLogin }) => {
           'ngrok-skip-browser-warning': 'true'
         },
         credentials: 'include', // enviar cookies/sesión si el backend las usa
-        body: JSON.stringify({ credential: credentialResponse.credential })
+        body: JSON.stringify({ credential: credentialResponse.credential, plataforma: 'web' })
       });
       const data = await res.json();
       if (res.ok && data.token) {
@@ -21,6 +21,10 @@ const GoogleAuthButton = ({ onLogin }) => {
         Swal.fire('¡Bienvenido!', 'Inicio de sesión con Google exitoso', 'success');
         if (onLogin) onLogin();
       } else {
+        if (res.status === 403 && data && data.code === 'ACCOUNT_NOT_APPROVED') {
+          Swal.fire('Cuenta registrada', 'Tu cuenta fue registrada correctamente. Falta la aprobación del administrador para iniciar sesión.', 'info');
+          return;
+        }
         Swal.fire('Error', data.message || 'No se pudo autenticar con Google', 'error');
       }
     } catch (err) {

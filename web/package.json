@@ -17,7 +17,7 @@
     "recharts": "^3.2.1",
     "sweetalert2": "^11.23.0"
   },
-  "proxy": "http://localhost:3001",
+  "proxy": "http://localhost:3002",
   "browserslist": {
     "production": [
       ">0.2%",

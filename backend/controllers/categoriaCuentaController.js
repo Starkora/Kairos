@@ -22,6 +22,9 @@ exports.create = async (req, res) => {
     const result = await CategoriaCuenta.create({ usuario_id, nombre });
     res.status(201).json(result);
   } catch (err) {
+    if (err && (err.code === 'ER_DUP_ENTRY' || /Duplicate entry/i.test(err.message || ''))) {
+      return res.status(409).json({ code: 'DUPLICATE_ACCOUNT_CATEGORY', message: 'Ya existe una categoría de cuenta con ese nombre.' });
+    }
     res.status(500).json({ error: 'Error al crear categoría de cuenta' });
   }
 };
@@ -38,6 +41,9 @@ exports.update = async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Categoría de cuenta no encontrada' });
     res.json({ message: 'Categoría de cuenta actualizada' });
   } catch (err) {
+    if (err && (err.code === 'ER_DUP_ENTRY' || /Duplicate entry/i.test(err.message || ''))) {
+      return res.status(409).json({ code: 'DUPLICATE_ACCOUNT_CATEGORY', message: 'Ya existe una categoría de cuenta con ese nombre.' });
+    }
     res.status(500).json({ error: 'Error al actualizar categoría de cuenta' });
   }
 };

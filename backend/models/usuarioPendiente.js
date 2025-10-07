@@ -18,7 +18,11 @@ const UsuarioPendiente = {
     console.log('[Kairos][DEBUG][usuarioPendiente] Resultados:', results);
     return results;
   },
-  deleteByEmail: async (email) => {
+  deleteByEmail: async (email, plataforma) => {
+    if (plataforma) {
+      const [result] = await db.query('DELETE FROM usuarios_pendientes WHERE email = ? AND plataforma = ?', [email, plataforma]);
+      return result;
+    }
     const [result] = await db.query('DELETE FROM usuarios_pendientes WHERE email = ?', [email]);
     return result;
   },

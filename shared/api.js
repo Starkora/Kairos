@@ -1,6 +1,24 @@
 // Lógica de consumo de API reutilizable para web y mobile
+// API_URL dinámico:
+// - Permite override con globalThis.KAIROS_API_BASE
+// - En React Native (Android emulator), usa 10.0.2.2 por defecto
 
-export const API_URL = 'http://localhost:3001/api';
+function resolveApiBase() {
+  try {
+    if (typeof globalThis !== 'undefined' && globalThis.KAIROS_API_BASE) {
+      return String(globalThis.KAIROS_API_BASE);
+    }
+    // Detectar entorno React Native
+    const isRN = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+    if (isRN) {
+      // Heurística: asumir backend local en host de desarrollo
+      return 'http://10.0.2.2:3001/api';
+    }
+  } catch (_) {}
+  return 'http://localhost:3001/api';
+}
+
+export const API_URL = resolveApiBase();
 
 export async function loginUsuario(email, password) {
   const response = await fetch(`${API_URL}/usuarios/login`, {

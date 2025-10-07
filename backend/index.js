@@ -8,6 +8,7 @@ if (process.env.NODE_ENV !== 'production') {
     'TWILIO_AUTH_TOKEN',
     'TWILIO_PHONE_NUMBER',
     'PORT',
+    'GOOGLE_CLIENT_ID',
   ].filter((k) => process.env[k]).join(', '));
 }
 
