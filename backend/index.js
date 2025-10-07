@@ -9,6 +9,7 @@ if (process.env.NODE_ENV !== 'production') {
     'TWILIO_PHONE_NUMBER',
     'PORT',
     'GOOGLE_CLIENT_ID',
+    'GOOGLE_CLIENT_IDS',
   ].filter((k) => process.env[k]).join(', '));
 }
 

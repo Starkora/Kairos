@@ -23,6 +23,8 @@ services:
       #     <BASE64_CA>
       - key: JWT_SECRET
         generateValue: true
+      - key: GOOGLE_CLIENT_IDS
+        sync: false
       # Opcionales
       - key: SENDGRID_API_KEY
         sync: false
