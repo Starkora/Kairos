@@ -39,23 +39,36 @@ export default function MiCuenta() {
       })
       .then((data) => {
         console.log('Datos obtenidos del servidor:', data); // Log para depuración
+        // El backend puede devolver: 1) un array de usuarios, 2) un objeto usuario, o
+        // 3) una estructura anidada como [rows, ...]. Normalizamos esas formas.
+        let usuario = null;
         if (Array.isArray(data) && data.length > 0) {
-          const usuario = data[0]; // Obtener el primer objeto del array
+          // Caso común: array plano de usuarios
+          usuario = data[0];
+        } else if (data && typeof data === 'object' && !Array.isArray(data)) {
+          // Caso donde el backend devuelve directamente un objeto usuario
+          usuario = data;
+        } else if (Array.isArray(data) && Array.isArray(data[0]) && data[0].length > 0) {
+          // Caso de respuesta anidada: [rows, ...]
+          usuario = data[0][0];
+        }
+
+        if (usuario) {
           setUserInfo({
             email: usuario.email || '',
-            telefono: usuario.telefono || '',
+            telefono: usuario.telefono || usuario.numero || '',
             nombre: usuario.nombre || '',
             apellido: usuario.apellido || ''
           });
           setOriginalUserInfo({
             email: usuario.email || '',
-            telefono: usuario.telefono || '',
+            telefono: usuario.telefono || usuario.numero || '',
             nombre: usuario.nombre || '',
             apellido: usuario.apellido || ''
           });
           console.log('Estado actualizado con los datos del usuario:', {
             email: usuario.email || '',
-            telefono: usuario.telefono || '',
+            telefono: usuario.telefono || usuario.numero || '',
             nombre: usuario.nombre || '',
             apellido: usuario.apellido || ''
           }); // Log para depuración
