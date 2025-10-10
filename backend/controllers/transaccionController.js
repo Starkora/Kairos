@@ -23,7 +23,7 @@ exports.getAll = async (req, res) => {
 
 exports.create = async (req, res) => {
   const usuario_id = req.user && req.user.id;
-  const { cuenta_id, tipo, monto, descripcion, fecha, categoria_id } = req.body;
+  const { cuenta_id, tipo, monto, descripcion, fecha, categoria_id, icon, color } = req.body;
 
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   // Validación detallada de campos requeridos + logging para depurar
@@ -52,8 +52,38 @@ exports.create = async (req, res) => {
       const [cats] = await db.query('SELECT * FROM categorias WHERE id = ? AND usuario_id = ?', [categoria_id, usuario_id]);
       if (!cats || cats.length === 0) return res.status(403).json({ error: 'Categoría no pertenece al usuario' });
     }
-    const result = await Transaccion.create({ usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma });
+  const result = await Transaccion.create({ usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color });
     res.status(201).json({ message: 'Movimiento creado', id: result.insertId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Eliminar movimiento
+exports.deleteById = async (req, res) => {
+  const id = req.params.id;
+  const usuario_id = req.user && req.user.id;
+  if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  try {
+    const Transaccion = require('../models/transaccion');
+    await Transaccion.deleteById(id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Actualizar movimiento
+exports.update = async (req, res) => {
+  const usuario_id = req.user && req.user.id;
+  const id = req.params.id;
+  const { cuenta_id, tipo, monto, descripcion, fecha, categoria_id, icon, color } = req.body;
+  if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  if (!cuenta_id || !tipo || !monto || !fecha) return res.status(400).json({ error: 'Faltan campos requeridos' });
+  try {
+    const Transaccion = require('../models/transaccion');
+    await Transaccion.update({ id, usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, icon, color });
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

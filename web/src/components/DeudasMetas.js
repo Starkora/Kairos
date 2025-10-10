@@ -100,21 +100,24 @@ export default function DeudasMetas() {
   const handlePago = async (id, tipo, monto) => {
     try {
       console.log('Datos enviados a handlePago:', { id, tipo, monto }); // Log para depuración
-  const url = tipo === 'deuda' ? `${API_BASE}/api/deudas/pago` : `${API_BASE}/api/metas/aporte`;
+      const url = tipo === 'deuda' ? `${API_BASE}/api/deudas/pago` : `${API_BASE}/api/metas/aporte`;
       const fecha = new Date().toISOString().split('T')[0]; // Fecha actual en formato YYYY-MM-DD
-      console.log('Datos enviados a handlePago:', { deuda_id: id, monto, fecha, plataforma: 'web' }); // Log adicional para depuración
+      // Construir body según tipo: deuda -> deuda_id, meta -> meta_id
+      const body = {
+        monto: Number(monto),
+        fecha,
+        plataforma: 'web'
+      };
+      if (tipo === 'deuda') body.deuda_id = id;
+      else body.meta_id = id;
+
+      console.log('Payload handlePago:', body);
+
       const response = await fetch(url, {
         method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken(), 'ngrok-skip-browser-warning': 'true' },
-  credentials: 'include',
-        body: JSON.stringify({
-          meta_id: id, // Cambiado de `deuda_id` a `meta_id`
-          monto,
-          fecha,
-          fecha_inicio: nueva.fecha_inicio || null,
-          fecha_objetivo: nueva.fecha_objetivo || null,
-          plataforma: 'web'
-        })
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken(), 'ngrok-skip-browser-warning': 'true' },
+        credentials: 'include',
+        body: JSON.stringify(body)
       });
       const data = await response.json();
       if (response.ok && data.success) {
@@ -238,8 +241,26 @@ export default function DeudasMetas() {
   };
 
   const handleDelete = async (id, tipo) => {
+    // Obtener descripción del elemento para mostrar en la confirmación
+    let item;
+    if (tipo === 'deuda') item = deudas.find(d => d.id === id);
+    else item = metas.find(m => m.id === id);
+    const nombreTipo = tipo === 'deuda' ? 'deuda' : 'meta';
+    const titulo = item && item.descripcion ? `¿Deseas eliminar la ${nombreTipo} "${item.descripcion}"?` : `¿Deseas eliminar la ${nombreTipo}?`;
+    const confirm = await Swal.fire({
+      title: titulo,
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#e53935'
+    });
+
+    if (!confirm.isConfirmed) return;
+
     try {
-  const url = tipo === 'deuda' ? `${API_BASE}/api/deudas/${id}` : `${API_BASE}/api/metas/${id}`;
+      const url = tipo === 'deuda' ? `${API_BASE}/api/deudas/${id}` : `${API_BASE}/api/metas/${id}`;
       const response = await fetch(url, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken(), 'ngrok-skip-browser-warning': 'true' },

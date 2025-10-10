@@ -18,6 +18,8 @@ export default function Registro() {
     fecha: '',
     descripcion: '',
     cuenta: '',
+    icon: '💸',
+    color: '#c62828'
   });
   // Helper para obtener la fecha local (YYYY-MM-DD) sin desfase de zona horaria
   const getToday = React.useCallback(() => {
@@ -168,26 +170,33 @@ export default function Registro() {
         monto: form.monto,
         descripcion: form.descripcion,
         fecha: form.fecha,
-        categoria_id: form.categoria
+        categoria_id: form.categoria,
+        icon: form.icon,
+        color: form.color
       };
       try {
-  const res = await fetch(`${API_BASE}/api/transacciones`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + getToken()
-          },
-          body: JSON.stringify(movimiento)
-        });
-        if (res.ok) {
+      const apiFetch = (await import('../utils/apiFetch')).default;
+      const res = await apiFetch(`${API_BASE}/api/transacciones`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(movimiento)
+            });
+            if (res && res.ok) {
           Swal.fire({ icon: 'success', title: 'Movimiento registrado', showConfirmButton: false, timer: 1200 });
-          setForm({ tipo: 'ingreso', monto: '', categoria: '', fecha: getToday(), descripcion: '', cuenta: cuentas[0]?.id || '' });
-          // Refrescar cuentas para mostrar el saldo actualizado
-          fetch(`${API_BASE}/api/cuentas`, {
-            headers: { 'Authorization': 'Bearer ' + getToken() }
-          })
+          setForm({ tipo: 'ingreso', monto: '', categoria: '', fecha: getToday(), descripcion: '', cuenta: cuentas[0]?.id || '', icon: '💸', color: '#c62828' });
+          // Refrescar cuentas para mostrar el saldo actualizado (asegurar plataforma=web)
+          (await import('../utils/apiFetch')).default(`${API_BASE}/api/cuentas?plataforma=web`)
             .then(res => res.ok ? res.json() : [])
-            .then(data => setCuentas(data));
+            .then(data => setCuentas(Array.isArray(data) ? data : []))
+            .catch(() => setCuentas([]));
+            // Emitir evento para que otros componentes (ej. Cuentas) puedan refrescarse
+            try {
+              window.dispatchEvent(new Event('cuentas:refresh'));
+            } catch (e) {
+              // no crítico
+            }
         } else {
           const data = await res.json();
           Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo registrar el movimiento.' });
@@ -242,6 +251,15 @@ export default function Registro() {
               <option key={cat.id} value={cat.id}>{cat.nombre}</option>
             ))}
           </select>
+        </div>
+        <div>
+          <label>Icono:&nbsp;</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <select name="icon" value={form.icon} onChange={handleChange} style={{ padding: 6, borderRadius: 6 }}>
+              {['💸','💰','🏦','🍎','🚗','💳','🔌','🎁','🛒','🏥'].map(i => <option key={i} value={i}>{i}</option>)}
+            </select>
+            <input type="color" name="color" value={form.color} onChange={handleChange} style={{ width: 48, height: 36, padding: 0, border: 'none', background: 'transparent' }} />
+          </div>
         </div>
         <div>
           <label>Fecha:&nbsp;</label>

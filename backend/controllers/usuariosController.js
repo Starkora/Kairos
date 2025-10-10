@@ -30,6 +30,7 @@ const getUserInfo = async (req, res) => {
 // Método para enviar código de verificación
 const enviarCodigoVerificacion = async (req, res) => {
   try {
+    console.log('[RecuperarPassword] Petición recibida:', req.body);
     console.log('Usuario en enviarCodigoVerificacion:', req.user); // Log para depuración
 
     const usuarioId = req.user.id; // Obtener el ID del usuario autenticado

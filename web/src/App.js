@@ -14,7 +14,7 @@ import CategoriasCuenta from './components/CategoriasCuenta';
 import Login from './components/Login';
 import RecuperarPasswordPage from './pages/RecuperarPasswordPage';
 import LogoutButton from './components/LogoutButton';
-import { isLoggedIn, getToken } from './utils/auth';
+import { isLoggedIn, getToken, getTokenExpiration, scheduleAutoLogout, forceLogout } from './utils/auth';
 import MiCuenta from './components/MiCuenta';
 import ApiEndpointBadge from './components/ApiEndpointBadge';
 import AdminUsuariosPendientes from './components/AdminUsuariosPendientes.jsx';
@@ -59,6 +59,22 @@ export default function App() {
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  // Programar auto-logout al iniciar la app (si hay token)
+  useEffect(() => {
+    const token = getToken();
+    if (token) {
+      const exp = getTokenExpiration(token);
+      if (exp) scheduleAutoLogout(exp);
+    }
+    // Escuchar evento global de sesión expirada para mostrar feedback o acciones adicionales
+    const onExpired = () => {
+      // Forzar logout (ya redirige)
+      try { forceLogout(); } catch (e) { /* ignore */ }
+    };
+    window.addEventListener('session:expired', onExpired);
+    return () => window.removeEventListener('session:expired', onExpired);
   }, []);
 
   // Función para refrescar usuario tras login/logout en la misma pestaña

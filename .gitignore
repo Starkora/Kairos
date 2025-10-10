@@ -49,3 +49,7 @@ KariosMobile/ios/Pods/
 .vercel/
 .netlify/
 .render/
+ 
+# EAS credentials
+credentials.json
+credentials/

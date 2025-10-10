@@ -26,9 +26,28 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Filtrar movimientos: mostrar solo los que ya están aplicados o cuya fecha es <= hoy
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const visibleMovimientos = movimientos.filter(m => {
+    try {
+      // Si el backend ya incluye el flag `applied`, úsalo
+      if (typeof m.applied !== 'undefined' && m.applied !== null) {
+        return Number(m.applied) === 1;
+      }
+      // Fallback: comparar solo la parte de fecha (sin hora)
+      if (!m.fecha) return false;
+      const movDate = new Date(m.fecha);
+      movDate.setHours(0, 0, 0, 0);
+      return movDate <= today;
+    } catch (e) {
+      return false;
+    }
+  });
+
   // Calcular totales
-  const totalIngreso = movimientos.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
-  const totalEgreso = movimientos.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto), 0);
+  const totalIngreso = visibleMovimientos.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
+  const totalEgreso = visibleMovimientos.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto), 0);
   const ahorro = totalIngreso - totalEgreso;
 
   // Indicadores
@@ -37,25 +56,25 @@ export default function Dashboard() {
       icon: '📉',
       color: '#ff9800',
       titulo: 'Indicadores Egresos',
-      valor: movimientos.filter(m => m.tipo === 'egreso').length,
+    valor: visibleMovimientos.filter(m => m.tipo === 'egreso').length,
     },
     {
       icon: '📈',
       color: '#388e3c',
       titulo: 'Indicadores Ingresos',
-      valor: movimientos.filter(m => m.tipo === 'ingreso').length,
+    valor: visibleMovimientos.filter(m => m.tipo === 'ingreso').length,
     },
     {
       icon: '💵',
       color: '#ff7043',
       titulo: 'Ingreso',
-      valor: `S/ ${totalIngreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+    valor: `S/ ${totalIngreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
     },
     {
       icon: '🏦',
       color: '#26c6da',
       titulo: 'Gastos',
-      valor: `S/ ${totalEgreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+    valor: `S/ ${totalEgreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
     },
   ];
 
@@ -68,7 +87,7 @@ export default function Dashboard() {
 
   // Top egresos por categoría
   const egresosPorCategoria = {};
-  movimientos.filter(m => m.tipo === 'egreso').forEach(m => {
+  visibleMovimientos.filter(m => m.tipo === 'egreso').forEach(m => {
     const cat = m.categoria || 'Sin categoría';
     egresosPorCategoria[cat] = (egresosPorCategoria[cat] || 0) + Number(m.monto);
   });
@@ -84,7 +103,7 @@ export default function Dashboard() {
   // Normalizar fechas y asegurar que todos los meses estén presentes
   const data = meses.map((nombreMes, idx) => {
     // Filtrar movimientos de este mes
-    const movsMes = movimientos.filter(m => {
+    const movsMes = visibleMovimientos.filter(m => {
       if (!m.fecha) return false;
       let fecha = new Date(m.fecha);
       // Si la fecha es inválida, forzar mes 0 (enero)
@@ -235,6 +254,64 @@ export default function Dashboard() {
             <Line type="monotone" dataKey="Ahorro" stroke="#6c4fa1" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
+      </div>
+
+      {/* Movimientos programados / pendientes */}
+      <div className="card" style={{ marginTop: 24 }}>
+        <h3>Movimientos programados</h3>
+        {/* Filtrar movimientos pendientes: applied===0 o fecha > hoy */}
+        {(() => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const pendientes = movimientos.filter(m => {
+            try {
+              if (typeof m.applied !== 'undefined' && m.applied !== null) {
+                return Number(m.applied) === 0;
+              }
+              if (!m.fecha) return false;
+              const movDate = new Date(m.fecha);
+              movDate.setHours(0, 0, 0, 0);
+              return movDate > today;
+            } catch (e) {
+              return false;
+            }
+          });
+
+          const totalPendientes = pendientes.reduce((acc, m) => acc + Number(m.monto || 0), 0);
+
+          return (
+            <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 220 }}>
+                <div style={{ fontWeight: 'bold' }}>Cantidad pendientes</div>
+                <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{pendientes.length}</div>
+              </div>
+              <div style={{ minWidth: 220 }}>
+                <div style={{ fontWeight: 'bold' }}>Monto total pendiente</div>
+                <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>S/ {totalPendientes.toLocaleString()}</div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ marginBottom: 8, color: '#666' }}>Próximos movimientos programados (5 primeros)</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {pendientes.slice(0, 5).map((p, idx) => (
+                    <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: '#fff', padding: 8, borderRadius: 8 }}>
+                      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                        <div style={{ fontSize: 20 }}>{p.icon || '📅'}</div>
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{p.categoria || 'Sin categoría'}</div>
+                          <div style={{ fontSize: 12, color: '#666' }}>{p.cuenta || p.cuenta_nombre || ''}</div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight: 700 }}>S/ {Number(p.monto || 0).toLocaleString()}</div>
+                        <div style={{ fontSize: 12, color: '#666' }}>{p.fecha ? new Date(p.fecha).toLocaleDateString() : ''}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

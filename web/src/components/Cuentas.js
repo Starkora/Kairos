@@ -12,7 +12,7 @@ export default function Cuentas() {
 
   // Cargar tipos de cuenta desde la API de categorias_cuenta
   React.useEffect(() => {
-  fetch(`${API_BASE}/api/categorias-cuenta`, {
+    fetch(`${API_BASE}/api/categorias-cuenta`, {
       headers: {
         'Authorization': 'Bearer ' + getToken()
       }
@@ -72,6 +72,24 @@ export default function Cuentas() {
       .catch(err => console.error('Error en GET /api/cuentas:', err.message)); // Depuración
   }, []);
 
+  // Listener para refrescar cuentas desde otros componentes
+  React.useEffect(() => {
+    const handler = () => {
+      (async () => {
+        try {
+          const apiFetch = (await import('../utils/apiFetch')).default;
+          const res = await apiFetch(`${API_BASE}/api/cuentas?plataforma=web`);
+          const data = res.ok ? await res.json() : [];
+          setCuentas(Array.isArray(data) ? data : []);
+        } catch (e) {
+          // si hubo 401 o error, ya será manejado por apiFetch/forceLogout
+        }
+      })();
+    };
+    window.addEventListener('cuentas:refresh', handler);
+    return () => window.removeEventListener('cuentas:refresh', handler);
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -109,7 +127,7 @@ export default function Cuentas() {
           },
           body: JSON.stringify({
             nombre: form.nombre,
-            saldo_inicial: form.saldo,
+              saldo_inicial: Number(form.saldo),
             tipo: form.tipo,
             plataforma: 'web' // Asegúrate de incluir este campo
           })
@@ -124,8 +142,8 @@ export default function Cuentas() {
             setCuentas(prevCuentas => [...prevCuentas, {
               id: data.id,
               nombre: form.nombre,
-              saldo_inicial: form.saldo,
-              saldo_actual: form.saldo,
+                saldo_inicial: Number(form.saldo),
+                saldo_actual: Number(form.saldo),
               tipo: form.tipo,
               plataforma: 'web'
             }]); // Actualizar el estado local con datos consistentes
@@ -245,6 +263,9 @@ export default function Cuentas() {
           onChange={handleChange}
           required
           min="0"
+          step="0.01"
+          inputMode="decimal"
+          pattern="[0-9]+([\.,][0-9]+)?"
           style={{ width: '100%', padding: 8, borderRadius: 6, minWidth: 0 }}
         />
         <select

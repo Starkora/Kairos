@@ -17,6 +17,8 @@ const upload = multer({
 
 router.get('/', auth, transaccionController.getAll);
 router.post('/', auth, transaccionController.create);
+router.delete('/:id', auth, transaccionController.deleteById);
+router.put('/:id', auth, transaccionController.update);
 
 // Descargar plantilla Excel para importación masiva
 router.get('/plantilla', auth, transaccionController.descargarPlantilla);

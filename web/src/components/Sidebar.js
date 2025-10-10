@@ -52,30 +52,50 @@ export default function Sidebar({ className = 'sidebar', onNavigate }) {
   return (
     <aside className={className} style={{ display: 'flex', flexDirection: 'column' }}>
       <h2 style={{margin: '32px 0 24px 0'}}>Kairos</h2>
-      <nav style={{flex: 1}}
-        onClick={(e) => {
-          const target = e.target;
-          if (target && target.closest('a') && typeof onNavigate === 'function') {
-            onNavigate();
-          }
-        }}
-      >
-        <NavLink to="/" end>Dashboard</NavLink>
-        <NavLink to="/registro">Registro</NavLink>
-        <NavLink to="/cuentas">Cuentas</NavLink>
-        <NavLink to="/calendario">Calendario</NavLink>
-        <NavLink to="/deudas-metas">Deudas y Metas</NavLink>
-        <NavLink to="/categorias">Categorías</NavLink>
-        <NavLink to="/notificaciones">Notificaciones</NavLink>
-        <NavLink to="/micuenta">Mi Cuenta</NavLink>
-        <NavLink to="/acercade">Acerca de</NavLink>
-        {rol === 'admin' && (
-          <>
-            <hr />
-            <NavLink to="/admin/usuarios-pendientes">Admin: Usuarios pendientes</NavLink>
-          </>
-        )}
-      </nav>
+      <div className="sidebar-scroll" style={{ flex: 1, overflowY: 'auto', paddingRight: 8, maxHeight: 'calc(100vh - 180px)' }}>
+        <nav
+          onClick={(e) => {
+            const target = e.target;
+            if (target && target.closest('a') && typeof onNavigate === 'function') {
+              onNavigate();
+            }
+          }}
+        >
+          <NavLink to="/" end>Dashboard</NavLink>
+          <NavLink to="/registro">Registro de movimientos</NavLink>
+          <NavLink to="/cuentas">Cuentas</NavLink>
+          <NavLink to="/calendario">Calendario</NavLink>
+          <NavLink to="/deudas-metas">Deudas y Metas</NavLink>
+          <NavLink to="/categorias">Categorías</NavLink>
+          <NavLink to="/notificaciones">Notificaciones</NavLink>
+          <NavLink to="/micuenta">Mi Cuenta</NavLink>
+          <NavLink to="/acercade">Acerca de</NavLink>
+          {rol === 'admin' && (
+            <>
+              <hr />
+              <NavLink to="/admin/usuarios-pendientes">Admin: Usuarios pendientes</NavLink>
+            </>
+          )}
+        </nav>
+      </div>
+      <style>{`
+        /* Scrollbar: thin and subtle; non-invasive fallback to system behavior */
+        .sidebar .sidebar-scroll {
+          scrollbar-width: thin; /* Firefox */
+          scrollbar-color: rgba(0,0,0,0.18) transparent;
+        }
+        .sidebar .sidebar-scroll::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        .sidebar .sidebar-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .sidebar .sidebar-scroll::-webkit-scrollbar-thumb {
+          background-color: rgba(0,0,0,0.18);
+          border-radius: 6px;
+        }
+      `}</style>
       {isLoggedIn() && (
         <div style={{ width: '100%', textAlign: 'center', marginBottom: 40 }}>
           <LogoutButton />

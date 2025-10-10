@@ -219,6 +219,22 @@ async function setupCleanupJob() {
 }
 setupCleanupJob();
 
+// Job para aplicar movimientos pendientes cuya fecha haya llegado
+async function applyPendingJob() {
+  try {
+    const Transaccion = require('./models/transaccion');
+    const appliedCount = await Transaccion.applyPendingMovements();
+    if (appliedCount > 0) console.log(`[applyPendingJob] Movimientos aplicados: ${appliedCount}`);
+  } catch (e) {
+    console.error('[applyPendingJob] Error ejecutando job:', e.message);
+  }
+}
+// En producción se puede programar una vez al día; mientras tanto ejecutamos cada 60s para dev/test
+const applyInterval = process.env.NODE_ENV === 'production' ? 24 * 60 * 60 * 1000 : 60 * 1000;
+setInterval(applyPendingJob, applyInterval);
+// Ejecutar al arrancar una vez
+applyPendingJob();
+
 // Endpoint de salud para monitorear limpieza de usuarios_pendientes
 // Middleware de protección adicional: allowlist de IPs y rate limiting simple
 const adminHealthAllowIps = (process.env.ADMIN_HEALTH_IPS || '').split(',').map(s => s.trim()).filter(Boolean);
