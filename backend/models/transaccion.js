@@ -15,18 +15,26 @@ const Transaccion = {
   },
   create: async (data) => {
     const { usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color } = data;
+    const tipoNorm = (tipo || '').toLowerCase();
     // Decide si aplicar ahora: si fecha <= hoy (date only) aplicamos
     const todayStr = new Date().toISOString().slice(0,10);
     const fechaStr = String(fecha).slice(0,10);
     const applied = fechaStr <= todayStr ? 1 : 0;
     const [result] = await db.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id || null, plataforma || 'web', icon || null, color || null, applied]
+      [usuario_id, cuenta_id, tipoNorm, monto, descripcion, fecha, categoria_id || null, plataforma || 'web', icon || null, color || null, applied]
     );
     // Actualizar saldo solo si se aplica de inmediato
     if (applied) {
-      const signo = tipo === 'ingreso' ? '+' : '-';
-      await db.query(`UPDATE cuentas SET saldo_actual = saldo_actual ${signo} ? WHERE id = ?`, [monto, cuenta_id]);
+      // Tratar 'ahorro' como ingreso (positivo)
+      const isIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
+      if (isIngreso) {
+        console.log('[transaccion.create] Aplicando SUMA en cuenta', cuenta_id, 'monto', monto, 'tipo', tipoNorm);
+        await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, cuenta_id]);
+      } else {
+        console.log('[transaccion.create] Aplicando RESTA en cuenta', cuenta_id, 'monto', monto, 'tipo', tipoNorm);
+        await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, cuenta_id]);
+      }
     }
     return { insertId: result.insertId };
   },
@@ -38,11 +46,16 @@ const Transaccion = {
     if (!rows || rows.length === 0) throw new Error('Movimiento no encontrado');
     const mov = rows[0];
     const { cuenta_id, tipo, monto, applied } = mov;
+    const tipoNorm = (tipo || '').toLowerCase();
     // Revertir efecto en la cuenta solo si estaba aplicado
     if (applied) {
-      if (tipo === 'ingreso') {
+      // Tratar 'ahorro' como ingreso (revertir como resto)
+      const wasIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
+      if (wasIngreso) {
+        console.log('[transaccion.deleteById] Revirtiendo SUMA en cuenta', cuenta_id, 'monto', monto, 'tipo', tipoNorm);
         await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, cuenta_id]);
       } else {
+        console.log('[transaccion.deleteById] Revirtiendo RESTA en cuenta', cuenta_id, 'monto', monto, 'tipo', tipoNorm);
         await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, cuenta_id]);
       }
     }
@@ -60,9 +73,13 @@ const Transaccion = {
     const old = rows[0];
     // Revertir efecto del movimiento antiguo solo si estaba aplicado
     if (old.applied) {
-      if (old.tipo === 'ingreso') {
+      const oldTipoNorm = (old.tipo || '').toLowerCase();
+      const wasIngreso = oldTipoNorm === 'ingreso' || oldTipoNorm === 'ahorro';
+      if (wasIngreso) {
+        console.log('[transaccion.update] Revirtiendo SUMA del movimiento antiguo en cuenta', old.cuenta_id, 'monto', old.monto, 'tipo', oldTipoNorm);
         await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [old.monto, old.cuenta_id]);
       } else {
+        console.log('[transaccion.update] Revirtiendo RESTA del movimiento antiguo en cuenta', old.cuenta_id, 'monto', old.monto, 'tipo', oldTipoNorm);
         await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [old.monto, old.cuenta_id]);
       }
     }
@@ -72,16 +89,20 @@ const Transaccion = {
     const newApplied = fechaStr <= todayStr ? 1 : 0;
     // Aplicar efecto del nuevo movimiento solo si corresponde
     if (newApplied) {
-      if (tipo === 'ingreso') {
+      const tipoNorm = (tipo || '').toLowerCase();
+      const isIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
+      if (isIngreso) {
+        console.log('[transaccion.update] Aplicando SUMA en cuenta', cuenta_id, 'monto', monto, 'tipo', tipoNorm);
         await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, cuenta_id]);
       } else {
+        console.log('[transaccion.update] Aplicando RESTA en cuenta', cuenta_id, 'monto', monto, 'tipo', tipoNorm);
         await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, cuenta_id]);
       }
     }
     // Actualizar fila de movimientos
     const [res] = await db.query(
       'UPDATE movimientos SET cuenta_id = ?, tipo = ?, monto = ?, descripcion = ?, fecha = ?, categoria_id = ?, icon = ?, color = ?, applied = ? WHERE id = ?',
-      [cuenta_id, tipo, monto, descripcion, fecha, categoria_id || null, data.icon || null, data.color || null, newApplied, id]
+      [cuenta_id, tipoNorm, monto, descripcion, fecha, categoria_id || null, data.icon || null, data.color || null, newApplied, id]
     );
     return res;
   },
@@ -91,9 +112,13 @@ const Transaccion = {
     const [rows] = await db.query('SELECT * FROM movimientos WHERE applied = 0 AND DATE(fecha) <= ?', [todayStr]);
     for (const mov of rows) {
       try {
-        if (mov.tipo === 'ingreso') {
+        const tipoNorm = (mov.tipo || '').toLowerCase();
+        const isIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
+        if (isIngreso) {
+          console.log('[transaccion.applyPendingMovements] Aplicando SUMA en cuenta', mov.cuenta_id, 'monto', mov.monto, 'tipo', tipoNorm);
           await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [mov.monto, mov.cuenta_id]);
         } else {
+          console.log('[transaccion.applyPendingMovements] Aplicando RESTA en cuenta', mov.cuenta_id, 'monto', mov.monto, 'tipo', tipoNorm);
           await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [mov.monto, mov.cuenta_id]);
         }
         await db.query('UPDATE movimientos SET applied = 1 WHERE id = ?', [mov.id]);

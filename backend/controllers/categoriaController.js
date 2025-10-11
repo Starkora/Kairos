@@ -40,8 +40,13 @@ exports.create = async (req, res) => {
     const result = await Categoria.create({ usuario_id, nombre, tipo, plataforma });
     res.status(201).json({ message: 'Categoría creada', id: result.id });
   } catch (err) {
+    // Detectar errores comunes de MySQL (enum/truncation) y dar una indicación clara
     if (err && (err.code === 'ER_DUP_ENTRY' || /Duplicate entry/i.test(err.message || ''))) {
       return res.status(409).json({ code: 'DUPLICATE_CATEGORY', message: 'Ya existe una categoría con ese nombre.' });
+    }
+    // Error por valor no permitido en ENUM o truncación de campo
+    if (err && (err.code === 'ER_WARN_DATA_OUT_OF_RANGE' || /truncated|incorrect value for column/i.test(err.message || ''))) {
+      return res.status(400).json({ code: 'INVALID_TYPE', message: 'El tipo proporcionado no es válido en la base de datos. Aplica la migración add_ahorro_to_categorias.sql para permitir el tipo "ahorro".' });
     }
     res.status(500).json({ error: err.message });
   }

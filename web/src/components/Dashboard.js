@@ -48,7 +48,8 @@ export default function Dashboard() {
   // Calcular totales
   const totalIngreso = visibleMovimientos.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
   const totalEgreso = visibleMovimientos.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto), 0);
-  const ahorro = totalIngreso - totalEgreso;
+  // Ahorro registrado explícitamente (movimientos cuyo tipo es 'ahorro')
+  const totalAhorro = visibleMovimientos.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + Number(m.monto), 0);
 
   // Indicadores
   const indicadores = [
@@ -82,7 +83,7 @@ export default function Dashboard() {
       icon: '💰',
       color: '#6c4fa1',
       titulo: 'Ahorro',
-      valor: `S/ ${ahorro.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      valor: `S/ ${totalAhorro.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
       isAmount: true,
     },
   ];
@@ -91,7 +92,7 @@ export default function Dashboard() {
   const resumen = {
     egreso: totalEgreso,
     ingreso: totalIngreso,
-    ahorro: ahorro,
+    ahorro: totalAhorro,
   };
 
   // Top egresos por categoría
@@ -121,7 +122,8 @@ export default function Dashboard() {
     });
     const Ingreso = movsMes.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
     const Gasto = movsMes.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto), 0);
-    const Ahorro = Ingreso - Gasto;
+    // Ahorro por mes: sumar movimientos de tipo 'ahorro' en ese mes
+    const Ahorro = movsMes.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + Number(m.monto), 0);
     return { mes: nombreMes, Ingreso, Gasto, Ahorro };
   });
 
@@ -303,7 +305,7 @@ export default function Dashboard() {
                 <div style={{ marginBottom: 8, color: '#666' }}>Próximos movimientos programados (5 primeros)</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {pendientes.slice(0, 5).map((p, idx) => (
-                <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
+                    <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
                       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                         <div style={{ fontSize: 20 }}>{p.icon || '📅'}</div>
                         <div>

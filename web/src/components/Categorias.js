@@ -112,7 +112,13 @@ export default function Categorias() {
             setLoading(false);
           });
       } else {
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo agregar la categoría.' });
+        // Leer la respuesta del servidor para mostrar detalle del error
+        let text = await res.text();
+        let parsed = null;
+        try { parsed = JSON.parse(text); } catch (e) { /* no JSON */ }
+        console.error('Error al crear categoría, status:', res.status, 'body:', parsed || text);
+        const message = (parsed && (parsed.message || parsed.error)) ? (parsed.message || parsed.error) : (`HTTP ${res.status}` + (typeof text === 'string' ? (': ' + text) : ''));
+        Swal.fire({ icon: 'error', title: 'Error', text: message });
       }
     }
   };
@@ -185,6 +191,7 @@ export default function Categorias() {
              <select id='tipo' class='swal2-input'>
                <option value='ingreso' ${categoria.tipo === 'ingreso' ? 'selected' : ''}>Ingreso</option>
                <option value='egreso' ${categoria.tipo === 'egreso' ? 'selected' : ''}>Egreso</option>
+               <option value='ahorro' ${categoria.tipo === 'ahorro' ? 'selected' : ''}>Ahorro</option>
              </select>`,
       showCancelButton: true,
       confirmButtonText: 'Guardar',
@@ -352,6 +359,7 @@ export default function Categorias() {
             >
               <option value="ingreso">Ingreso</option>
               <option value="egreso">Egreso</option>
+              <option value="ahorro">Ahorro</option>
             </select>
             <button type="submit" style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600, width: '100%' }}>
               Agregar

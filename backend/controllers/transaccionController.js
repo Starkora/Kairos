@@ -17,13 +17,20 @@ exports.getAll = async (req, res) => {
     const rows = await Transaccion.getAllByUsuario(usuario_id, plataforma);
     res.json(rows);
   } catch (err) {
+    console.error('[transacciones.create] Error al crear movimiento:', err && err.message, err && err.code);
+    // Detectar errores por valor no permitido (ENUM/truncation) y sugerir migración
+    if (err && (err.code === 'ER_WARN_DATA_OUT_OF_RANGE' || /truncated|incorrect value for column|Illegal mix of collations/i.test(err.message || ''))) {
+      return res.status(400).json({ code: 'INVALID_TYPE', message: 'El tipo proporcionado no es válido en la base de datos. Aplica la migración add_ahorro_to_categorias.sql para permitir el tipo "ahorro" en categorías y movimientos.' });
+    }
     res.status(500).json({ error: err.message });
   }
 };
 
 exports.create = async (req, res) => {
   const usuario_id = req.user && req.user.id;
-  const { cuenta_id, tipo, monto, descripcion, fecha, categoria_id, icon, color } = req.body;
+  let { cuenta_id, tipo, monto, descripcion, fecha, categoria_id, icon, color } = req.body;
+  // Normalizar tipo a minúsculas para aceptar 'Ahorro', 'AHORRO', etc.
+  tipo = (tipo === undefined || tipo === null) ? tipo : String(tipo).toLowerCase();
 
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   // Validación detallada de campos requeridos + logging para depurar
@@ -52,7 +59,9 @@ exports.create = async (req, res) => {
       const [cats] = await db.query('SELECT * FROM categorias WHERE id = ? AND usuario_id = ?', [categoria_id, usuario_id]);
       if (!cats || cats.length === 0) return res.status(403).json({ error: 'Categoría no pertenece al usuario' });
     }
-  const result = await Transaccion.create({ usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color });
+    console.log('[transacciones.create] Payload recibido:', { usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color });
+    const result = await Transaccion.create({ usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color });
+    console.log('[transacciones.create] Resultado create.insertId:', result && result.insertId);
     res.status(201).json({ message: 'Movimiento creado', id: result.insertId });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -77,7 +86,9 @@ exports.deleteById = async (req, res) => {
 exports.update = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   const id = req.params.id;
-  const { cuenta_id, tipo, monto, descripcion, fecha, categoria_id, icon, color } = req.body;
+  let { cuenta_id, tipo, monto, descripcion, fecha, categoria_id, icon, color } = req.body;
+  // Normalizar tipo a minúsculas
+  tipo = (tipo === undefined || tipo === null) ? tipo : String(tipo).toLowerCase();
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   if (!cuenta_id || !tipo || !monto || !fecha) return res.status(400).json({ error: 'Faltan campos requeridos' });
   try {

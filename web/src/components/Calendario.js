@@ -268,24 +268,29 @@ export default function Calendario() {
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {movimientosDelDia.map(mov => (
                 <li key={mov.id} style={{
-                  marginBottom: 18,
-                  padding: 22,
-                  borderRadius: 18,
-                  background: mov.color ? mov.color : (mov.tipo === 'ingreso' ? 'linear-gradient(90deg, #1de9b6 0%, #43a047 100%)' : 'linear-gradient(90deg, #ff7043 0%, #c62828 100%)'),
-                  color: mov.color ? '#fff' : (mov.tipo === 'ingreso' ? '#fff' : '#222'),
-                  display: 'flex',
-                  alignItems: 'center',
-                  boxShadow: '0 2px 12px #0002',
-                  position: 'relative',
-                }}>
-                  <span style={{ fontSize: 36, marginRight: 18 }}>{mov.icon || (mov.tipo === 'egreso' ? '💸' : '💰')}</span>
+                    marginBottom: 18,
+                    padding: 22,
+                    borderRadius: 18,
+                    // Normalizar tipo y tratar 'ahorro' como ingreso para la UI
+                    background: mov.color ? mov.color : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? 'linear-gradient(90deg, #1de9b6 0%, #43a047 100%)' : 'linear-gradient(90deg, #ff7043 0%, #c62828 100%)'),
+                    color: mov.color ? '#fff' : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '#fff' : '#222'),
+                    display: 'flex',
+                    alignItems: 'center',
+                    boxShadow: '0 2px 12px #0002',
+                    position: 'relative',
+                  }}>
+                    <span style={{ fontSize: 36, marginRight: 18 }}>{mov.icon || (((mov.tipo || '').toLowerCase() === 'egreso') ? '💸' : '💰')}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--color-text)' }}>{mov.descripcion}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--color-text)' }}>{mov.descripcion}</div>
+                      {/* Badge que muestra el tipo: Ahorro / Ingreso / Egreso */}
+                      <div style={{ fontSize: 12, padding: '4px 8px', borderRadius: 12, background: mov.tipo === 'ingreso' ? '#1de9b6' : (mov.tipo === 'ahorro' ? '#4fc3f7' : '#ff8a80'), color: '#222', fontWeight: 800, textTransform: 'capitalize' }}>{mov.tipo}</div>
+                    </div>
                     <div style={{ fontSize: 15, color: 'var(--color-muted)', marginBottom: 2 }}>{mov.cuenta}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ fontWeight: 800, fontSize: 22, color: mov.tipo === 'ingreso' ? '#fff' : '#222', minWidth: 160, textAlign: 'right' }}>
-                      {mov.tipo === 'ingreso' ? '+' : '-'}S/ {mov.monto.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    <div style={{ fontWeight: 800, fontSize: 22, color: ((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '#fff' : '#222', minWidth: 160, textAlign: 'right' }}>
+                      {((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '+' : '-'}S/ {mov.monto.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
                       <button onClick={() => handleEditMovimiento(mov)} style={{ background: 'rgba(255,255,255,0.14)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Editar</button>
