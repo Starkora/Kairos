@@ -151,9 +151,12 @@ class CustomRedisStore extends session.Store {
   }
 }
 
+// Configurable session TTL (minutos)
+const sessionTtlMinutes = Number(process.env.SESSION_TTL_MINUTES || 15);
 let store = null;
 if (redisClient) {
-  store = new CustomRedisStore(redisClient, { prefix: 'sess:', ttl: 60 * 15 });
+  // ttl en segundos
+  store = new CustomRedisStore(redisClient, { prefix: 'sess:', ttl: sessionTtlMinutes * 60 });
 } else {
   // Fallback MemoryStore para entornos sin Redis (no recomendado en multi-instancia)
   store = new session.MemoryStore();
@@ -164,14 +167,17 @@ const sameSitePolicy = process.env.SAMESITE || (process.env.CROSS_SITE_COOKIES =
 
 app.use(session({
   store,
-  secret: 'kairos_secret',
+  secret: process.env.SESSION_SECRET || 'kairos_secret',
   resave: false,
-  saveUninitialized: true, // true en debug; considerar false en prod
+  // No guardar sesiones vacías por defecto (mejor para producción)
+  saveUninitialized: false,
+  // Renueva la cookie en cada request activa (expira por inactividad)
+  rolling: true,
   cookie: {
     httpOnly: true,
     secure: 'auto', // requiere app.set('trust proxy', 1) para https detrás de ngrok
     sameSite: sameSitePolicy,
-    maxAge: 1000 * 60 * 15 // 15 minutos
+    maxAge: 1000 * 60 * sessionTtlMinutes // configurable por env
   }
 }));
 
