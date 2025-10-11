@@ -289,6 +289,7 @@ export default function MiCuenta() {
   };
 
   const handleVerificationSubmit = () => {
+    // El backend espera { codigo, userInfo } en /verificar-codigo (ruta protegida)
     fetch(`${API_BASE}/api/usuarios/verificar-codigo`, {
       method: 'POST',
       headers: {
@@ -297,26 +298,27 @@ export default function MiCuenta() {
         'ngrok-skip-browser-warning': 'true'
       },
       credentials: 'include',
-      body: JSON.stringify({
-        email: userInfo.email,
-        codigo: codigoVerificacion
-      })
+      body: JSON.stringify({ codigo: codigoVerificacion, userInfo })
     })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && (data.message || data.success)) {
           Swal.fire({
             icon: 'success',
-            title: 'Verificación exitosa',
-            text: 'Tu información ha sido actualizada.',
+            title: 'Datos actualizados',
+            text: data.message || 'Tus datos han sido actualizados correctamente.',
             confirmButtonColor: '#6C4AB6'
           });
           setMostrarPopup(false);
+          setEditableInputs({});
+          setOriginalUserInfo((prev) => ({ ...prev, ...userInfo }));
+          // Opcional: recargar para reflejar cambios en toda la app
+          window.location.reload();
         } else {
           Swal.fire({
             icon: 'error',
             title: 'Error de verificación',
-            text: 'El código ingresado es incorrecto.',
+            text: (data && (data.error || data.message)) || 'El código ingresado es incorrecto.',
             confirmButtonColor: '#6C4AB6'
           });
         }
@@ -478,7 +480,7 @@ export default function MiCuenta() {
           />
           <button
             type="button"
-            onClick={verificarCodigo}
+            onClick={handleVerificationSubmit}
             style={{ padding: '10px 20px', backgroundColor: '#6C4AB6', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}
           >
             Verificar
