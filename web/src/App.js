@@ -77,6 +77,20 @@ export default function App() {
     return () => window.removeEventListener('session:expired', onExpired);
   }, []);
 
+  // Tema: detectar preferencia almacenada o preferencia OS
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('theme');
+      if (saved) return saved === 'dark';
+    } catch (e) {}
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('theme', darkMode ? 'dark' : 'light'); } catch (e) {}
+    if (darkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
+  }, [darkMode]);
+
   // Función para refrescar usuario tras login/logout en la misma pestaña
   const refreshUser = () => setUserInfo(getUserInfoFromToken());
 
@@ -167,6 +181,10 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                           <ellipse cx="12" cy="18" rx="7" ry="5" fill="#fff" fillOpacity="1"/>
                         </svg>
                       </span>
+                      {/* Toggle modo oscuro */}
+                      <button onClick={() => setDarkMode(d => !d)} title="Alternar tema" style={{marginLeft: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', padding: '6px 10px', borderRadius: 8, cursor: 'pointer'}}>
+                        {darkMode ? '🌙' : '☀️'}
+                      </button>
                     </div>
                   )}
                 </div>

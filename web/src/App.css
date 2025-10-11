@@ -10,6 +10,19 @@
   --color-text: #222;
 }
 
+/* Modo oscuro: al aplicar la clase .dark en <html> se re-definen variables */
+.dark {
+  --color-primary: #5b3e8a;
+  --color-secondary: #1f1f23;
+  --color-accent: #ffb74d;
+  --color-success: #4caf50;
+  --color-danger: #e57373;
+  --color-info: #64b5f6;
+  --color-bg: #0f1113;
+  --color-card: #121217;
+  --color-text: #e6e6e9;
+}
+
 /* Asegurar que padding/border no provoquen desbordes */
 *, *::before, *::after { box-sizing: border-box; }
 
