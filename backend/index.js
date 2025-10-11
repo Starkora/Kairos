@@ -29,11 +29,16 @@ if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process
 
 // Middleware CORS
 const cors = require('cors');
+function normalizeOrigin(o) {
+  if (!o) return o;
+  return String(o).trim().replace(/\/+$/, '');
+}
+
 const allowedOrigins = [
   'http://localhost:3000',
-  process.env.WEB_ORIGIN,
-  process.env.NGROK_ORIGIN,
-  process.env.DEVTUNNELS_ORIGIN
+  normalizeOrigin(process.env.WEB_ORIGIN),
+  normalizeOrigin(process.env.NGROK_ORIGIN),
+  normalizeOrigin(process.env.DEVTUNNELS_ORIGIN)
 ].filter(Boolean);
 
 const corsOptions = {
@@ -44,7 +49,8 @@ const corsOptions = {
     const isProd = process.env.NODE_ENV === 'production';
     const isNgrok = /https?:\/\/([a-z0-9-]+)\.ngrok(-free)?\.app$/i.test(origin);
     const isDevTunnels = /https?:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.devtunnels\.ms$/i.test(origin);
-    if (allowedOrigins.includes(origin) || (!isProd && (isNgrok || isDevTunnels))) {
+    const originNorm = normalizeOrigin(origin);
+    if (allowedOrigins.includes(originNorm) || (!isProd && (isNgrok || isDevTunnels))) {
       return callback(null, true);
     }
     callback(new Error('Not allowed by CORS: ' + origin));
