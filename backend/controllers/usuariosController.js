@@ -113,6 +113,13 @@ const verificarCodigoYGuardar = async (req, res) => {
     console.log('Código almacenado en la sesión:', req.session.codigoVerificacion); // Log para depuración
     console.log('Código ingresado por el usuario:', codigo); // Log para depuración
 
+    // Debug: imprimir userInfo recibido para entender por qué puede fallar la validación de unicidad
+    try {
+      console.log('Payload userInfo recibido en verificarCodigoYGuardar:', JSON.stringify(userInfo));
+    } catch (e) {
+      console.log('Payload userInfo (no JSON):', userInfo);
+    }
+
     if (!req.session || !req.session.codigoVerificacion) {
       return res.status(400).json({ error: 'No hay código de verificación en la sesión' });
     }
@@ -124,6 +131,8 @@ const verificarCodigoYGuardar = async (req, res) => {
     const userId = req.user.id;
     const email = (userInfo.email || '').trim();
     const numero = (userInfo.telefono || '').trim();
+
+  console.log(`Validando unicidad: email='${email}', numero='${numero}', userId=${userId}`);
 
     if (email) {
       const [emailRows] = await db.query('SELECT id FROM usuarios WHERE email = ? AND id <> ?', [email, userId]);
