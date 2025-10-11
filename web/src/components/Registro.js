@@ -208,13 +208,13 @@ export default function Registro() {
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: '32px auto', background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #eee', padding: 32 }}>
+    <div style={{ maxWidth: 420, margin: '32px auto', background: 'var(--color-card)', borderRadius: 12, boxShadow: '0 2px 8px var(--card-shadow)', padding: 32 }}>
       <h1 style={{ marginBottom: 16 }}>Registro de Movimientos</h1>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <button type="button" onClick={handleDownloadTemplate} style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 600 }}>
+        <button type="button" onClick={handleDownloadTemplate} style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 600 }}>
           Descargar plantilla
         </button>
-        <button type="button" onClick={handleImportClick} disabled={uploadLoading} style={{ background: uploadLoading ? '#b3a7d1' : '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 600 }}>
+        <button type="button" onClick={handleImportClick} disabled={uploadLoading} style={{ background: uploadLoading ? 'rgba(108,79,161,0.7)' : 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 600 }}>
           {uploadLoading ? 'Importando…' : 'Importar movimientos'}
         </button>
         <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleImportFileSelected} style={{ display: 'none' }} />
@@ -269,7 +269,7 @@ export default function Registro() {
           <label>Descripción:&nbsp;</label>
           <input type="text" name="descripcion" value={form.descripcion} onChange={handleChange} style={{ padding: 6, borderRadius: 6, width: '100%' }} />
         </div>
-        <button type="submit" style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 8 }}>
+        <button type="submit" style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 8 }}>
           Guardar Movimiento
         </button>
       </form>

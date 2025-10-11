@@ -345,7 +345,7 @@ const Login = ({ onLogin }) => {
       background: '#f7f7fa'
     }}>
       <div style={{
-        background: '#fff',
+  background: 'var(--color-card)',
         padding: '2.5rem 2rem',
         borderRadius: '12px',
         boxShadow: '0 2px 16px rgba(0,0,0,0.08)',

@@ -15,7 +15,7 @@ export default function Categorias() {
   const [loadingTablaCuenta, setLoadingTablaCuenta] = React.useState(true);
   // Obtener categorías de cuenta al cargar
   React.useEffect(() => {
-  fetch(`${API_BASE}/api/categorias-cuenta`, {
+    fetch(`${API_BASE}/api/categorias-cuenta`, {
       headers: {
         'Authorization': 'Bearer ' + getToken()
       }
@@ -36,7 +36,7 @@ export default function Categorias() {
   }, []);
 
   React.useEffect(() => {
-  fetch(`${API_BASE}/api/categorias?plataforma=web`, {
+    fetch(`${API_BASE}/api/categorias?plataforma=web`, {
       headers: {
         'Authorization': 'Bearer ' + getToken()
       }
@@ -79,7 +79,7 @@ export default function Categorias() {
     if (result.isConfirmed) {
       setLoading(true);
       console.log('Datos enviados en POST /api/categorias:', { ...form, plataforma: 'web' }); // Depuración
-  const res = await fetch(`${API_BASE}/api/categorias`, {
+      const res = await fetch(`${API_BASE}/api/categorias`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,7 +93,7 @@ export default function Categorias() {
         setForm({ nombre: '', tipo: 'ingreso' });
         // Refrescar tabla
         setLoading(true);
-  fetch(`${API_BASE}/api/categorias?plataforma=web`, {
+        fetch(`${API_BASE}/api/categorias?plataforma=web`, {
           headers: {
             'Authorization': 'Bearer ' + getToken()
           }
@@ -138,7 +138,7 @@ export default function Categorias() {
     });
     if (result.isConfirmed) {
       setLoadingCuenta(true);
-  const res = await fetch(`${API_BASE}/api/categorias-cuenta`, {
+      const res = await fetch(`${API_BASE}/api/categorias-cuenta`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,7 +152,7 @@ export default function Categorias() {
         setFormCuenta({ nombre: '' });
         // Refrescar tabla
         setLoadingTablaCuenta(true);
-  fetch(`${API_BASE}/api/categorias-cuenta`, {
+        fetch(`${API_BASE}/api/categorias-cuenta`, {
           headers: {
             'Authorization': 'Bearer ' + getToken()
           }
@@ -332,8 +332,8 @@ export default function Categorias() {
     <div className="card categories-card">
       {/* Bloque de Categorías ingreso/egreso */}
       <div style={{ marginBottom: 48 }}>
-        <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: '#222' }}>Categorías</h2>
-        <div style={{ background: '#f7f7fa', borderRadius: 10, padding: 24, marginBottom: 32 }}>
+  <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: 'var(--color-text)' }}>Categorías</h2>
+  <div style={{ background: 'var(--color-card)', borderRadius: 10, padding: 24, marginBottom: 32 }}>
           <form onSubmit={handleSubmit} className="categories-form" style={{ marginBottom: 24 }}>
             <input
               type="text"
@@ -353,18 +353,18 @@ export default function Categorias() {
               <option value="ingreso">Ingreso</option>
               <option value="egreso">Egreso</option>
             </select>
-            <button type="submit" style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600, width: '100%' }}>
+            <button type="submit" style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600, width: '100%' }}>
               Agregar
             </button>
           </form>
         </div>
-        <div style={{ background: '#f7f7fa', borderRadius: 10, padding: 24 }}>
+  <div style={{ background: 'var(--color-card)', borderRadius: 10, padding: 24 }}>
           {loading ? (
             <div>Cargando...</div>
           ) : (
             <div className="table-responsive"><table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
-                <tr style={{ background: '#f7f7fa' }}>
+                <tr style={{ background: 'var(--color-table-header-bg)' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
                   <th style={{ textAlign: 'left', padding: 8 }}>Tipo</th>
                   <th style={{ textAlign: 'center', padding: 8 }}>Acciones</th>
@@ -372,7 +372,7 @@ export default function Categorias() {
               </thead>
               <tbody>
                 {(Array.isArray(categorias) ? categorias : []).map(cat => (
-                  <tr key={cat.id} style={{ borderBottom: '1px solid #eee' }}>
+                  <tr key={cat.id} style={{ borderBottom: '1px solid var(--color-input-border)' }}>
                     <td style={{ fontWeight: 600, padding: 8 }}>{cat.nombre}</td>
                     <td style={{ padding: 8 }}>{cat.tipo}</td>
                     <td style={{ textAlign: 'center', padding: 8 }}>
@@ -381,18 +381,18 @@ export default function Categorias() {
                           style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
                           aria-label="Editar" title="Editar">
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c4fa1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 20h9"/>
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
                           </svg>
                         </button>
                         <button onClick={() => handleDelete(cat.id)}
                           style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
                           aria-label="Eliminar" title="Eliminar">
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f44336" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                            <line x1="10" y1="11" x2="10" y2="17"/>
-                            <line x1="14" y1="11" x2="14" y2="17"/>
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
                           </svg>
                         </button>
                       </div>
@@ -407,8 +407,8 @@ export default function Categorias() {
 
       {/* Bloque de Categoría de Cuenta */}
       <div>
-        <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: '#222' }}>Categoría de Cuenta</h2>
-        <div style={{ background: '#f7f7fa', borderRadius: 10, padding: 24, marginBottom: 32 }}>
+  <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: 'var(--color-text)' }}>Categoría de Cuenta</h2>
+        <div style={{ background: 'var(--color-card)', borderRadius: 10, padding: 24, marginBottom: 32 }}>
           <form onSubmit={handleSubmitCuenta} className="categories-form" style={{ marginBottom: 0 }}>
             <input
               type="text"
@@ -419,20 +419,20 @@ export default function Categorias() {
               required
               style={{ padding: 8, borderRadius: 6, width: '100%', minWidth: 0 }}
             />
-            <button type="submit" style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600, width: '100%' }}>
+            <button type="submit" style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600, width: '100%' }}>
               Agregar Categoría de Cuenta
             </button>
           </form>
           {loadingCuenta && <div style={{ marginTop: 8 }}>Guardando...</div>}
         </div>
         {/* Tabla de categorías de cuenta */}
-        <div style={{ background: '#f7f7fa', borderRadius: 10, padding: 24 }}>
+  <div style={{ background: 'var(--color-card)', borderRadius: 10, padding: 24 }}>
           {loadingTablaCuenta ? (
             <div>Cargando...</div>
           ) : (
             <div className="table-responsive"><table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
-                <tr style={{ background: '#f7f7fa' }}>
+                <tr style={{ background: 'var(--color-table-header-bg)' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
                   <th style={{ textAlign: 'left', padding: 8 }}>Fecha de creación</th>
                   <th style={{ textAlign: 'center', padding: 8 }}>Acciones</th>
@@ -440,7 +440,7 @@ export default function Categorias() {
               </thead>
               <tbody>
                 {(Array.isArray(categoriasCuenta) ? categoriasCuenta : []).map(cat => (
-                  <tr key={cat.id} style={{ borderBottom: '1px solid #eee' }}>
+                  <tr key={cat.id} style={{ borderBottom: '1px solid var(--color-input-border)' }}>
                     <td style={{ fontWeight: 600, padding: 8 }}>{cat.nombre}</td>
                     <td style={{ padding: 8 }}>{cat.created_at ? cat.created_at.substring(0, 10) : ''}</td>
                     <td style={{ textAlign: 'center', padding: 8 }}>
@@ -449,18 +449,18 @@ export default function Categorias() {
                           style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
                           aria-label="Editar" title="Editar">
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c4fa1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 20h9"/>
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
                           </svg>
                         </button>
                         <button onClick={() => handleDeleteCuenta(cat.id)}
                           style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
                           aria-label="Eliminar" title="Eliminar">
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f44336" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                            <line x1="10" y1="11" x2="10" y2="17"/>
-                            <line x1="14" y1="11" x2="14" y2="17"/>
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
                           </svg>
                         </button>
                       </div>

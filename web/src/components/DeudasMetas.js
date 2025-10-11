@@ -298,14 +298,14 @@ export default function DeudasMetas() {
 
   return (
     <div className="card debts-card">
-      <h1 className="debts-title">Deudas y Metas</h1>
+        <h1 className="debts-title">Deudas y Metas</h1>
       <div className="debts-tabs" style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-        <button onClick={() => setTab('deudas')} style={{ background: tab === 'deudas' ? '#6c4fa1' : '#eee', color: tab === 'deudas' ? '#fff' : '#222', border: 'none', borderRadius: 8, padding: '8px 24px', fontWeight: 600 }}>Deudas</button>
-        <button onClick={() => setTab('metas')} style={{ background: tab === 'metas' ? '#6c4fa1' : '#eee', color: tab === 'metas' ? '#fff' : '#222', border: 'none', borderRadius: 8, padding: '8px 24px', fontWeight: 600 }}>Metas</button>
+          <button onClick={() => setTab('deudas')} style={{ background: tab === 'deudas' ? 'var(--color-primary)' : 'var(--color-secondary)', color: tab === 'deudas' ? '#fff' : 'var(--color-text)', border: 'none', borderRadius: 8, padding: '8px 24px', fontWeight: 600 }}>Deudas</button>
+          <button onClick={() => setTab('metas')} style={{ background: tab === 'metas' ? 'var(--color-primary)' : 'var(--color-secondary)', color: tab === 'metas' ? '#fff' : 'var(--color-text)', border: 'none', borderRadius: 8, padding: '8px 24px', fontWeight: 600 }}>Metas</button>
       </div>
       <div className="debts-form">
-        <input type="text" placeholder="Descripción" value={nueva.descripcion} onChange={e => setNueva({ ...nueva, descripcion: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', width: '100%', minWidth: 0 }} />
-        <input type="number" placeholder="Monto" value={nueva.monto} onChange={e => setNueva({ ...nueva, monto: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', width: '100%', minWidth: 0 }} />
+          <input type="text" placeholder="Descripción" value={nueva.descripcion} onChange={e => setNueva({ ...nueva, descripcion: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--color-input-border)', width: '100%', minWidth: 0, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} />
+          <input type="number" placeholder="Monto" value={nueva.monto} onChange={e => setNueva({ ...nueva, monto: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--color-input-border)', width: '100%', minWidth: 0, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', minWidth: 0 }}>
           <label htmlFor="fecha_inicio" style={{ fontSize: '12px', color: '#555', marginBottom: '4px' }}>Fecha inicio</label>
           <input id="fecha_inicio" type="date" value={nueva.fecha_inicio} onChange={e => setNueva({ ...nueva, fecha_inicio: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%' }} />
@@ -322,11 +322,11 @@ export default function DeudasMetas() {
             <input id="fecha_vencimiento" type="date" value={nueva.fecha_vencimiento} onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%' }} />
           </div>
         )}
-        <select value={nueva.tipo} onChange={e => setNueva({ ...nueva, tipo: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%', backgroundColor: '#f9f9f9', minWidth: 0 }}>
+        <select value={nueva.tipo} onChange={e => setNueva({ ...nueva, tipo: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--color-input-border)', width: '100%', backgroundColor: 'var(--color-input-bg)', minWidth: 0, color: 'var(--color-text)' }}>
           <option value="deuda">Deuda</option>
           <option value="meta">Meta</option>
         </select>
-        <button onClick={handleAdd} style={{ backgroundColor: 'green', color: 'white', padding: '10px', borderRadius: '5px', border: 'none' }}>Agregar</button>
+        <button onClick={handleAdd} style={{ backgroundColor: 'var(--color-success)', color: 'white', padding: '10px', borderRadius: '5px', border: 'none' }}>Agregar</button>
       </div>
       {tab === 'deudas' ? (
         <div>
@@ -334,17 +334,17 @@ export default function DeudasMetas() {
           {deudas.length === 0 && <div style={{ color: '#888' }}>No tienes deudas registradas.</div>}
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {deudas.map(d => (
-              <li key={d.id} style={{ background: '#fff3e0', marginBottom: 14, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px #0001', flexWrap: 'wrap', gap: 12 }}>
+              <li key={d.id} style={{ background: 'var(--color-card)', marginBottom: 14, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px var(--card-shadow)', flexWrap: 'wrap', gap: 12, border: '1px solid var(--color-input-border)' }}>
                 <div>
                   <div style={{ fontWeight: 700 }}>{d.descripcion}</div>
-                  <div style={{ fontSize: 15, color: '#888' }}>
+                  <div style={{ fontSize: 15, color: 'var(--color-muted)' }}>
                     Monto: S/ {Number(d.monto ?? d.monto_total ?? 0).toFixed(2)} | Pagado: S/ {Number(d.pagado ?? d.monto_pagado ?? 0).toFixed(2)}<br />
                     {d.fecha_inicio && <span>Inicio: {new Date(d.fecha_inicio).toLocaleDateString()} </span>}
                     {d.fecha_vencimiento && <span>Vence: {new Date(d.fecha_vencimiento).toLocaleDateString()}</span>}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input type="number" min={1} max={(d.monto ?? d.monto_total ?? 0) - (d.pagado ?? d.monto_pagado ?? 0)} placeholder="Pago" style={{ width: 80, marginRight: 8, borderRadius: 6, border: '1px solid #ccc', padding: 4 }} id={`pago-deuda-${d.id}`} disabled={(parseFloat(d.pagado ?? d.monto_pagado ?? 0) >= parseFloat(d.monto ?? d.monto_total ?? 0))} />
+                  <input type="number" min={1} max={(d.monto ?? d.monto_total ?? 0) - (d.pagado ?? d.monto_pagado ?? 0)} placeholder="Pago" style={{ width: 80, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-deuda-${d.id}`} disabled={(parseFloat(d.pagado ?? d.monto_pagado ?? 0) >= parseFloat(d.monto ?? d.monto_total ?? 0))} />
                   <button
                     onClick={() => {
                       const val = document.getElementById(`pago-deuda-${d.id}`).value;
@@ -364,10 +364,10 @@ export default function DeudasMetas() {
                     style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 600 }}
                     disabled={(parseFloat(d.pagado ?? d.monto_pagado ?? 0) >= parseFloat(d.monto ?? d.monto_total ?? 0))}
                   >Pagar</button>
-                  <button
+                    <button
                     onClick={() => handleEdit(d.id, 'deuda')}
                     title="Editar"
-                    style={{ background: '#ffa726', color: '#fff', border: 'none', borderRadius: 8, padding: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ background: 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: 8, padding: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Editar">
                       <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"></path>
@@ -377,7 +377,7 @@ export default function DeudasMetas() {
                   <button
                     onClick={() => handleDelete(d.id, 'deuda')}
                     className="icon-btn"
-                    style={{ background: '#e53935', color: '#fff', border: 'none', borderRadius: 8, padding: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ background: 'var(--color-danger)', color: '#fff', border: 'none', borderRadius: 8, padding: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Eliminar">
                       <polyline points="3 6 5 6 21 6"></polyline>
@@ -399,17 +399,17 @@ export default function DeudasMetas() {
           {metas.length === 0 && <div style={{ color: '#888' }}>No tienes metas registradas.</div>}
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {metas.map(m => (
-              <li key={m.id} style={{ background: '#e3f2fd', marginBottom: 14, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px #0001', flexWrap: 'wrap', gap: 12 }}>
+              <li key={m.id} style={{ background: 'var(--color-card)', marginBottom: 14, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px var(--card-shadow)', flexWrap: 'wrap', gap: 12, border: '1px solid var(--color-input-border)' }}>
                 <div>
                   <div style={{ fontWeight: 700 }}>{m.descripcion}</div>
-                  <div style={{ fontSize: 15, color: '#888' }}>
+                  <div style={{ fontSize: 15, color: 'var(--color-muted)' }}>
                     Meta: S/ {(m.monto_objetivo || 0).toLocaleString()} | Ahorrado: S/ {(m.monto_ahorrado || 0).toLocaleString()}<br />
                     {m.fecha_inicio && <span>Inicio: {new Date(m.fecha_inicio).toLocaleDateString()} </span>}
                     {m.fecha_objetivo && <span>Objetivo: {new Date(m.fecha_objetivo).toLocaleDateString()} </span>}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input type="number" min={1} max={(m.monto_objetivo || 0) - (m.monto_ahorrado || 0)} placeholder="Aportar" style={{ width: 80, marginRight: 8, borderRadius: 6, border: '1px solid #ccc', padding: 4 }} id={`pago-meta-${m.id}`} disabled={(parseFloat(m.pagado ?? m.monto_ahorrado ?? 0) >= parseFloat(m.monto_objetivo ?? 0))} />
+                  <input type="number" min={1} max={(m.monto_objetivo || 0) - (m.monto_ahorrado || 0)} placeholder="Aportar" style={{ width: 80, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-meta-${m.id}`} disabled={(parseFloat(m.pagado ?? m.monto_ahorrado ?? 0) >= parseFloat(m.monto_objetivo ?? 0))} />
                   <button
                     onClick={() => {
                       const val = document.getElementById(`pago-meta-${m.id}`).value;
@@ -432,7 +432,7 @@ export default function DeudasMetas() {
                   <button
                     onClick={() => handleEdit(m.id, 'meta')}
                     title="Editar"
-                    style={{ background: '#ffa726', color: '#fff', border: 'none', borderRadius: 8, padding: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ background: 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: 8, padding: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Editar">
                       <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"></path>
@@ -442,7 +442,7 @@ export default function DeudasMetas() {
                   <button
                     onClick={() => handleDelete(m.id, 'meta')}
                     className="icon-btn"
-                    style={{ background: '#e53935', color: '#fff', border: 'none', borderRadius: 8, padding: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ background: 'var(--color-danger)', color: '#fff', border: 'none', borderRadius: 8, padding: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Eliminar">
                       <polyline points="3 6 5 6 21 6"></polyline>

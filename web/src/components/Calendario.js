@@ -193,7 +193,7 @@ export default function Calendario() {
   };
 
   return (
-    <div className="card calendar-card" style={{ color: '#222' }}>
+    <div className="card calendar-card" style={{ color: 'var(--color-text)' }}>
       <h1 className="calendar-title">Calendario de Movimientos</h1>
       <div className="calendar-actions" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <button
@@ -259,11 +259,11 @@ export default function Calendario() {
           />
         </div>
         <div className="calendar-right">
-          <h2 style={{ fontSize: 22, marginBottom: 18, fontWeight: 700, color: '#222' }}>
+          <h2 style={{ fontSize: 22, marginBottom: 18, fontWeight: 700, color: 'var(--color-text)' }}>
             Movimientos del {fechaSeleccionada.split('-').reverse().join('/')}
           </h2>
           {movimientosDelDia.length === 0 ? (
-            <div style={{ color: '#bbb', fontSize: 18 }}>No hay movimientos para este día.</div>
+            <div style={{ color: 'var(--color-muted)', fontSize: 18 }}>No hay movimientos para este día.</div>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {movimientosDelDia.map(mov => (
@@ -280,8 +280,8 @@ export default function Calendario() {
                 }}>
                   <span style={{ fontSize: 36, marginRight: 18 }}>{mov.icon || (mov.tipo === 'egreso' ? '💸' : '💰')}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 20 }}>{mov.descripcion}</div>
-                    <div style={{ fontSize: 15, color: '#e0e0e0', marginBottom: 2 }}>{mov.cuenta}</div>
+                    <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--color-text)' }}>{mov.descripcion}</div>
+                    <div style={{ fontSize: 15, color: 'var(--color-muted)', marginBottom: 2 }}>{mov.cuenta}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <div style={{ fontWeight: 800, fontSize: 22, color: mov.tipo === 'ingreso' ? '#fff' : '#222', minWidth: 160, textAlign: 'right' }}>
@@ -322,6 +322,40 @@ export default function Calendario() {
         .big-light-calendar .react-calendar__tile {
           min-height: 60px;
         }
+          .big-light-calendar {
+            background: var(--color-card) !important;
+            border-radius: 18px;
+            color: var(--color-text) !important;
+            font-size: 1.3rem;
+            box-shadow: 0 2px 12px var(--card-shadow);
+            border: none;
+            width: 100%;
+          }
+          .big-light-calendar.export-mode {
+            box-shadow: 0 0 0 3px #f9a825 inset, 0 2px 12px var(--card-shadow);
+          }
+          .big-light-calendar .react-calendar__tile--active {
+            background: var(--color-primary) !important;
+            color: #fff !important;
+          }
+          .big-light-calendar .react-calendar__tile--now {
+            background: #b39ddb !important;
+            color: var(--color-text) !important;
+          }
+          .big-light-calendar .react-calendar__tile {
+            min-height: 60px;
+          }
+          .big-light-calendar .react-calendar__month-view__weekdays__weekday,
+          .big-light-calendar .react-calendar__month-view__weekdays {
+            color: var(--color-text) !important;
+            font-weight: 700;
+          }
+          .big-light-calendar .react-calendar__navigation__label,
+          .big-light-calendar .react-calendar__navigation__arrow {
+            color: var(--color-text) !important;
+          }
+          .big-light-calendar button { color: var(--color-text) !important; }
+          .big-light-calendar abbr { color: var(--color-text) !important; }
       `}</style>
     </div>
   );

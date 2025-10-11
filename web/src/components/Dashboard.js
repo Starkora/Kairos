@@ -69,12 +69,21 @@ export default function Dashboard() {
       color: '#ff7043',
       titulo: 'Ingreso',
     valor: `S/ ${totalIngreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+    isAmount: true,
     },
     {
       icon: '🏦',
       color: '#26c6da',
       titulo: 'Gastos',
     valor: `S/ ${totalEgreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+    isAmount: true,
+    },
+    {
+      icon: '💰',
+      color: '#6c4fa1',
+      titulo: 'Ahorro',
+      valor: `S/ ${ahorro.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      isAmount: true,
     },
   ];
 
@@ -130,39 +139,40 @@ export default function Dashboard() {
             flex: 1,
             minWidth: 220,
             maxWidth: 320,
-            background: '#fff',
+            background: 'var(--color-card)',
             borderRadius: 16,
-            boxShadow: '0 2px 8px rgba(44, 44, 84, 0.08)',
+            boxShadow: '0 2px 8px var(--card-shadow)',
             display: 'flex',
             alignItems: 'center',
             padding: '18px 28px',
             margin: '0 0 8px 0',
             gap: 18,
           }}>
-            <div style={{ fontSize: 44, color: item.color, background: '#f8f8fa', borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.icon}</div>
+            <div style={{ fontSize: 44, color: item.color, background: 'var(--color-input-bg)', borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.icon}</div>
             <div style={{ flex: 1 }}>
               <div style={{ color: item.color, fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{item.titulo}</div>
-              <div style={{ fontWeight: 700, fontSize: 22, color: '#222', marginTop: 6 }}>{item.valor}</div>
+              <div style={{ fontWeight: 700, fontSize: 22, color: item.isAmount ? 'var(--color-amount)' : 'var(--color-text)', marginTop: 6 }}>{item.valor}</div>
             </div>
           </div>
         ))}
       </div>
       {/* Segmentador y gráfica horizontal ocupando todo el ancho */}
-      <div className="card" style={{ width: '100%', marginBottom: 24 }}>
+  <div className="card" style={{ width: '100%', marginBottom: 24 }}>
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 'bold' }}>Seleccionar Segmentos:</span>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="checkbox" name="Ahorro" checked={segmentos.Ahorro} onChange={handleSegmentoChange} />
-            <span style={{ color: '#6c4fa1', fontWeight: 600 }}>Ahorro</span>
+            <span className="segment-label ahorro-label" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Ahorro</span>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="checkbox" name="Gasto" checked={segmentos.Gasto} onChange={handleSegmentoChange} />
-            <span style={{ color: '#fbc02d', fontWeight: 600 }}>Gastos</span>
+            <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>Gastos</span>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="checkbox" name="Ingreso" checked={segmentos.Ingreso} onChange={handleSegmentoChange} />
-            <span style={{ color: '#388e3c', fontWeight: 600 }}>Ingresos</span>
+            <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Ingresos</span>
           </label>
+          {/* inline ahorro form removed */}
         </div>
   <ResponsiveContainer width="100%" height={600}>
           <BarChart data={data} layout="vertical" margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
@@ -183,28 +193,28 @@ export default function Dashboard() {
         {/* Resumen de totales y gráfica de presupuesto en una sola tarjeta */}
         <div className="card" style={{ flex: 1.2, minWidth: 320, maxWidth: 500, display: 'flex', flexDirection: 'row', alignItems: 'stretch', gap: 0, padding: 0 }}>
           {/* Leyenda a la izquierda */}
-          <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <h4 style={{ color: '#6c4fa1', marginBottom: 16 }}>Resumen de Totales</h4>
+            <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'var(--color-card)' }}>
+              <h4 style={{ color: 'var(--color-table-header-text)', marginBottom: 16 }}>Resumen de Totales</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#fbc02d', display: 'inline-block' }}></span>
-                <span style={{ color: '#fbc02d', fontWeight: 'bold' }}>Egreso</span>
-                <span style={{ color: '#222', fontWeight: 500, marginLeft: 8 }}>S/ {resumen.egreso.toLocaleString()}</span>
+                  <span style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--color-accent)', display: 'inline-block' }}></span>
+                  <span style={{ color: 'var(--color-accent)', fontWeight: 'bold' }}>Egreso</span>
+                  <span style={{ color: 'var(--color-text)', fontWeight: 500, marginLeft: 8 }}>S/ {resumen.egreso.toLocaleString()}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#388e3c', display: 'inline-block' }}></span>
-                <span style={{ color: '#388e3c', fontWeight: 'bold' }}>Ingreso</span>
-                <span style={{ color: '#222', fontWeight: 500, marginLeft: 8 }}>S/ {resumen.ingreso.toLocaleString()}</span>
+                  <span style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--color-success)', display: 'inline-block' }}></span>
+                  <span style={{ color: 'var(--color-success)', fontWeight: 'bold' }}>Ingreso</span>
+                  <span style={{ color: 'var(--color-text)', fontWeight: 500, marginLeft: 8 }}>S/ {resumen.ingreso.toLocaleString()}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#6c4fa1', display: 'inline-block' }}></span>
-                <span style={{ color: '#6c4fa1', fontWeight: 'bold' }}>Ahorro</span>
-                <span style={{ color: '#222', fontWeight: 500, marginLeft: 8 }}>S/ {resumen.ahorro.toLocaleString()}</span>
-              </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--color-primary)', display: 'inline-block' }}></span>
+          <span className="resumen-ahorro" style={{ color: 'var(--color-table-header-text)', fontWeight: 'bold' }}>Ahorro</span>
+          <span style={{ color: 'var(--color-amount)', fontWeight: 500, marginLeft: 8 }}>S/ {resumen.ahorro.toLocaleString()}</span>
+        </div>
             </div>
           </div>
           {/* Gráfica de barras verticales a la derecha */}
-          <div style={{ flex: 2, background: '#f8f8fa', borderTopRightRadius: 12, borderBottomRightRadius: 12, padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ flex: 2, background: 'var(--color-card)', borderTopRightRadius: 12, borderBottomRightRadius: 12, padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div style={{ color: '#888', fontWeight: 500, textAlign: 'right', marginBottom: 8 }}>Resultado de Presupuesto</div>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={[
@@ -293,7 +303,7 @@ export default function Dashboard() {
                 <div style={{ marginBottom: 8, color: '#666' }}>Próximos movimientos programados (5 primeros)</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {pendientes.slice(0, 5).map((p, idx) => (
-                    <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: '#fff', padding: 8, borderRadius: 8 }}>
+                <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
                       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                         <div style={{ fontSize: 20 }}>{p.icon || '📅'}</div>
                         <div>

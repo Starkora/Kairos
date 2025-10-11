@@ -78,7 +78,7 @@ const RecuperarPassword = ({ onVolver }) => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f7f7fa' }}>
-      <div style={{ background: '#fff', padding: '2.5rem 2rem', borderRadius: '12px', boxShadow: '0 2px 16px rgba(0,0,0,0.08)', minWidth: '340px', maxWidth: 400 }}>
+  <div style={{ background: 'var(--color-card)', padding: '2.5rem 2rem', borderRadius: '12px', boxShadow: '0 2px 16px var(--card-shadow)', minWidth: '340px', maxWidth: 400 }}>
         <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '2rem', color: '#4B2E83' }}>Recuperar Contraseña</h2>
         {paso === 1 ? (
           <form onSubmit={handleEnviarCodigo} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

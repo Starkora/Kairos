@@ -297,7 +297,7 @@ export default function Cuentas() {
   <div className="table-responsive">
   <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
         <thead>
-          <tr style={{ background: '#f7f7fa' }}>
+          <tr style={{ background: 'var(--color-table-header-bg)' }}>
             <th style={{ textAlign: 'left', padding: 8 }}>Cuenta</th>
             <th style={{ textAlign: 'left', padding: 8 }}>Tipo</th>
             <th style={{ textAlign: 'right', padding: 8 }}>Monto Actual</th>
@@ -306,23 +306,23 @@ export default function Cuentas() {
         </thead>
         <tbody>
           {(Array.isArray(cuentas) ? cuentas : []).map((cuenta) => (
-            <tr key={cuenta.id} style={{ borderBottom: '1px solid #eee' }}>
-              <td style={{ fontWeight: 600, padding: 8 }}>{cuenta.nombre}</td>
-              <td style={{ padding: 8 }}>{cuenta.tipo || '-'}</td>
-              <td style={{ color: '#6c4fa1', fontWeight: 700, textAlign: 'right', padding: 8 }}>S/ {(Number(cuenta.saldo_actual) || 0).toLocaleString()}</td>
+            <tr key={cuenta.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+              <td style={{ fontWeight: 600, padding: 8, color: 'var(--color-text)' }}>{cuenta.nombre}</td>
+              <td style={{ padding: 8, color: 'var(--color-muted)' }}>{cuenta.tipo || '-'}</td>
+              <td style={{ color: 'var(--color-amount)', fontWeight: 700, textAlign: 'right', padding: 8 }}>S/ {(Number(cuenta.saldo_actual) || 0).toLocaleString()}</td>
               <td style={{ textAlign: 'center', padding: 8 }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                   <button onClick={() => openEdit(cuenta)}
-                    style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
+                    style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', color: 'var(--color-primary)' }}
                     aria-label="Editar" title="Editar"
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c4fa1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 20h9"/>
                       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
                     </svg>
                   </button>
-                  <button onClick={() => handleDelete(cuenta.id)} style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }} aria-label="Eliminar" title="Eliminar">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f44336" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <button onClick={() => handleDelete(cuenta.id)} style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', color: 'var(--color-danger)' }} aria-label="Eliminar" title="Eliminar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="3 6 5 6 21 6"/>
                       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                       <line x1="10" y1="11" x2="10" y2="17"/>
@@ -338,7 +338,7 @@ export default function Cuentas() {
   </div>
       {editing && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={closeEdit}>
-          <div style={{ background:'#fff', borderRadius:12, padding:20, width: 420 }} onClick={(e)=>e.stopPropagation()}>
+          <div style={{ background:'var(--color-card)', borderRadius:12, padding:20, width: 420 }} onClick={(e)=>e.stopPropagation()}>
             <h3 style={{ marginTop: 0, marginBottom: 12 }}>Editar cuenta</h3>
             <form onSubmit={saveEdit} style={{ display:'grid', gridTemplateColumns:'1fr', gap:12 }}>
               <input type="text" placeholder="Nombre" value={editData.nombre} onChange={(e)=>setEditData(s=>({...s, nombre: e.target.value}))} style={{ padding:8, borderRadius:6 }} />
@@ -348,8 +348,8 @@ export default function Cuentas() {
                 ))}
               </select>
               <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:8 }}>
-                <button type="button" onClick={closeEdit} style={{ padding:'8px 12px', borderRadius:8, border:'1px solid #ddd', background:'#fff' }}>Cancelar</button>
-                <button type="submit" style={{ padding:'8px 12px', borderRadius:8, border:'none', background:'#6c4fa1', color:'#fff', fontWeight:600 }}>Guardar</button>
+                <button type="button" onClick={closeEdit} style={{ padding:'8px 12px', borderRadius:8, border:'1px solid var(--color-border)', background:'var(--color-card)', color:'var(--color-text)' }}>Cancelar</button>
+                <button type="submit" style={{ padding:'8px 12px', borderRadius:8, border:'none', background:'var(--color-primary)', color:'var(--color-on-primary)', fontWeight:600 }}>Guardar</button>
               </div>
             </form>
           </div>

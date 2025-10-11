@@ -104,12 +104,21 @@ export default function App() {
 
   return (
     <Router>
-      <AppRoutes email={userInfo.email} name={userInfo.name} refreshUser={refreshUser} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} isMobile={isMobile} />
+      <AppRoutes
+        email={userInfo.email}
+        name={userInfo.name}
+        refreshUser={refreshUser}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        isMobile={isMobile}
+        darkMode={darkMode}
+        setDarkMode={setDarkMode}
+      />
     </Router>
   );
 }
 
-function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMobile }) {
+function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMobile, darkMode, setDarkMode }) {
   const navigate = useNavigate();
   // Función para redirigir tras login
   const handleLogin = () => {

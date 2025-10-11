@@ -8,19 +8,44 @@
   --color-bg: #f8f8fa;
   --color-card: #fff;
   --color-text: #222;
+  --color-muted: #666;
+  --color-amount: #6c4fa1;
+  /* Inputs and UI specifics */
+  --color-sidebar-bg: var(--color-primary);
+  --color-input-bg: #fff;
+  --color-input-border: #ddd;
+  --color-placeholder: #888;
+  --card-shadow: rgba(0,0,0,0.04);
+  /* Tabla */
+  --color-table-header-bg: #ffffff;
+  --color-table-header-text: #222;
+  --color-table-row-hover: #fafafa;
 }
 
 /* Modo oscuro: al aplicar la clase .dark en <html> se re-definen variables */
 .dark {
-  --color-primary: #5b3e8a;
+  --color-primary: #2b2b2b;
   --color-secondary: #1f1f23;
   --color-accent: #ffb74d;
   --color-success: #4caf50;
   --color-danger: #e57373;
   --color-info: #64b5f6;
-  --color-bg: #0f1113;
-  --color-card: #121217;
+  /* Fondo principal oscuro solicitado */
+  --color-bg: #363636;
+  /* Tarjetas ligeramente más oscuras que el fondo */
+  --color-card: #2f2f2f;
   --color-text: #e6e6e9;
+  --color-muted: #bfbfbf;
+  --color-sidebar-bg: #2b2b2b;
+  --color-input-bg: #3b3b3b;
+  --color-input-border: #555;
+  --color-placeholder: #bfbfbf;
+  --card-shadow: rgba(0,0,0,0.6);
+  /* Tabla en modo oscuro */
+  --color-table-header-bg: #3b3b3b;
+  --color-table-header-text: #ffffff;
+  --color-table-row-hover: rgba(255,255,255,0.02);
+  --color-amount: #ffffff;
 }
 
 /* Asegurar que padding/border no provoquen desbordes */
@@ -45,7 +70,7 @@ html, body, #root { max-width: 100%; }
 }
 
 .sidebar {
-  background: var(--color-primary);
+  background: var(--color-sidebar-bg);
   color: #fff;
   width: 220px;
   display: flex;
@@ -98,8 +123,9 @@ html, body, #root { max-width: 100%; }
 .card {
   background: var(--color-card);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px var(--card-shadow);
   padding: 24px;
+  border: 1px solid var(--color-input-border);
   margin-bottom: 24px;
 }
 
@@ -152,15 +178,123 @@ html, body, #root { max-width: 100%; }
 }
 
 /* Cuentas: formulario y tabla responsive */
-.accounts-card { background: var(--color-card); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 24px; }
+.accounts-card { background: var(--color-card); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 24px; border: 1px solid var(--color-input-border); }
 .accounts-form {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 16px;
   align-items: center;
 }
-.table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--color-input-border); border-radius: 8px; overflow: hidden; }
 .table-responsive table { width: 100%; }
+
+/* Estilos para tablas: encabezado, filas, hover en modo claro y oscuro */
+.table-responsive table thead th {
+  background: var(--color-card);
+  color: var(--color-text);
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--color-input-border);
+}
+.table-responsive table tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-input-border);
+  color: var(--color-text);
+}
+
+/* En modo oscuro ajustar headers y filas para mejorar contraste */
+.dark .table-responsive table thead th {
+  background: rgba(255,255,255,0.03);
+  color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.dark .table-responsive table tbody td {
+  color: #ddd;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.dark .table-responsive table tbody tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+
+/* Encabezado de tablas (fila top) para destacar en tarjeta */
+.card .table-responsive table thead th { font-weight: 700; }
+
+/* Encabezado blanco para categorías y cuentas en dark */
+.dark .categories-card h2, .dark .accounts-card h2 { color: #fff; }
+
+/* Texto para el label Ahorro en modo oscuro */
+.dark .ahorro-label { color: #ffffff !important; }
+
+/* Asegurar que el título 'Resumen de Totales' y el label 'Ahorro' estén en blanco en dark */
+.dark .resumen-ahorro { color: #ffffff !important; }
+.dark h4 { color: #fff; }
+
+/* Forzar apariencia completa de la tabla en modo oscuro */
+.dark .table-responsive table {
+  background: var(--color-card);
+  color: var(--color-text);
+  border-collapse: separate;
+}
+.dark .table-responsive table thead {
+  background: rgba(255,255,255,0.03);
+}
+.dark .table-responsive table thead th {
+  color: #fff;
+  background: rgba(255,255,255,0.02);
+}
+.dark .table-responsive table tbody tr {
+  background: transparent;
+}
+.dark .table-responsive table tbody tr td {
+  background: transparent;
+  color: #e6e6e9;
+}
+.dark .table-responsive table tbody tr:hover td {
+  background: rgba(230,230,233,0.02);
+}
+.dark .table-responsive table thead th, .dark .table-responsive table tbody td {
+  border-color: rgba(255,255,255,0.06);
+}
+
+/* Ajustes específicos para el encabezado de la tabla en tarjetas (contraste) */
+.dark .card .table-responsive table thead th {
+  background: rgba(0,0,0,0.18);
+  color: #fff;
+}
+
+/* Estilos para tablas (encabezado, filas, bordes) */
+.table-responsive table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.table-responsive table thead th {
+  background: var(--color-table-header-bg);
+  color: var(--color-table-header-text);
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 700;
+  border-bottom: 1px solid var(--color-input-border);
+}
+.table-responsive table tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-input-border);
+  color: var(--color-text);
+}
+.table-responsive table tbody tr:hover { background: var(--color-table-row-hover); }
+
+/* Ajustes específicos para la tabla de cuentas: texto principal en blanco en dark */
+.dark .table-responsive table tbody td, .dark .table-responsive table thead th {
+  color: var(--color-table-header-text);
+}
+
+/* Botones de acciones en la tabla (editar/eliminar) */
+.table-action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-primary);
+}
+.dark .table-action-btn { color: #ff6b6b; }
 
 @media (max-width: 992px) {
   .accounts-form { grid-template-columns: 1fr 1fr; }
@@ -171,6 +305,8 @@ html, body, #root { max-width: 100%; }
 
 /* Calendario: layout centrado y responsive */
 .calendar-card { max-width: 1100px; margin: 24px auto; background: #f7f7fa; border-radius: 24px; box-shadow: 0 4px 24px #1a1a2a44; padding: 24px; }
+/* Usar variables para el fondo de las tarjetas (soporta modo oscuro) */
+.calendar-card { background: var(--color-card); box-shadow: 0 4px 24px var(--card-shadow); }
 .calendar-title { margin: 0 0 16px 0; font-weight: 800; font-size: 28px; letter-spacing: 1px; }
 .calendar-layout { display: grid; grid-template-columns: 1fr 2fr; gap: 32px; align-items: start; }
 .calendar-left { min-width: 0; }
@@ -180,14 +316,14 @@ html, body, #root { max-width: 100%; }
 }
 
 /* Deudas y Metas */
-.debts-card { max-width: 900px; margin: 24px auto; background: #fff; border-radius: 18px; box-shadow: 0 2px 12px #0002; padding: 24px; }
+.debts-card { max-width: 900px; margin: 24px auto; background: var(--color-card); border-radius: 18px; box-shadow: 0 2px 12px var(--card-shadow); padding: 24px; }
 .debts-title { font-weight: 800; font-size: 28px; margin: 0 0 16px 0; }
 .debts-form { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 12px; align-items: end; margin-bottom: 12px; }
 @media (max-width: 992px) { .debts-form { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 768px) { .debts-form { grid-template-columns: 1fr; } }
 
 /* Categorías */
-.categories-card { max-width: 700px; margin: 24px auto; padding: 24px; }
+.categories-card { max-width: 700px; margin: 24px auto; padding: 24px; background: var(--color-card); box-shadow: 0 2px 12px var(--card-shadow); border-radius: 12px; }
 .categories-form { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; align-items: center; }
 @media (max-width: 768px) { .categories-form { grid-template-columns: 1fr; } }
 
@@ -196,6 +332,22 @@ img, video, canvas, svg {
   max-width: 100%;
   height: auto;
 }
+
+/* Inputs y selects: estilo neutro que se adapta al tema */
+input, textarea, select {
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-input-border);
+  padding: 8px;
+  border-radius: 8px;
+}
+input::placeholder, textarea::placeholder { color: var(--color-placeholder); }
+
+/* Hamburguesa adaptativa */
+.hamburger .bar { background: var(--color-text); }
+
+/* Formularios específicos: cuentas, deudas y categorias usan .card, por lo que ya adaptan */
+
 
 /* Hamburguesa para móviles */
 .hamburger {

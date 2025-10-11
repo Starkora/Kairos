@@ -339,7 +339,7 @@ export default function MiCuenta() {
       <h1 style={{ textAlign: 'center', color: '#6C4AB6' }}>Mi Cuenta</h1>
 
       {/* Sección: Datos principales */}
-      <section style={{ background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 2px 10px #0001', marginBottom: 20 }}>
+  <section style={{ background: 'var(--color-card)', borderRadius: 12, padding: 16, boxShadow: '0 2px 10px var(--card-shadow)', marginBottom: 20 }}>
         <h2 style={{ color: '#6C4AB6', marginTop: 0 }}>Datos principales</h2>
         {/* Email */}
         <div style={{ marginBottom: 12 }}>
@@ -416,7 +416,7 @@ export default function MiCuenta() {
       </section>
 
       {/* Sección: Perfil */}
-      <section style={{ background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 2px 10px #0001' }}>
+  <section style={{ background: 'var(--color-card)', borderRadius: 12, padding: 16, boxShadow: '0 2px 10px var(--card-shadow)' }}>
         <h2 style={{ color: '#6C4AB6', marginTop: 0 }}>Perfil</h2>
   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 240px))', justifyContent: 'start', columnGap: 24, rowGap: 16, marginBottom: 16 }}>
           <div>
