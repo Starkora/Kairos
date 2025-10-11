@@ -132,16 +132,24 @@ const verificarCodigoYGuardar = async (req, res) => {
     const email = (userInfo.email || '').trim();
     const numero = (userInfo.telefono || '').trim();
 
-  console.log(`Validando unicidad: email='${email}', numero='${numero}', userId=${userId}`);
+    console.log(`Validando unicidad: email='${email}', numero='${numero}', userId=${userId}`);
 
-    if (email) {
+    // Obtener valores actuales del usuario para comparar y evitar falsos positivos
+    const [currentRows] = await db.query('SELECT email, numero FROM usuarios WHERE id = ?', [userId]);
+    const current = Array.isArray(currentRows) && currentRows[0] ? currentRows[0] : null;
+    const currentEmail = current ? String(current.email || '').trim() : '';
+    const currentNumero = current ? String(current.numero || '').trim() : '';
+
+    // Si el email enviado es distinto del actual, verificar unicidad; si es igual, omitir la comprobación
+    if (email && email !== currentEmail) {
       const [emailRows] = await db.query('SELECT id FROM usuarios WHERE email = ? AND id <> ?', [email, userId]);
       if (Array.isArray(emailRows) && emailRows.length > 0) {
         return res.status(409).json({ error: 'El correo ya está en uso por otro usuario.' });
       }
     }
 
-    if (numero) {
+    // Lo mismo para el número: sólo verificar si cambió
+    if (numero && numero !== currentNumero) {
       const [numeroRows] = await db.query('SELECT id FROM usuarios WHERE numero = ? AND id <> ?', [numero, userId]);
       if (Array.isArray(numeroRows) && numeroRows.length > 0) {
         return res.status(409).json({ error: 'El número de teléfono ya está en uso por otro usuario.' });
