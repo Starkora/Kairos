@@ -212,7 +212,7 @@ export default function Notificaciones() {
         </button>
       </div>
   <h2 style={{ textAlign: 'center', color: '#6C4AB6', marginTop: 24 }}>Notificaciones Configuradas</h2>
-  <div className="table-responsive">
+  <div className="table-responsive notificaciones">
   <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
         <thead>
           <tr>

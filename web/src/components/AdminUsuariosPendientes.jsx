@@ -64,7 +64,7 @@ export default function AdminUsuariosPendientes() {
   }, [usuarios, query]);
 
   return (
-    <div className="card centered-card" style={{maxWidth: 900}}>
+  <div className="card centered-card admin-pendientes" style={{maxWidth: 1100}}>
       <h2>Usuarios pendientes de aprobación</h2>
       {toast && (
         <div className={`alert ${toast.type === 'error' ? 'error' : ''}`}

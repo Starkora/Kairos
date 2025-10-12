@@ -35,6 +35,7 @@ function getUserInfoFromToken() {
   }
 }
 import './App.css';
+import { MdFormatListBulleted } from 'react-icons/md';
 
 
 
@@ -94,9 +95,9 @@ export default function App() {
   // Función para refrescar usuario tras login/logout en la misma pestaña
   const refreshUser = () => setUserInfo(getUserInfoFromToken());
 
-  // Detectar móvil por ancho de ventana y reaccionar a resize
+  // Detectar móvil por ancho de ventana y reaccionar a resize (ahora umbral 1024px)
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= 768);
+    const check = () => setIsMobile(window.innerWidth <= 1024);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
@@ -165,24 +166,12 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                   top: 0
                 }}>
                   {/* Botón hamburguesa en móvil */}
-                  <button className="hamburger" aria-label="Abrir menú" onClick={() => setSidebarOpen(v => !v)}>
-                    <span className="bar" />
-                    <span className="bar" />
-                    <span className="bar" />
+                  <button className="hamburger" aria-label="Abrir menú" title="Abrir menú" onClick={() => setSidebarOpen(v => !v)}>
+                    {/* Usar react-icons para el icono de lista/bullets */}
+                    <MdFormatListBulleted className="menu-icon" aria-hidden="true" />
                   </button>
                   {(name || email) && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 18,
-                      background: 'var(--color-primary)',
-                      borderRadius: 32,
-                      padding: '6px 24px 6px 32px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                      marginLeft: 'auto',
-                      marginRight: '24px',
-                      minWidth: 0
-                    }}>
+                    <div className="user-header-block">
                       <span style={{fontSize: '1.1rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', letterSpacing: 0.2, overflow:'hidden', textOverflow:'ellipsis', maxWidth:'60vw'}}>{name || email}</span>
                       <span style={{fontSize: '1.7rem', color: '#fff', display: 'flex', alignItems: 'center'}}>
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
