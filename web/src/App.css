@@ -288,6 +288,18 @@ html, body, #root { max-width: 100%; }
 .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--color-input-border); border-radius: 8px; overflow: hidden; }
 .table-responsive table { width: 100%; }
 
+/* Ajustes específicos para tarjetas de categorías: evitar espacio en blanco debajo de la tabla */
+.categories-card .table-responsive {
+  border: none; /* quitar borde extra si hay */
+  overflow: visible; /* permitir que la tabla ocupe su altura real */
+}
+.categories-card .table-responsive table {
+  display: table;
+  width: 100%;
+  margin-top: 12px;
+}
+.categories-card .table-responsive tbody tr:last-child td { padding-bottom: 8px; }
+
 /* Estilos para tablas: encabezado, filas, hover en modo claro y oscuro */
 .table-responsive table thead th {
   background: var(--color-card);
