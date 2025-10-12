@@ -1,3 +1,103 @@
+.table-responsive table {
+  display: block;
+  width: 100%;
+}
+/* Scroll vertical para tablas largas en admin */
+.table-responsive {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+/* Reglas específicas para la pantalla Admin: Usuarios pendientes */
+.admin-pendientes .table-responsive {
+  max-height: 480px; /* suficiente para mostrar varias filas antes de scrollear */
+  overflow-y: auto;
+  overflow-x: auto; /* permitir desplazamiento horizontal si la tabla es más ancha */
+}
+.admin-pendientes .table-responsive table {
+  min-width: 900px; /* forzar desborde horizontal en anchos pequeños */
+  width: max-content;
+}
+/* Ajustes para que la tabla quepa mejor en pantallas medias y muestre columnas */
+.admin-pendientes .table-responsive {
+  overflow-x: auto;
+}
+.admin-pendientes .table-responsive table {
+  table-layout: fixed; /* distribuir espacios según anchos */
+  width: 100%;
+  min-width: 0; /* permitir encogerse si el contenedor lo permite */
+}
+/* Estilos para la sección de Notificaciones: permitir scroll horizontal si es necesario */
+.notificaciones.table-responsive {
+  overflow-x: auto;
+}
+.notificaciones.table-responsive table {
+  width: max-content; /* fuerza ancho según contenido para que aparezca scroll */
+  min-width: 100%;
+}
+.notificaciones.table-responsive thead th,
+.notificaciones.table-responsive tbody td {
+  white-space: nowrap;
+}
+.admin-pendientes .table-responsive thead th,
+.admin-pendientes .table-responsive tbody td {
+  padding: 8px 10px; /* menos padding para ahorrar espacio */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Proporciones para columnas comunes en la tabla de usuarios */
+.admin-pendientes .table-responsive thead th:nth-child(1),
+.admin-pendientes .table-responsive tbody td:nth-child(1) { width: 6%; }
+.admin-pendientes .table-responsive thead th:nth-child(2),
+.admin-pendientes .table-responsive tbody td:nth-child(2) { width: 30%; }
+.admin-pendientes .table-responsive thead th:nth-child(3),
+.admin-pendientes .table-responsive tbody td:nth-child(3) { width: 18%; }
+.admin-pendientes .table-responsive thead th:nth-child(4),
+.admin-pendientes .table-responsive tbody td:nth-child(4) { width: 18%; }
+.admin-pendientes .table-responsive thead th:nth-child(5),
+.admin-pendientes .table-responsive tbody td:nth-child(5) { width: 12%; }
+.admin-pendientes .table-responsive thead th:nth-child(6),
+.admin-pendientes .table-responsive tbody td:nth-child(6) { width: 16%; }
+@media (max-width: 1024px) {
+  .admin-pendientes .table-responsive {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .admin-pendientes .table-responsive table {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 0;
+  }
+  /* En pantallas medias reducir aún más padding y tamaño de fuente */
+  .admin-pendientes .table-responsive thead th,
+  .admin-pendientes .table-responsive tbody td {
+    padding: 6px 8px;
+    font-size: .9rem;
+  }
+}
+/* Bloque usuario e icono en el header/topbar */
+.user-header-block {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--color-primary);
+  border-radius: 32px;
+  padding: 6px 24px 6px 32px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  margin-left: auto;
+  margin-right: 24px;
+  min-width: 0;
+}
+
+@media (max-width: 1024px) and (min-width: 800px) {
+  .user-header-block {
+    margin-right: 350px !important;
+    padding-right: 0 !important;
+    max-width: 60vw;
+  }
+}
 :root {
   --color-primary: #6c4fa1;
   --color-secondary: #f5f5f5;
@@ -303,6 +403,17 @@ html, body, #root { max-width: 100%; }
   .accounts-form { grid-template-columns: 1fr; }
 }
 
+/* Expandir comportamiento mobile/drawer hasta 1024px */
+@media (max-width: 1024px) {
+  .hamburger { display: inline-block; }
+  .sidebar { display: none; }
+  /* Cuando la app añade la clase .mobile a la sidebar via props, la tratamos como drawer */
+  .sidebar.mobile { display: block; position: fixed; transform: translateX(-100%); }
+  .sidebar.mobile.open { transform: translateX(0); }
+  .backdrop { display: block; }
+  .main-content { padding: 16px; }
+}
+
 /* Calendario: layout centrado y responsive */
 .calendar-card { max-width: 1100px; margin: 24px auto; background: #f7f7fa; border-radius: 24px; box-shadow: 0 4px 24px #1a1a2a44; padding: 24px; }
 /* Usar variables para el fondo de las tarjetas (soporta modo oscuro) */
@@ -345,6 +456,34 @@ input::placeholder, textarea::placeholder { color: var(--color-placeholder); }
 
 /* Hamburguesa adaptativa */
 .hamburger .bar { background: var(--color-text); }
+
+/* Nuevo icono circular para la hamburguesa: usar color actual para rellenar el círculo y forzar icono blanco en el topbar */
+.hamburger .hamburger-icon {
+  display: block;
+  width: 36px;
+  height: 36px;
+  color: #fff; /* compatibilidad si queda SVG */
+}
+.hamburger { background: transparent; border: none; }
+
+/* Estilos para el icono importado de react-icons */
+.hamburger .menu-icon {
+  width: 28px;
+  height: 28px;
+  color: #fff;
+  display: inline-block;
+}
+.hamburger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  transition: background .12s ease, transform .12s ease;
+}
+.hamburger:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
 
 /* Formularios específicos: cuentas, deudas y categorias usan .card, por lo que ya adaptan */
 
@@ -396,7 +535,23 @@ input::placeholder, textarea::placeholder { color: var(--color-placeholder); }
 
 /* Breakpoints */
 @media (max-width: 1200px) {
-  .main-content { padding: 24px; }
+  .hamburger {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    width: 40px;
+    height: 40px;
+    padding: 6px;
+    z-index: 40;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: #fff;
+  }
+  .hamburger .bar { background: #fff; }
 }
 
 @media (max-width: 992px) {

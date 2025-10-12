@@ -29,9 +29,9 @@ export default function Calendario() {
         setMovimientos([]);
         return;
       }
-  const data = await res.json();
-  // Do not auto-assign icons/colors here — use stored values from movimientos (set via Registro)
-  setMovimientos(Array.isArray(data) ? data : []);
+      const data = await res.json();
+      // Do not auto-assign icons/colors here — use stored values from movimientos (set via Registro)
+      setMovimientos(Array.isArray(data) ? data : []);
     } catch (err) {
       setMovimientos([]);
     }
@@ -75,7 +75,7 @@ export default function Calendario() {
           `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Cuenta</label><select id="swal-cuenta" class="swal2-select">${cuentasOptions}</select></div>` +
           `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Tipo</label><input id="swal-tipo" class="swal2-input" value="${mov.tipo}" disabled></div>` +
           `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Monto</label><input id="swal-monto" class="swal2-input" placeholder="Monto" value="${mov.monto}" type="number" step="0.01"></div>` +
-          `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Fecha</label><input id="swal-fecha" class="swal2-input" placeholder="Fecha" value="${(mov.fecha||'').slice(0,10)}" type="date"></div>` +
+          `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Fecha</label><input id="swal-fecha" class="swal2-input" placeholder="Fecha" value="${(mov.fecha || '').slice(0, 10)}" type="date"></div>` +
           `<div style="display:flex;flex-direction:column;grid-column:1/3"><label style="font-weight:700;margin-bottom:6px">Descripción</label><input id="swal-descripcion" class="swal2-input" placeholder="Descripción" value="${mov.descripcion || ''}"></div>` +
           `<div style="display:flex;flex-direction:column;grid-column:1/3"><label style="font-weight:700;margin-bottom:6px">Categoría (opcional)</label><select id="swal-categoria" class="swal2-select"><option value="">- Ninguna -</option>${categoriasOptions}</select></div>` +
           `</div>`,
@@ -194,7 +194,7 @@ export default function Calendario() {
 
   return (
     <div className="card calendar-card" style={{ color: 'var(--color-text)' }}>
-      <h1 className="calendar-title">Calendario de Movimientos</h1>
+      <h1 className="calendar-title ">Calendario de Movimientos</h1>
       <div className="calendar-actions" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <button
           type="button"
@@ -268,19 +268,19 @@ export default function Calendario() {
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {movimientosDelDia.map(mov => (
                 <li key={mov.id} style={{
-                    marginBottom: 18,
-                    padding: 22,
-                    borderRadius: 18,
-                    // Normalizar tipo y tratar 'ahorro' como ingreso para la UI
-                    background: mov.color ? mov.color : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? 'linear-gradient(90deg, #1de9b6 0%, #43a047 100%)' : 'linear-gradient(90deg, #ff7043 0%, #c62828 100%)'),
-                    color: mov.color ? '#fff' : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '#fff' : '#222'),
-                    display: 'flex',
-                    alignItems: 'center',
-                    boxShadow: '0 2px 12px #0002',
-                    position: 'relative',
-                  }}>
-                    <span style={{ fontSize: 36, marginRight: 18 }}>{mov.icon || (((mov.tipo || '').toLowerCase() === 'egreso') ? '💸' : '💰')}</span>
-                  <div style={{ flex: 1 }}>
+                  marginBottom: 18,
+                  padding: 22,
+                  borderRadius: 18,
+                  // Normalizar tipo y tratar 'ahorro' como ingreso para la UI
+                  background: mov.color ? mov.color : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? 'linear-gradient(90deg, #1de9b6 0%, #43a047 100%)' : 'linear-gradient(90deg, #ff7043 0%, #c62828 100%)'),
+                  color: mov.color ? '#fff' : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '#fff' : '#222'),
+                  display: 'flex',
+                  alignItems: 'center',
+                  boxShadow: '0 2px 12px #0002',
+                  position: 'relative',
+                }}>
+                  <span style={{ fontSize: 36, marginRight: 18 }}>{mov.icon || (((mov.tipo || '').toLowerCase() === 'egreso') ? '💸' : '💰')}</span>
+                  <div className="movimiento-main" style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--color-text)' }}>{mov.descripcion}</div>
                       {/* Badge que muestra el tipo: Ahorro / Ingreso / Egreso */}
@@ -288,11 +288,11 @@ export default function Calendario() {
                     </div>
                     <div style={{ fontSize: 15, color: 'var(--color-muted)', marginBottom: 2 }}>{mov.cuenta}</div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ fontWeight: 800, fontSize: 22, color: ((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '#fff' : '#222', minWidth: 160, textAlign: 'right' }}>
+                  <div className="movimiento-right" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div className="movimiento-amount" style={{ fontWeight: 800, fontSize: 22, color: ((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '#fff' : '#222', minWidth: 160, textAlign: 'right' }}>
                       {((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '+' : '-'}S/ {mov.monto.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                    <div className="movimiento-actions" style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
                       <button onClick={() => handleEditMovimiento(mov)} style={{ background: 'rgba(255,255,255,0.14)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Editar</button>
                       <button onClick={() => handleDeleteMovimiento(mov.id)} style={{ background: 'rgba(0,0,0,0.08)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Eliminar</button>
                     </div>
@@ -349,6 +349,67 @@ export default function Calendario() {
           }
           .big-light-calendar .react-calendar__tile {
             min-height: 60px;
+          }
+          .calendar-layout { display: flex; gap: 20px; align-items: flex-start; justify-content: flex-start; flex-wrap: nowrap; }
+          /* Columna izquierda adaptativa: hasta 360px o 40% del espacio disponible */
+          .calendar-left { width: min(360px, 40%); max-width: 360px; flex: 0 0 auto; }
+          .calendar-left .big-light-calendar { margin: 0 auto; }
+          /* Columna derecha: ocupa el resto pero no se encoja demasiado. Añadimos padding y overflow para evitar recortes */
+          .calendar-right { flex: 1 1 auto; min-width: 280px; padding-left: 8px; overflow: visible; }
+          .calendar-right ul { padding-right: 8px; }
+          .movimiento-amount { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+          /* Apilar para anchos hasta 1024px (incluido) */
+          @media (max-width: 1024px) {
+            .calendar-title {
+              text-align: center;
+              width: 100%;
+              margin-bottom: 18px;
+            }
+            .calendar-layout { flex-direction: column; }
+            /* Centrar la columna del calendario */
+            .calendar-left {
+              width: 100%;
+              max-width: 360px;
+              margin-left: auto;
+              margin-right: auto;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              padding-top: 8px;
+              box-sizing: border-box;
+            }
+            .calendar-actions {
+              justify-content: center;
+              width: 100%;
+            }
+            .calendar-right { width: 100%; }
+            .big-light-calendar {
+              font-size: 1rem;
+              max-width: 360px;
+              width: 100%;
+              margin-left: auto;
+              margin-right: auto;
+              align-self: center;
+              box-sizing: border-box;
+            }
+            .calendar-right h2 { font-size: 18px; }
+            .calendar-right li { padding: 14px; border-radius: 12px; }
+            .movimiento-amount { font-size: 18px !important; min-width: 120px !important; text-align: left !important; width: auto; white-space: normal; }
+            .movimiento-right { display: block; width: 100%; margin-top: 8px; }
+            .movimiento-right .movimiento-amount { margin-bottom: 8px; }
+            .movimiento-actions { display: flex !important; flex-direction: row !important; justify-content: flex-start !important; gap: 8px !important; }
+            .movimiento-actions button { width: auto !important; padding: 8px 10px !important; }
+            .big-light-calendar .react-calendar__tile { min-height: 48px; }
+            .big-light-calendar { width: 100% !important; }
+            /* Hacer que el contenido principal ocupe todo el ancho del bloque rojo */
+            .calendar-right li { display: flex; flex-direction: column; }
+            .calendar-right li > .movimiento-main { width: 100%; }
+            .calendar-right li > .movimiento-right { width: 100%; display: block; }
+            /* Permitir que el listado tenga scroll si el contenedor es estrecho */
+            .calendar-right ul { max-height: calc(100vh - 360px); overflow: auto; }
+            .calendar-right li > .movimiento-right { margin-top: 12px; }
           }
           .big-light-calendar .react-calendar__month-view__weekdays__weekday,
           .big-light-calendar .react-calendar__month-view__weekdays {

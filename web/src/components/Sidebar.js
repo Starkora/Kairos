@@ -50,7 +50,7 @@ export default function Sidebar({ className = 'sidebar', onNavigate }) {
     return () => controller.abort();
   }, []);
   return (
-    <aside className={className} style={{ display: 'flex', flexDirection: 'column' }}>
+    <aside id="app-sidebar" className={className} style={{ display: 'flex', flexDirection: 'column' }}>
       <h2 style={{margin: '32px 0 24px 0'}}>Kairos</h2>
       <div className="sidebar-scroll" style={{ flex: 1, overflowY: 'auto', paddingRight: 8, maxHeight: 'calc(100vh - 180px)' }}>
         <nav
@@ -95,6 +95,11 @@ export default function Sidebar({ className = 'sidebar', onNavigate }) {
           background-color: rgba(0,0,0,0.18);
           border-radius: 6px;
         }
+        /* Ocultar sidebar en pantallas pequeñas y permitir mostrarlo con clase '.visible' */
+        @media (max-width: 800px) {
+          .sidebar { display: none; }
+          .sidebar.visible { display: flex !important; position: fixed; left: 0; top: 0; bottom: 0; width: 260px; z-index: 9999; background: var(--color-surface); box-shadow: 0 6px 30px rgba(0,0,0,0.6); }
+        }
       `}</style>
       {isLoggedIn() && (
         <div style={{ width: '100%', textAlign: 'center', marginBottom: 40 }}>
@@ -103,4 +108,13 @@ export default function Sidebar({ className = 'sidebar', onNavigate }) {
       )}
     </aside>
   );
+}
+
+// Lógica para manejar el toggle desde otros componentes (Calendario)
+if (typeof window !== 'undefined') {
+  window.addEventListener('toggle-sidebar', () => {
+    const el = document.getElementById('app-sidebar');
+    if (!el) return;
+    if (el.classList.contains('visible')) el.classList.remove('visible'); else el.classList.add('visible');
+  });
 }
