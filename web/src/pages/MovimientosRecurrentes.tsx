@@ -50,9 +50,17 @@ const MovimientosRecurrentes = () => {
 
     const cargarMovimientos = async () => {
         try {
-            const res = await apiFetch('/api/movimientos-recurrentes');
+            // Obtener token y API_BASE igual que en Categorias.tsx
+            const getToken = () => localStorage.getItem('token') || '';
+            const API_BASE = process.env.REACT_APP_API_BASE || '';
+            const res = await fetch(`${API_BASE}/api/movimientos-recurrentes`, {
+                headers: {
+                    'Authorization': 'Bearer ' + getToken()
+                }
+            });
+            if (!res.ok) throw new Error('No autorizado');
             const data = await res.json();
-            console.log('Movimientos recurrentes recibidos:', data); // <-- Log de depuración
+            console.log('Movimientos recurrentes recibidos:', data);
             setMovimientos(Array.isArray(data) ? data : []);
             // cargar cuentas y categorias para nombres
             try {
