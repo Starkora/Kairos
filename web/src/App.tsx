@@ -20,6 +20,9 @@ import ApiEndpointBadge from './components/ApiEndpointBadge';
 import AdminUsuariosPendientes from './components/AdminUsuariosPendientes';
 import API_BASE from './utils/apiBase';
 import MovimientosRecurrentes from './pages/MovimientosRecurrentes';
+import { SpeedInsights } from "@vercel/speed-insights/react";
+import './App.css';
+import { MdFormatListBulleted } from 'react-icons/md';
 
 function getUserInfoFromToken() {
   const token = getToken();
@@ -35,11 +38,6 @@ function getUserInfoFromToken() {
     return {};
   }
 }
-import './App.css';
-import { MdFormatListBulleted } from 'react-icons/md';
-
-
-
 
 function AppWrapper() {
   // Wrapper para usar useNavigate en App
@@ -84,12 +82,12 @@ export default function App() {
     try {
       const saved = localStorage.getItem('theme');
       if (saved) return saved === 'dark';
-    } catch (e) {}
+    } catch (e) { }
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
   useEffect(() => {
-    try { localStorage.setItem('theme', darkMode ? 'dark' : 'light'); } catch (e) {}
+    try { localStorage.setItem('theme', darkMode ? 'dark' : 'light'); } catch (e) { }
     if (darkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
   }, [darkMode]);
 
@@ -116,6 +114,7 @@ export default function App() {
         darkMode={darkMode}
         setDarkMode={setDarkMode}
       />
+      <SpeedInsights />
     </Router>
   );
 }
@@ -136,8 +135,8 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
   return (
     <Routes>
       {/* Login es independiente, sin layout */}
-  <Route path="/login" element={isLoggedIn() ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />} />
-  <Route path="/recuperar-password" element={<RecuperarPasswordPage />} />
+      <Route path="/login" element={isLoggedIn() ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />} />
+      <Route path="/recuperar-password" element={<RecuperarPasswordPage />} />
       {/* Página pública de Acerca */}
       <Route path="/acerca" element={<AcercaPublic />} />
       {/* Resto de la app solo si está logueado */}
@@ -152,7 +151,7 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
               {isMobile && sidebarOpen && (
                 <div className="backdrop" onClick={() => setSidebarOpen(false)} />
               )}
-              <div style={{flex: 1, display: 'flex', flexDirection: 'column', height: isMobile ? 'auto' : '100vh'}}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: isMobile ? 'auto' : '100vh' }}>
                 {/* Navbar superior */}
                 <div style={{
                   width: '100%',
@@ -173,21 +172,21 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                   </button>
                   {(name || email) && (
                     <div className="user-header-block">
-                      <span style={{fontSize: '1.1rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', letterSpacing: 0.2, overflow:'hidden', textOverflow:'ellipsis', maxWidth:'60vw'}}>{name || email}</span>
-                      <span style={{fontSize: '1.7rem', color: '#fff', display: 'flex', alignItems: 'center'}}>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', letterSpacing: 0.2, overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60vw' }}>{name || email}</span>
+                      <span style={{ fontSize: '1.7rem', color: '#fff', display: 'flex', alignItems: 'center' }}>
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                          <circle cx="12" cy="8" r="4" fill="#fff" fillOpacity="1"/>
-                          <ellipse cx="12" cy="18" rx="7" ry="5" fill="#fff" fillOpacity="1"/>
+                          <circle cx="12" cy="8" r="4" fill="#fff" fillOpacity="1" />
+                          <ellipse cx="12" cy="18" rx="7" ry="5" fill="#fff" fillOpacity="1" />
                         </svg>
                       </span>
                       {/* Toggle modo oscuro */}
-                      <button onClick={() => setDarkMode(d => !d)} title="Alternar tema" style={{marginLeft: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', padding: '6px 10px', borderRadius: 8, cursor: 'pointer'}}>
+                      <button onClick={() => setDarkMode(d => !d)} title="Alternar tema" style={{ marginLeft: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', padding: '6px 10px', borderRadius: 8, cursor: 'pointer' }}>
                         {darkMode ? '🌙' : '☀️'}
                       </button>
                     </div>
                   )}
                 </div>
-                <main className="main-content" style={{height: isMobile ? 'auto' : 'calc(100vh - 64px)'}}>
+                <main className="main-content" style={{ height: isMobile ? 'auto' : 'calc(100vh - 64px)' }}>
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/registro" element={<Registro />} />
@@ -203,12 +202,12 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                     <Route path="/admin/usuarios-pendientes" element={<AdminOnly><AdminUsuariosPendientes /></AdminOnly>} />
                   </Routes>
                 </main>
-                {process.env.REACT_APP_SHOW_API_BADGE === 'true' && <ApiEndpointBadge />} 
+                {process.env.REACT_APP_SHOW_API_BADGE === 'true' && <ApiEndpointBadge />}
                 {/* Controles fijos: siempre en esquinas */}
-                <button onClick={handleLogout} className="fixed-bottom-btn" style={{position:'fixed', left:16, bottom:16, background:'#6C4AB6', color:'#fff', border:'none', borderRadius:20, padding:'10px 28px', fontWeight:600, fontSize:'1rem', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', zIndex: 10, display: (isMobile && !sidebarOpen) ? 'inline-flex' : 'none'}}>
-                  <span style={{marginRight:8, fontSize:'1.1em'}}>⎋</span> Cerrar sesión
+                <button onClick={handleLogout} className="fixed-bottom-btn" style={{ position: 'fixed', left: 16, bottom: 16, background: '#6C4AB6', color: '#fff', border: 'none', borderRadius: 20, padding: '10px 28px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', zIndex: 10, display: (isMobile && !sidebarOpen) ? 'inline-flex' : 'none' }}>
+                  <span style={{ marginRight: 8, fontSize: '1.1em' }}>⎋</span> Cerrar sesión
                 </button>
-                <a href="/acercade" className="fixed-bottom-btn" style={{position:'fixed', right:16, bottom:16, color:'#6C4AB6', textDecoration:'underline', fontWeight:600, background:'#fff', padding:'8px 12px', borderRadius:16, boxShadow:'0 2px 8px rgba(0,0,0,0.04)', display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex'}}>Acerca de</a>
+                <a href="/acercade" className="fixed-bottom-btn" style={{ position: 'fixed', right: 16, bottom: 16, color: '#6C4AB6', textDecoration: 'underline', fontWeight: 600, background: '#fff', padding: '8px 12px', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex' }}>Acerca de</a>
               </div>
             </div>
           ) : (
@@ -240,7 +239,7 @@ function AdminOnly({ children }) {
         setChecking(false);
         return;
       }
-    } catch {}
+    } catch { }
 
     // Si no hay rol en el token o no es admin, consultar backend
     (async () => {
@@ -267,7 +266,7 @@ function AdminOnly({ children }) {
   }, [navigate]);
 
   if (checking) {
-    return <div style={{padding:24}}>Verificando permisos…</div>;
+    return <div style={{ padding: 24 }}>Verificando permisos…</div>;
   }
   return allowed ? children : null;
 }
