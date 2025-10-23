@@ -197,8 +197,8 @@ export default function Categorias() {
       confirmButtonText: 'Guardar',
       cancelButtonText: 'Cancelar',
       preConfirm: () => {
-        const nombre = document.getElementById('nombre').value;
-        const tipo = document.getElementById('tipo').value;
+  const nombre = (document.getElementById('nombre') as HTMLInputElement).value;
+  const tipo = (document.getElementById('tipo') as HTMLSelectElement).value;
         return { nombre, tipo };
       }
     }).then(result => {
@@ -264,7 +264,7 @@ export default function Categorias() {
       confirmButtonText: 'Guardar',
       cancelButtonText: 'Cancelar',
       preConfirm: () => {
-        const nombre = document.getElementById('nombre').value;
+  const nombre = (document.getElementById('nombre') as HTMLInputElement).value;
         return { nombre };
       }
     }).then(result => {

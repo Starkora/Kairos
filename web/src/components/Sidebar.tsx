@@ -55,7 +55,7 @@ export default function Sidebar({ className = 'sidebar', onNavigate }) {
       <div className="sidebar-scroll" style={{ flex: 1, overflowY: 'auto', paddingRight: 8, maxHeight: 'calc(100vh - 180px)' }}>
         <nav
           onClick={(e) => {
-            const target = e.target;
+            const target = e.target as Element;
             if (target && target.closest('a') && typeof onNavigate === 'function') {
               onNavigate();
             }
@@ -68,6 +68,7 @@ export default function Sidebar({ className = 'sidebar', onNavigate }) {
           <NavLink to="/deudas-metas">Deudas y Metas</NavLink>
           <NavLink to="/categorias">Categorías</NavLink>
           <NavLink to="/notificaciones">Notificaciones</NavLink>
+          <NavLink to="/movimientos-recurrentes">Movimientos Recurrentes</NavLink>
           <NavLink to="/micuenta">Mi Cuenta</NavLink>
           <NavLink to="/acercade">Acerca de</NavLink>
           {rol === 'admin' && (

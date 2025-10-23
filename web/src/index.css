@@ -1,0 +1,163 @@
+/* --- Tabla morada en modo claro, azul en modo oscuro --- */
+html:not(.dark) .kr-table-bg {
+	background: #a78bfa !important;
+	border: 2px solid #6C4AB6 !important;
+}
+html:not(.dark) .kr-table-bg th {
+	background: #6C4AB6 !important;
+	color: #fff !important;
+}
+html:not(.dark) .kr-table-bg tr {
+	background: #ede9fe !important;
+}
+html:not(.dark) .kr-table-bg td {
+	color: #4b006e !important;
+}
+/* --- Modo claro para el modal SweetAlert2 --- */
+html:not(.dark) .swal-wide.kr-modal-popup {
+	background: #f5f3ff !important;
+	color: #4b006e !important;
+}
+html:not(.dark) .kr-modal-input, html:not(.dark) .swal2-input.kr-modal-input, html:not(.dark) .swal2-select.kr-modal-input {
+	background: #ede9fe !important;
+	color: #4b006e !important;
+	border: 1.5px solid #a78bfa !important;
+}
+html:not(.dark) .kr-modal-input:focus {
+	border-color: #a21caf !important;
+}
+html:not(.dark) .kr-modal-color-preview {
+	border: 1.5px solid #a78bfa;
+	background: #ede9fe;
+	color: #4b006e;
+}
+html:not(.dark) .swal2-actions button.swal2-confirm {
+	background: #a78bfa !important;
+	color: #fff !important;
+}
+html:not(.dark) .swal2-actions button.swal2-confirm:hover {
+	background: #7c3aed !important;
+}
+html:not(.dark) .swal2-actions button.swal2-cancel {
+	background: #ede9fe !important;
+	color: #4b006e !important;
+}
+html:not(.dark) .swal2-actions button.swal2-cancel:hover {
+	background: #c4b5fd !important;
+}
+html:not(.dark) .swal2-title {
+	color: #a21caf !important;
+}
+html:not(.dark) .swal2-html-container label {
+	color: #4b006e;
+}
+html:not(.dark) .swal2-html-container input[type="checkbox"] {
+	accent-color: #a21caf;
+}
+@import "tailwindcss";
+
+/* --- SweetAlert2 Modern Modal Redesign --- */
+.swal-wide.kr-modal-popup {
+	background: #18181b !important;
+	color: #f3f4f6 !important;
+	border-radius: 1.5rem !important;
+	box-shadow: 0 8px 40px 0 rgba(0,0,0,0.25) !important;
+	padding: 2.5rem 2rem 2rem 2rem !important;
+	max-width: 580px !important;
+}
+.kr-modal-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1.2rem 1.5rem;
+	margin-top: 1.2rem;
+}
+.kr-modal-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		width: 100%;
+}
+.kr-modal-field-full {
+		grid-column: 1/3;
+		width: 100%;
+}
+.kr-modal-input, .swal2-input.kr-modal-input, .swal2-select.kr-modal-input {
+	background: #23232b !important;
+	color: #f3f4f6 !important;
+	border: 1.5px solid #06b6d4 !important;
+	border-radius: 0.7rem !important;
+	padding: 0.6rem 1rem !important;
+	font-size: 1rem !important;
+	font-family: inherit !important;
+	margin-top: 0.1rem;
+	margin-bottom: 0.1rem;
+	outline: none !important;
+	box-shadow: none !important;
+		transition: border 0.2s;
+		width: 100% !important;
+}
+.kr-modal-input:focus {
+	border-color: #22d3ee !important;
+}
+.kr-modal-color-preview {
+	display: inline-block;
+	min-width: 70px;
+	margin-left: 0.7rem;
+	padding: 0.3rem 0.7rem;
+	border-radius: 0.5rem;
+	border: 1.5px solid #06b6d4;
+	color: #fff;
+	font-size: 0.95rem;
+	font-weight: 600;
+	background: #23232b;
+	text-align: center;
+}
+.swal2-actions button.swal2-confirm {
+	background: #6366f1 !important;
+	color: #fff !important;
+	font-weight: 700 !important;
+	border-radius: 0.7rem !important;
+	font-size: 1.1rem !important;
+	padding: 0.7rem 2.2rem !important;
+	margin-right: 0.7rem !important;
+	box-shadow: 0 2px 8px 0 rgba(99,102,241,0.10) !important;
+	border: none !important;
+	transition: background 0.2s;
+}
+.swal2-actions button.swal2-confirm:hover {
+	background: #4f46e5 !important;
+}
+.swal2-actions button.swal2-cancel {
+	background: #374151 !important;
+	color: #f3f4f6 !important;
+	font-weight: 600 !important;
+	border-radius: 0.7rem !important;
+	font-size: 1.1rem !important;
+	padding: 0.7rem 2.2rem !important;
+	border: none !important;
+	transition: background 0.2s;
+}
+.swal2-actions button.swal2-cancel:hover {
+	background: #1e293b !important;
+}
+.swal2-title {
+	color: #06b6d4 !important;
+	font-weight: 800 !important;
+	font-size: 1.6rem !important;
+	margin-bottom: 0.5rem !important;
+}
+.swal2-html-container label {
+	font-weight: 700;
+	color: #f3f4f6;
+	margin-bottom: 0.2rem;
+	font-size: 1rem;
+}
+.swal2-html-container input[type="checkbox"] {
+	accent-color: #06b6d4;
+	width: 1.2rem;
+	height: 1.2rem;
+	margin-right: 0.5rem;
+}

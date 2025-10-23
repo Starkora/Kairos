@@ -5,6 +5,8 @@ import { getToken } from '../utils/auth';
 import API_BASE from '../utils/apiBase';
 import Swal from 'sweetalert2';
 
+type Value = Date | [Date, Date];
+
 
 // NOTE: icons and colors now come from stored movimiento fields (icon, color).
 
@@ -16,40 +18,57 @@ export default function Calendario() {
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
-  const [value, setValue] = React.useState(today);
+  const [value, setValue] = React.useState<Value>(today);
   const [movimientos, setMovimientos] = React.useState([]);
+  const [movimientosRecurrentes, setMovimientosRecurrentes] = React.useState([]);
   const [exportMode, setExportMode] = React.useState(false);
 
   // Función para cargar movimientos y asignar iconos/colores
   const refreshMovimientos = React.useCallback(async () => {
     try {
       const apiFetch = (await import('../utils/apiFetch')).default;
+      // Movimientos normales
       const res = await apiFetch(`${API_BASE}/api/transacciones?plataforma=web`);
-      if (!res.ok) {
-        setMovimientos([]);
-        return;
-      }
-      const data = await res.json();
-      // Do not auto-assign icons/colors here — use stored values from movimientos (set via Registro)
+      const data = res.ok ? await res.json() : [];
       setMovimientos(Array.isArray(data) ? data : []);
+      // Movimientos recurrentes (instancias)
+      const resRec = await apiFetch(`${API_BASE}/api/movimientos-recurrentes/instancias`);
+      const dataRec = resRec.ok ? await resRec.json() : [];
+      setMovimientosRecurrentes(Array.isArray(dataRec) ? dataRec : []);
     } catch (err) {
       setMovimientos([]);
+      setMovimientosRecurrentes([]);
     }
   }, []);
 
   React.useEffect(() => {
     refreshMovimientos();
+    // Escuchar evento para refrescar desde Registro
+    const handler = () => refreshMovimientos();
+    window.addEventListener('movimientos:refresh', handler);
+    return () => window.removeEventListener('movimientos:refresh', handler);
   }, [refreshMovimientos]);
 
   // Determinar el día mostrado a la derecha (si hay rango, usar el primer día)
   const selectedDate = React.useMemo(() => {
     if (value instanceof Date) return value;
-    if (Array.isArray(value) && value[0] instanceof Date) return value[0];
+    if (Array.isArray(value) && value.length > 0) return value[0];
     return today;
   }, [value, today]);
 
   const fechaSeleccionada = selectedDate.toISOString().slice(0, 10);
-  const movimientosDelDia = movimientos.filter(m => {
+  // Unir movimientos normales y recurrentes
+  const todosMovimientos = React.useMemo(() => {
+    // Evitar duplicados por id y fecha
+    const clave = m => `${m.id || ''}_${m.fecha || ''}`;
+    const mapa = new Map();
+    [...movimientos, ...movimientosRecurrentes].forEach(m => {
+      mapa.set(clave(m), m);
+    });
+    return Array.from(mapa.values());
+  }, [movimientos, movimientosRecurrentes]);
+
+  const movimientosDelDia = todosMovimientos.filter(m => {
     const fechaMov = m.fecha ? m.fecha.slice(0, 10) : '';
     return fechaMov === fechaSeleccionada;
   });
@@ -83,11 +102,11 @@ export default function Calendario() {
         focusConfirm: false,
         showCancelButton: true,
         preConfirm: () => {
-          const cuenta_id = document.getElementById('swal-cuenta').value;
-          const monto = parseFloat(document.getElementById('swal-monto').value || '0');
-          const descripcion = document.getElementById('swal-descripcion').value || '';
-          const fecha = document.getElementById('swal-fecha').value || '';
-          const categoria_id = document.getElementById('swal-categoria').value || null;
+          const cuenta_id = (document.getElementById('swal-cuenta') as HTMLSelectElement).value;
+          const monto = parseFloat((document.getElementById('swal-monto') as HTMLInputElement).value || '0');
+          const descripcion = (document.getElementById('swal-descripcion') as HTMLInputElement).value || '';
+          const fecha = (document.getElementById('swal-fecha') as HTMLInputElement).value || '';
+          const categoria_id = (document.getElementById('swal-categoria') as HTMLSelectElement).value || null;
           if (!cuenta_id) { Swal.showValidationMessage('Cuenta requerida'); return false; }
           if (!monto || isNaN(monto) || monto <= 0) { Swal.showValidationMessage('Monto inválido'); return false; }
           if (!fecha) { Swal.showValidationMessage('Fecha requerida'); return false; }
@@ -139,7 +158,7 @@ export default function Calendario() {
   const tileContent = ({ date, view }) => {
     if (view === 'month') {
       const fecha = date.toISOString().slice(0, 10);
-      const hayMov = movimientos.some(m => (m.fecha ? m.fecha.slice(0, 10) : '') === fecha);
+      const hayMov = todosMovimientos.some(m => (m.fecha ? m.fecha.slice(0, 10) : '') === fecha);
       if (hayMov) return <span style={{ color: '#6c4fa1', fontWeight: 700, fontSize: 18 }}>•</span>;
     }
     return null;

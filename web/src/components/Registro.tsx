@@ -21,11 +21,18 @@ export default function Registro() {
     icon: '💸',
     color: '#c62828'
   });
+  const [repetir, setRepetir] = React.useState(false);
+  const [repeticion, setRepeticion] = React.useState({
+    frecuencia: 'mensual', // mensual, semanal, diaria
+    inicio: '',
+    fin: '',
+    indefinido: true
+  });
   // Helper para obtener la fecha local (YYYY-MM-DD) sin desfase de zona horaria
   const getToday = React.useCallback(() => {
     const d = new Date();
     const tz = d.getTimezoneOffset() * 60000;
-    return new Date(d - tz).toISOString().slice(0, 10);
+  return new Date(d.getTime() - tz).toISOString().slice(0, 10);
   }, []);
 
   // Setear fecha por defecto al entrar a la pantalla
@@ -146,7 +153,7 @@ export default function Registro() {
       Swal.fire({ icon: 'warning', title: 'Categoría requerida', text: 'Selecciona una categoría.' });
       return;
     }
-    if (!form.monto || isNaN(form.monto) || Number(form.monto) <= 0) {
+  if (!form.monto || isNaN(Number(form.monto)) || Number(form.monto) <= 0) {
       Swal.fire({ icon: 'error', title: 'Monto inválido', text: 'El monto debe ser mayor a 0.' });
       return;
     }
@@ -172,31 +179,57 @@ export default function Registro() {
         fecha: form.fecha,
         categoria_id: form.categoria,
         icon: form.icon,
-        color: form.color
+        color: form.color,
+        repetir: repetir,
+        repeticion: repetir ? repeticion : null
       };
       try {
-      const apiFetch = (await import('../utils/apiFetch')).default;
-      const res = await apiFetch(`${API_BASE}/api/transacciones`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(movimiento)
-            });
-            if (res && res.ok) {
+        const apiFetch = (await import('../utils/apiFetch')).default;
+        let res;
+        if (repetir) {
+          // Guardar como movimiento recurrente
+          res = await apiFetch(`${API_BASE}/api/movimientos-recurrentes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              cuenta_id: form.cuenta,
+              tipo: form.tipo,
+              monto: form.monto,
+              descripcion: form.descripcion,
+              categoria_id: form.categoria,
+              icon: form.icon,
+              color: form.color,
+              frecuencia: repeticion.frecuencia,
+              inicio: repeticion.inicio || form.fecha,
+              fin: repeticion.indefinido ? null : repeticion.fin,
+              indefinido: repeticion.indefinido
+            })
+          });
+        } else {
+          // Guardar como movimiento normal
+          res = await apiFetch(`${API_BASE}/api/transacciones`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(movimiento)
+          });
+        }
+        if (res && res.ok) {
           Swal.fire({ icon: 'success', title: 'Movimiento registrado', showConfirmButton: false, timer: 1200 });
           setForm({ tipo: 'ingreso', monto: '', categoria: '', fecha: getToday(), descripcion: '', cuenta: cuentas[0]?.id || '', icon: '💸', color: '#c62828' });
+          setRepetir(false);
+          setRepeticion({ frecuencia: 'mensual', inicio: '', fin: '', indefinido: true });
           // Refrescar cuentas para mostrar el saldo actualizado (asegurar plataforma=web)
           (await import('../utils/apiFetch')).default(`${API_BASE}/api/cuentas?plataforma=web`)
             .then(res => res.ok ? res.json() : [])
             .then(data => setCuentas(Array.isArray(data) ? data : []))
             .catch(() => setCuentas([]));
-            // Emitir evento para que otros componentes (ej. Cuentas) puedan refrescarse
-            try {
-              window.dispatchEvent(new Event('cuentas:refresh'));
-            } catch (e) {
-              // no crítico
-            }
+          // Emitir evento para que otros componentes (ej. Cuentas, Calendario) puedan refrescarse
+          try {
+            window.dispatchEvent(new Event('cuentas:refresh'));
+            window.dispatchEvent(new Event('movimientos:refresh'));
+          } catch (e) {
+            // no crítico
+          }
         } else {
           const data = await res.json();
           Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo registrar el movimiento.' });
@@ -269,6 +302,33 @@ export default function Registro() {
           <label>Descripción:&nbsp;</label>
           <input type="text" name="descripcion" value={form.descripcion} onChange={handleChange} style={{ padding: 6, borderRadius: 6, width: '100%' }} />
         </div>
+        <div>
+          <label>
+            <input type="checkbox" checked={repetir} onChange={e => setRepetir(e.target.checked)} /> ¿Repetir este movimiento?
+          </label>
+        </div>
+        {repetir && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+            <label>Frecuencia:&nbsp;
+              <select value={repeticion.frecuencia} onChange={e => setRepeticion(r => ({ ...r, frecuencia: e.target.value }))} style={{ padding: 6, borderRadius: 6 }}>
+                <option value="mensual">Mensual</option>
+                <option value="semanal">Semanal</option>
+                <option value="diaria">Diaria</option>
+              </select>
+            </label>
+            <label>Fecha de inicio:&nbsp;
+              <input type="date" value={repeticion.inicio} onChange={e => setRepeticion(r => ({ ...r, inicio: e.target.value }))} style={{ padding: 6, borderRadius: 6 }} />
+            </label>
+            <label>
+              <input type="checkbox" checked={repeticion.indefinido} onChange={e => setRepeticion(r => ({ ...r, indefinido: e.target.checked, fin: '' }))} /> Repetir indefinidamente
+            </label>
+            {!repeticion.indefinido && (
+              <label>Fecha de fin:&nbsp;
+                <input type="date" value={repeticion.fin} onChange={e => setRepeticion(r => ({ ...r, fin: e.target.value }))} style={{ padding: 6, borderRadius: 6 }} />
+              </label>
+            )}
+          </div>
+        )}
         <button type="submit" style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 8 }}>
           Guardar Movimiento
         </button>
