@@ -1,3 +1,10 @@
+// Sincronizar modelos Sequelize
+const sequelize = require('./sequelize');
+sequelize.sync().then(() => {
+  console.log('[Sequelize] Modelos sincronizados');
+}).catch(err => {
+  console.error('[Sequelize] Error al sincronizar modelos:', err);
+});
 require('dotenv').config();
 // Evitar imprimir secretos en logs
 if (process.env.NODE_ENV !== 'production') {
@@ -36,6 +43,7 @@ function normalizeOrigin(o) {
 
 const allowedOrigins = [
   'http://localhost:3000',
+  'http://localhost:3002', 
   normalizeOrigin(process.env.WEB_ORIGIN),
   normalizeOrigin(process.env.NGROK_ORIGIN),
   normalizeOrigin(process.env.DEVTUNNELS_ORIGIN)
@@ -352,6 +360,8 @@ app.use('/api/usuarios', usuariosRouter);
 app.use('/api/usuarios/google', googleAuthRouter); // /api/usuarios/google
 app.use('/api/deudas', deudasRouter);
 app.use('/api/metas', metasRouter);
+const movimientosRecurrentesRouter = require('./routes/movimientosRecurrentes');
+app.use('/api/movimientos-recurrentes', movimientosRecurrentesRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api', notificacionesController);
 
