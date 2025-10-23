@@ -53,6 +53,7 @@ const MovimientosRecurrentes = () => {
             // Obtener token y API_BASE igual que en Categorias.tsx
             const getToken = () => localStorage.getItem('token') || '';
             const API_BASE = process.env.REACT_APP_API_BASE || '';
+            // Movimientos recurrentes
             const res = await fetch(`${API_BASE}/api/movimientos-recurrentes`, {
                 headers: {
                     'Authorization': 'Bearer ' + getToken()
@@ -62,9 +63,14 @@ const MovimientosRecurrentes = () => {
             const data = await res.json();
             console.log('Movimientos recurrentes recibidos:', data);
             setMovimientos(Array.isArray(data) ? data : []);
-            // cargar cuentas y categorias para nombres
+            // Cuentas
             try {
-                const cuentasRes = await apiFetch('/api/cuentas?plataforma=web');
+                const cuentasRes = await fetch(`${API_BASE}/api/cuentas?plataforma=web`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + getToken()
+                    }
+                });
+                if (!cuentasRes.ok) throw new Error('No autorizado');
                 const cuentasData = await cuentasRes.json();
                 if (Array.isArray(cuentasData)) {
                     const map: Record<number,string> = {};
@@ -72,8 +78,14 @@ const MovimientosRecurrentes = () => {
                     setCuentasMap(map);
                 }
             } catch (e) {}
+            // Categorías
             try {
-                const categoriasRes = await apiFetch('/api/categorias?plataforma=web');
+                const categoriasRes = await fetch(`${API_BASE}/api/categorias?plataforma=web`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + getToken()
+                    }
+                });
+                if (!categoriasRes.ok) throw new Error('No autorizado');
                 const categoriasData = await categoriasRes.json();
                 if (Array.isArray(categoriasData)) {
                     const map: Record<number,string> = {};
