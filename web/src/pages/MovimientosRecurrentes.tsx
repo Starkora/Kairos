@@ -52,6 +52,7 @@ const MovimientosRecurrentes = () => {
         try {
             const res = await apiFetch('/api/movimientos-recurrentes');
             const data = await res.json();
+            console.log('Movimientos recurrentes recibidos:', data); // <-- Log de depuración
             setMovimientos(Array.isArray(data) ? data : []);
             // cargar cuentas y categorias para nombres
             try {
