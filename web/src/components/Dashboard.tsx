@@ -269,10 +269,9 @@ export default function Dashboard() {
         </ResponsiveContainer>
       </div>
 
-      {/* Movimientos programados / pendientes */}
+      {/* Movimientos programados / pendientes separados por tipo */}
       <div className="card" style={{ marginTop: 24 }}>
         <h3>Movimientos programados</h3>
-        {/* Filtrar movimientos pendientes: applied===0 o fecha > hoy */}
         {(() => {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
@@ -290,38 +289,43 @@ export default function Dashboard() {
             }
           });
 
-          const totalPendientes = pendientes.reduce((acc, m) => acc + Number(m.monto || 0), 0);
+          // Separar por tipo
+          const tipos = ['ingreso', 'egreso', 'ahorro'];
+          const pendientesPorTipo = tipos.map(tipo => ({
+            tipo,
+            lista: pendientes.filter(m => m.tipo === tipo),
+            total: pendientes.filter(m => m.tipo === tipo).reduce((acc, m) => acc + Number(m.monto || 0), 0)
+          }));
 
           return (
-            <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <div style={{ minWidth: 220 }}>
-                <div style={{ fontWeight: 'bold' }}>Cantidad pendientes</div>
-                <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{pendientes.length}</div>
-              </div>
-              <div style={{ minWidth: 220 }}>
-                <div style={{ fontWeight: 'bold' }}>Monto total pendiente</div>
-                <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>S/ {totalPendientes.toLocaleString()}</div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ marginBottom: 8, color: '#666' }}>Próximos movimientos programados (5 primeros)</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {pendientes.slice(0, 5).map((p, idx) => (
-                    <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
-                      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                        <div style={{ fontSize: 20 }}>{p.icon || '📅'}</div>
-                        <div>
-                          <div style={{ fontWeight: 600 }}>{p.categoria || 'Sin categoría'}</div>
-                          <div style={{ fontSize: 12, color: '#666' }}>{p.cuenta || p.cuenta_nombre || ''}</div>
+            <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              {pendientesPorTipo.map(({ tipo, lista, total }) => (
+                <div key={tipo} style={{ minWidth: 260, flex: 1 }}>
+                  <div style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 8, textTransform: 'capitalize' }}>
+                    {tipo === 'ingreso' ? 'Ingresos' : tipo === 'egreso' ? 'Egresos' : 'Ahorro'} pendientes
+                  </div>
+                  <div style={{ fontSize: 15, marginBottom: 4 }}>Cantidad: <b>{lista.length}</b></div>
+                  <div style={{ fontSize: 15, marginBottom: 8 }}>Monto total: <b>S/ {total.toLocaleString()}</b></div>
+                  <div style={{ marginBottom: 8, color: '#666' }}>Próximos (5 primeros)</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {lista.slice(0, 5).map((p, idx) => (
+                      <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                          <div style={{ fontSize: 20 }}>{p.icon || '📅'}</div>
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{p.categoria || 'Sin categoría'}</div>
+                            <div style={{ fontSize: 12, color: '#666' }}>{p.cuenta || p.cuenta_nombre || ''}</div>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontWeight: 700 }}>S/ {Number(p.monto || 0).toLocaleString()}</div>
+                          <div style={{ fontSize: 12, color: '#666' }}>{p.fecha ? new Date(p.fecha).toLocaleDateString() : ''}</div>
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 700 }}>S/ {Number(p.monto || 0).toLocaleString()}</div>
-                        <div style={{ fontSize: 12, color: '#666' }}>{p.fecha ? new Date(p.fecha).toLocaleDateString() : ''}</div>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
           );
         })()}
