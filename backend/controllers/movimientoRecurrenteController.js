@@ -30,13 +30,18 @@ const MovimientoRecurrente = require('../models/movimientoRecurrente');
 // Crear movimiento recurrente
 exports.crear = async (req, res) => {
   try {
-    const { cuenta_id, tipo, monto, descripcion, categoria_id, icon, color, frecuencia, inicio, fin, indefinido } = req.body;
+    let { cuenta_id, tipo, monto, descripcion, categoria_id, icon, color, frecuencia, inicio, fin, indefinido } = req.body;
     const usuario_id = req.user.id; // Asume que el usuario está en req.user
+    // Normalizar tipos
+    monto = Number(monto);
+    indefinido = (indefinido === true || indefinido === 'true' || indefinido === 1 || indefinido === '1') ? true : false;
+    // Crear registro
     const nuevo = await MovimientoRecurrente.create({
       cuenta_id, tipo, monto, descripcion, categoria_id, icon, color, frecuencia, inicio, fin, indefinido, usuario_id
     });
     res.status(201).json(nuevo);
   } catch (err) {
+    console.error('[movimientosRecurrentes.crear] Error:', err);
     res.status(500).json({ error: 'No se pudo crear el movimiento recurrente.' });
   }
 };
