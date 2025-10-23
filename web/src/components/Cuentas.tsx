@@ -298,10 +298,10 @@ export default function Cuentas() {
   <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
         <thead>
           <tr style={{ background: 'var(--color-table-header-bg)' }}>
-            <th style={{ textAlign: 'left', padding: 8 }}>Cuenta</th>
-            <th style={{ textAlign: 'left', padding: 8 }}>Tipo</th>
-            <th style={{ textAlign: 'right', padding: 8 }}>Monto Actual</th>
-            <th style={{ textAlign: 'center', padding: 8 }}>Funciones</th>
+           <th style={{ textAlign: 'left', padding: 8, width: '45%' }}>Cuenta</th>
+            <th style={{ textAlign: 'left', padding: 8, width: '20%' }}>Tipo</th>
+            <th style={{ textAlign: 'right', padding: 8, width: '25%' }}>Monto Actual</th>
+            <th style={{ textAlign: 'center', padding: 8, width: '15%' }}>Funciones</th>
           </tr>
         </thead>
         <tbody>
@@ -313,6 +313,7 @@ export default function Cuentas() {
               <td style={{ textAlign: 'center', padding: 8 }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                   <button onClick={() => openEdit(cuenta)}
+                    className="edit-btn"
                     style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', color: 'var(--color-primary)' }}
                     aria-label="Editar" title="Editar"
                   >

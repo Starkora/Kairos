@@ -108,8 +108,8 @@ export default function DeudasMetas() {
         fecha,
         plataforma: 'web'
       };
-      if (tipo === 'deuda') body.deuda_id = id;
-      else body.meta_id = id;
+  if (tipo === 'deuda') (body as any).deuda_id = id;
+  else (body as any).meta_id = id;
 
       console.log('Payload handlePago:', body);
 
@@ -184,10 +184,10 @@ export default function DeudasMetas() {
         focusConfirm: false,
         preConfirm: () => {
           return {
-            descripcion: document.getElementById('swal-descripcion').value,
-            monto: document.getElementById('swal-monto').value,
-            fecha_inicio: document.getElementById('swal-fecha-inicio').value,
-            fecha_vencimiento: document.getElementById('swal-fecha-vencimiento').value,
+            descripcion: (document.getElementById('swal-descripcion') as HTMLInputElement).value,
+            monto: (document.getElementById('swal-monto') as HTMLInputElement).value,
+            fecha_inicio: (document.getElementById('swal-fecha-inicio') as HTMLInputElement).value,
+            fecha_vencimiento: (document.getElementById('swal-fecha-vencimiento') as HTMLInputElement).value,
           };
         }
       });
@@ -347,7 +347,7 @@ export default function DeudasMetas() {
                   <input type="number" min={1} max={(d.monto ?? d.monto_total ?? 0) - (d.pagado ?? d.monto_pagado ?? 0)} placeholder="Pago" style={{ width: 80, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-deuda-${d.id}`} disabled={(parseFloat(d.pagado ?? d.monto_pagado ?? 0) >= parseFloat(d.monto ?? d.monto_total ?? 0))} />
                   <button
                     onClick={() => {
-                      const val = document.getElementById(`pago-deuda-${d.id}`).value;
+                      const val = (document.getElementById(`pago-deuda-${d.id}`) as HTMLInputElement).value;
                       const montoPago = Number(val);
                       const pagado = parseFloat(d.pagado ?? d.monto_pagado ?? 0);
                       const total = parseFloat(d.monto ?? d.monto_total ?? 0);
@@ -412,7 +412,7 @@ export default function DeudasMetas() {
                   <input type="number" min={1} max={(m.monto_objetivo || 0) - (m.monto_ahorrado || 0)} placeholder="Aportar" style={{ width: 80, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-meta-${m.id}`} disabled={(parseFloat(m.pagado ?? m.monto_ahorrado ?? 0) >= parseFloat(m.monto_objetivo ?? 0))} />
                   <button
                     onClick={() => {
-                      const val = document.getElementById(`pago-meta-${m.id}`).value;
+                      const val = (document.getElementById(`pago-meta-${m.id}`) as HTMLInputElement).value;
                       const montoAporte = Number(val);
                       const ahorrado = parseFloat(m.pagado ?? m.monto_ahorrado ?? 0);
                       const objetivo = parseFloat(m.monto_objetivo ?? 0);

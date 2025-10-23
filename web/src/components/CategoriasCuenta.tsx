@@ -65,7 +65,7 @@ export default function CategoriasCuenta() {
       confirmButtonText: 'Guardar',
       cancelButtonText: 'Cancelar',
       preConfirm: () => {
-        const nombre = document.getElementById('nombre').value;
+  const nombre = (document.getElementById('nombre') as HTMLInputElement).value;
         return { nombre };
       }
     }).then(result => {

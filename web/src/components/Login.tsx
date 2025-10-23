@@ -1,4 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+// Declaración global para grecaptcha
+declare global {
+  interface Window {
+    grecaptcha?: any;
+  }
+}
 import Swal from 'sweetalert2';
 import GoogleAuthButton from './GoogleAuthButton';
 import API_BASE from '../utils/apiBase';

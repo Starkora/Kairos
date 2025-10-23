@@ -101,12 +101,13 @@ export default function Dashboard() {
     const cat = m.categoria || 'Sin categoría';
     egresosPorCategoria[cat] = (egresosPorCategoria[cat] || 0) + Number(m.monto);
   });
-  const topEgresos = Object.entries(egresosPorCategoria)
-    .map(([categoria, monto]) => ({ categoria, monto }))
-    .sort((a, b) => b.monto - a.monto)
+  type TopEgreso = { categoria: string; monto: number; porcentaje?: number };
+  const topEgresos: TopEgreso[] = Object.entries(egresosPorCategoria)
+    .map(([categoria, monto]) => ({ categoria, monto: Number(monto) }))
+    .sort((a, b) => Number(b.monto) - Number(a.monto))
     .slice(0, 3);
-  const totalEgresosTop = topEgresos.reduce((acc, t) => acc + t.monto, 0);
-  topEgresos.forEach(t => t.porcentaje = totalEgresosTop ? Math.round((t.monto / totalEgresosTop) * 100) : 0);
+  const totalEgresosTop = topEgresos.reduce((acc, t) => acc + Number(t.monto), 0);
+  topEgresos.forEach(t => t.porcentaje = totalEgresosTop ? Math.round((Number(t.monto) / totalEgresosTop) * 100) : 0);
 
   // Datos para gráficos (totales por mes, siempre 12 meses)
   const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];

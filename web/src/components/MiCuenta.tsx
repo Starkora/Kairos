@@ -196,7 +196,7 @@ export default function MiCuenta() {
             confirmButtonColor: '#6C4AB6'
           });
           setMostrarPopup(false);
-          setEditableInputs({}); // Bloquear todos los campos
+          setEditableInputs({ email: false, telefono: false }); // Bloquear todos los campos
           // Actualizar originales con los nuevos valores confirmados
           setOriginalUserInfo((prev) => ({ ...prev, ...userInfo }));
           window.location.reload(); // Recargar la página
@@ -310,7 +310,7 @@ export default function MiCuenta() {
             confirmButtonColor: '#6C4AB6'
           });
           setMostrarPopup(false);
-          setEditableInputs({});
+          setEditableInputs({ email: false, telefono: false });
           setOriginalUserInfo((prev) => ({ ...prev, ...userInfo }));
           // Opcional: recargar para reflejar cambios en toda la app
           window.location.reload();

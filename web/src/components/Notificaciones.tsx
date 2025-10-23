@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 
 // Agregar estilos al componente de Notificaciones
 export default function Notificaciones() {
-  const [notificaciones, setNotificaciones] = React.useState({ frecuencia: 'diaria', medio: 'correo', horaInicio: '', intervaloHoras: '', dia: '' });
+  const [notificaciones, setNotificaciones] = React.useState<{ id?: string | number; frecuencia: string; medio: string; horaInicio: string; intervaloHoras: string; dia: string }>({ id: undefined, frecuencia: 'diaria', medio: 'correo', horaInicio: '', intervaloHoras: '', dia: '' });
   const [notificacionesList, setNotificacionesList] = React.useState([]);
   const [isEditing, setIsEditing] = React.useState(false); // Popup editar
   const [isAdding, setIsAdding] = React.useState(false);   // Popup agregar
@@ -255,7 +255,7 @@ export default function Notificaciones() {
             ))
           ) : (
             <tr>
-              <td colSpan="6" style={{ textAlign: 'center', padding: '10px' }}>No hay notificaciones configuradas.</td>
+              <td colSpan={6} style={{ textAlign: 'center', padding: '10px' }}>No hay notificaciones configuradas.</td>
             </tr>
           )}
         </tbody>

@@ -17,8 +17,9 @@ import LogoutButton from './components/LogoutButton';
 import { isLoggedIn, getToken, getTokenExpiration, scheduleAutoLogout, forceLogout } from './utils/auth';
 import MiCuenta from './components/MiCuenta';
 import ApiEndpointBadge from './components/ApiEndpointBadge';
-import AdminUsuariosPendientes from './components/AdminUsuariosPendientes.jsx';
+import AdminUsuariosPendientes from './components/AdminUsuariosPendientes';
 import API_BASE from './utils/apiBase';
+import MovimientosRecurrentes from './pages/MovimientosRecurrentes';
 
 function getUserInfoFromToken() {
   const token = getToken();
@@ -168,7 +169,7 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                   {/* Botón hamburguesa en móvil */}
                   <button className="hamburger" aria-label="Abrir menú" title="Abrir menú" onClick={() => setSidebarOpen(v => !v)}>
                     {/* Usar react-icons para el icono de lista/bullets */}
-                    <MdFormatListBulleted className="menu-icon" aria-hidden="true" />
+                    {MdFormatListBulleted({ className: 'menu-icon', 'aria-hidden': true })}
                   </button>
                   {(name || email) && (
                     <div className="user-header-block">
@@ -193,6 +194,7 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                     <Route path="/cuentas" element={<Cuentas />} />
                     <Route path="/calendario" element={<Calendario />} />
                     <Route path="/notificaciones" element={<Notificaciones />} />
+                    <Route path="/movimientos-recurrentes" element={<MovimientosRecurrentes />} />
                     <Route path="/acercade" element={<AcercaDe />} />
                     <Route path="/deudas-metas" element={<DeudasMetas />} />
                     <Route path="/categorias" element={<Categorias />} />
