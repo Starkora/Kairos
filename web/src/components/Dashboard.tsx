@@ -3,9 +3,13 @@ import API_BASE from '../utils/apiBase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, ResponsiveContainer, Cell } from 'recharts';
 import { getToken } from '../utils/auth';
 
+
 export default function Dashboard() {
   const [movimientos, setMovimientos] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  // Filtro de año
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = React.useState(currentYear);
   // Permitir selección múltiple de segmentos
   const [segmentos, setSegmentos] = React.useState({ Ahorro: true, Gasto: false, Ingreso: false });
 
@@ -26,18 +30,20 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Filtrar movimientos: mostrar solo los que ya están aplicados o cuya fecha es <= hoy
+  // Filtrar movimientos: mostrar solo los del año seleccionado y ya aplicados o cuya fecha es <= hoy
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const visibleMovimientos = movimientos.filter(m => {
     try {
+      // Filtrar por año
+      if (!m.fecha) return false;
+      const movDate = new Date(m.fecha);
+      if (movDate.getFullYear() !== year) return false;
       // Si el backend ya incluye el flag `applied`, úsalo
       if (typeof m.applied !== 'undefined' && m.applied !== null) {
         return Number(m.applied) === 1;
       }
       // Fallback: comparar solo la parte de fecha (sin hora)
-      if (!m.fecha) return false;
-      const movDate = new Date(m.fecha);
       movDate.setHours(0, 0, 0, 0);
       return movDate <= today;
     } catch (e) {
@@ -128,13 +134,36 @@ export default function Dashboard() {
     return { mes: nombreMes, Ingreso, Gasto, Ahorro };
   });
 
+
+  // Años disponibles en los movimientos (hook debe ir antes de cualquier return condicional)
+  const yearsAvailable = React.useMemo(() => {
+    const set = new Set<number>();
+    movimientos.forEach(m => {
+      if (m.fecha) {
+        const d = new Date(m.fecha);
+        set.add(d.getFullYear());
+      }
+    });
+    return Array.from(set).sort((a, b) => b - a);
+  }, [movimientos]);
+
   if (loading) {
     return <div style={{ padding: 40, textAlign: 'center' }}>Cargando datos del dashboard...</div>;
   }
 
   return (
     <div style={{ overflowX: 'hidden' }}>
-      <h1>Dashboard</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 8 }}>
+        <h1 style={{ margin: 0 }}>Dashboard</h1>
+        <div>
+          <label htmlFor="dashboard-year" style={{ fontWeight: 600, marginRight: 6 }}>Año:</label>
+          <select id="dashboard-year" value={year} onChange={e => setYear(Number(e.target.value))} style={{ padding: 4, borderRadius: 6, fontWeight: 600 }}>
+            {yearsAvailable.map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+      </div>
       {/* Fila de indicadores/resumen */}
       <div style={{ display: 'flex', gap: 24, margin: '24px 0 32px 0', justifyContent: 'space-between', flexWrap: 'wrap' }}>
         {indicadores.map((item, idx) => (
