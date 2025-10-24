@@ -118,7 +118,15 @@ const MovimientosRecurrentes = () => {
         });
         if (!result.isConfirmed) return;
         try {
-            await apiFetch(`/api/movimientos-recurrentes/${id}`, { method: 'DELETE' });
+            const getToken = () => localStorage.getItem('token') || '';
+            const API_BASE = process.env.REACT_APP_API_BASE || '';
+            const res = await fetch(`${API_BASE}/api/movimientos-recurrentes/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + getToken()
+                }
+            });
+            if (!res.ok) throw new Error('No autorizado');
             cargarMovimientos();
             Swal.fire({ icon: 'success', title: 'Eliminado', text: 'El movimiento recurrente fue eliminado.', timer: 1200, showConfirmButton: false });
         } catch (err) {
