@@ -315,26 +315,30 @@ export default function Dashboard() {
                   </div>
                   <div style={{ fontSize: 15, marginBottom: 4 }}>Cantidad: <b>{lista.length}</b></div>
                   <div style={{ fontSize: 15, marginBottom: 8 }}>Monto total: <b>S/ {total.toLocaleString()}</b></div>
-                  <div style={{ marginBottom: 8, color: '#666' }}>Próximos (5 primeros)</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {lista.slice(0, 5).map((p, idx) => (
-                      <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                          <div style={{ fontSize: 20 }}>{p.icon || '📅'}</div>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>{p.categoria || 'Sin categoría'}</div>
-                            <div style={{ fontSize: 12, color: '#666' }}>{p.cuenta || p.cuenta_nombre || ''}</div>
-                            {p.descripcion && (
-                              <div style={{ fontSize: 12, color: '#a3a3a3', marginTop: 2, fontStyle: 'italic' }}>{p.descripcion}</div>
-                            )}
+                  <div style={{ marginBottom: 8, color: '#666' }}>Todos los movimientos programados</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 320, overflowY: 'auto', paddingRight: 2 }}>
+                    {lista.length === 0 ? (
+                      <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center', padding: 12 }}>No hay movimientos programados</div>
+                    ) : (
+                      lista.map((p, idx) => (
+                        <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
+                          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                            <div style={{ fontSize: 20 }}>{p.icon || '📅'}</div>
+                            <div>
+                              <div style={{ fontWeight: 600 }}>{p.categoria || 'Sin categoría'}</div>
+                              <div style={{ fontSize: 12, color: '#666' }}>{p.cuenta || p.cuenta_nombre || ''}</div>
+                              {p.descripcion && (
+                                <div style={{ fontSize: 12, color: '#a3a3a3', marginTop: 2, fontStyle: 'italic' }}>{p.descripcion}</div>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontWeight: 700 }}>S/ {Number(p.monto || 0).toLocaleString()}</div>
+                            <div style={{ fontSize: 12, color: '#666' }}>{p.fecha ? new Date(p.fecha).toLocaleDateString() : ''}</div>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontWeight: 700 }}>S/ {Number(p.monto || 0).toLocaleString()}</div>
-                          <div style={{ fontSize: 12, color: '#666' }}>{p.fecha ? new Date(p.fecha).toLocaleDateString() : ''}</div>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               ))}
