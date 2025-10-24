@@ -226,7 +226,7 @@ export default function Dashboard() {
                 { name: 'Ahorro', value: resumen.ahorro, fill: '#6c4fa1' },
               ]}>
                 <XAxis type="category" dataKey="name" tick={{ fontWeight: 'bold', fontSize: 14 }} />
-                <YAxis type="number" domain={[0, 90000]} tick={{ fontSize: 12 }} />
+                <YAxis type="number" domain={[0, 10000]} ticks={[0, 2000, 4000, 10000]} tick={{ fontSize: 12 }} />
                 <Tooltip formatter={(value) => `S/ ${value.toLocaleString()}`} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                   <Cell key="egreso" fill="#fbc02d" />
@@ -320,7 +320,11 @@ export default function Dashboard() {
                     {lista.length === 0 ? (
                       <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center', padding: 12 }}>No hay movimientos programados</div>
                     ) : (
-                      lista.map((p, idx) => (
+                      [...lista].sort((a, b) => {
+                        const fa = a.fecha ? new Date(a.fecha).getTime() : 0;
+                        const fb = b.fecha ? new Date(b.fecha).getTime() : 0;
+                        return fa - fb;
+                      }).map((p, idx) => (
                         <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
                           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                             <div style={{ fontSize: 20 }}>{p.icon || '📅'}</div>
