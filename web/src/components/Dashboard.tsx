@@ -281,18 +281,16 @@ export default function Dashboard() {
                 return Number(m.applied) === 0;
               }
               if (!m.fecha) return false;
+              // Obtener fecha actual en zona horaria Perú (UTC-5)
+              const now = new Date();
+              const peruOffset = -5 * 60; // minutos
+              const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+              const peruDate = new Date(utc + peruOffset * 60000);
+              peruDate.setHours(0, 0, 0, 0);
+              // Fecha del movimiento (solo año, mes, día)
               const movDate = new Date(m.fecha);
-              // Comparar solo año, mes y día (ignorando hora y zona horaria)
-              const movY = movDate.getFullYear();
-              const movM = movDate.getMonth();
-              const movD = movDate.getDate();
-              const hoyY = today.getFullYear();
-              const hoyM = today.getMonth();
-              const hoyD = today.getDate();
-              if (movY > hoyY) return true;
-              if (movY === hoyY && movM > hoyM) return true;
-              if (movY === hoyY && movM === hoyM && movD > hoyD) return true;
-              return false;
+              movDate.setHours(0, 0, 0, 0);
+              return movDate.getTime() > peruDate.getTime();
             } catch (e) {
               return false;
             }
