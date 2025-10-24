@@ -282,8 +282,17 @@ export default function Dashboard() {
               }
               if (!m.fecha) return false;
               const movDate = new Date(m.fecha);
-              movDate.setHours(0, 0, 0, 0);
-              return movDate > today;
+              // Comparar solo año, mes y día (ignorando hora y zona horaria)
+              const movY = movDate.getFullYear();
+              const movM = movDate.getMonth();
+              const movD = movDate.getDate();
+              const hoyY = today.getFullYear();
+              const hoyM = today.getMonth();
+              const hoyD = today.getDate();
+              if (movY > hoyY) return true;
+              if (movY === hoyY && movM > hoyM) return true;
+              if (movY === hoyY && movM === hoyM && movD > hoyD) return true;
+              return false;
             } catch (e) {
               return false;
             }
@@ -315,6 +324,9 @@ export default function Dashboard() {
                           <div>
                             <div style={{ fontWeight: 600 }}>{p.categoria || 'Sin categoría'}</div>
                             <div style={{ fontSize: 12, color: '#666' }}>{p.cuenta || p.cuenta_nombre || ''}</div>
+                            {p.descripcion && (
+                              <div style={{ fontSize: 12, color: '#a3a3a3', marginTop: 2, fontStyle: 'italic' }}>{p.descripcion}</div>
+                            )}
                           </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
