@@ -71,7 +71,6 @@ export default function Dashboard() {
       return false;
     }
   });
-
   // Toggle para incluir/excluir transferencias
   const [incluirTransferencias, setIncluirTransferencias] = React.useState(false);
   const filteredMovs = React.useMemo(() => {
@@ -178,7 +177,7 @@ export default function Dashboard() {
       valor: filteredMovs.filter(m => m.tipo === 'ingreso').length,
     },
     {
-      icon: '',
+      icon: '�',
       color: '#ff7043',
       titulo: 'Ingreso',
       valor: `S/ ${totalIngreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
