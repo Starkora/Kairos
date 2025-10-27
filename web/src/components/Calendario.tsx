@@ -130,34 +130,96 @@ export default function Calendario() {
       const cuentasOptions = (cuentasList || []).map(c => `<option value="${c.id}" ${c.id === mov.cuenta_id ? 'selected' : ''}>${c.nombre}</option>`).join('');
       const categoriasOptions = (categoriasList || []).map(c => `<option value="${c.id}" ${c.id === mov.categoria_id ? 'selected' : ''}>${c.nombre}</option>`).join('');
 
+      const defaultIcon = mov.icon || (((mov.tipo || '').toLowerCase() === 'egreso') ? '💸' : ((mov.tipo || '').toLowerCase() === 'ahorro' ? '💰' : '🏦'));
+      const defaultColor = mov.color || '';
       const { value: formValues } = await Swal.fire({
         title: 'Editar movimiento',
         html:
           `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:720px">` +
+          // Preview en vivo
+          `<div id=\"swal-preview\" style=\"grid-column:1/3; display:flex; align-items:center; gap:14px; padding:14px; border-radius:12px; background:${defaultColor || ((mov.tipo||'').toLowerCase()==='ingreso' || (mov.tipo||'').toLowerCase()==='ahorro' ? 'linear-gradient(90deg,#1de9b6 0%, #43a047 100%)' : 'linear-gradient(90deg,#ff7043 0%, #c62828 100%)')}; color:#fff; box-shadow:0 2px 8px #0002; margin-bottom:6px;\">`+
+          `<span id=\"swal-prev-icon\" style=\"font-size:28px\">${defaultIcon}</span>`+
+          `<div style=\"display:flex; flex-direction:column; gap:4px\">`+
+          `<div id=\"swal-prev-desc\" style=\"font-weight:700\">${mov.descripcion || ''}</div>`+
+          `<div id=\"swal-prev-amount\" style=\"font-weight:800\">${((mov.tipo||'').toLowerCase()==='ingreso' || (mov.tipo||'').toLowerCase()==='ahorro'?'+':'-')}S/ ${Number(mov.monto||0).toLocaleString(undefined,{minimumFractionDigits:2})}</div>`+
+          `<div style=\"display:flex; align-items:center; gap:8px\">`+
+          `<span id=\"swal-prev-badge\" style=\"font-size:12px; padding:4px 8px; border-radius:12px; font-weight:800; text-transform:capitalize\">${mov.tipo}</span>`+
+          `<span id=\"swal-prev-cuenta\" style=\"font-size:12px; opacity:0.9\">${mov.cuenta || ''}</span>`+
+          `</div>`+
+          `</div>`+
+          `</div>`+
           `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Cuenta</label><select id="swal-cuenta" class="swal2-select">${cuentasOptions}</select></div>` +
           `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Tipo</label><input id="swal-tipo" class="swal2-input" value="${mov.tipo}" disabled></div>` +
           `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Monto</label><input id="swal-monto" class="swal2-input" placeholder="Monto" value="${mov.monto}" type="number" step="0.01"></div>` +
           `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Fecha</label><input id="swal-fecha" class="swal2-input" placeholder="Fecha" value="${(mov.fecha || '').slice(0, 10)}" type="date"></div>` +
+          `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Icono</label><input id="swal-icon" class="swal2-input" placeholder="Ej: 💵, 💸, 🏦" value="${defaultIcon}"></div>` +
+          `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Color</label><input id="swal-color" class="swal2-input" type="color" value="${defaultColor || '#6c4fa1'}"></div>` +
           `<div style="display:flex;flex-direction:column;grid-column:1/3"><label style="font-weight:700;margin-bottom:6px">Descripción</label><input id="swal-descripcion" class="swal2-input" placeholder="Descripción" value="${mov.descripcion || ''}"></div>` +
           `<div style="display:flex;flex-direction:column;grid-column:1/3"><label style="font-weight:700;margin-bottom:6px">Categoría (opcional)</label><select id="swal-categoria" class="swal2-select"><option value="">- Ninguna -</option>${categoriasOptions}</select></div>` +
           `</div>`,
         width: 760,
         focusConfirm: false,
         showCancelButton: true,
+        didOpen: () => {
+          const $ = (sel) => document.querySelector(sel);
+          const prev = $('#swal-preview') as HTMLElement;
+          const $icon = $('#swal-icon') as HTMLInputElement;
+          const $color = $('#swal-color') as HTMLInputElement;
+          const $monto = $('#swal-monto') as HTMLInputElement;
+          const $desc = $('#swal-descripcion') as HTMLInputElement;
+          const $cuenta = $('#swal-cuenta') as HTMLSelectElement;
+          const tipoNorm = (mov.tipo || '').toLowerCase();
+          const fallbackBg = (tipoNorm === 'ingreso' || tipoNorm === 'ahorro') ? 'linear-gradient(90deg,#1de9b6 0%, #43a047 100%)' : 'linear-gradient(90deg,#ff7043 0%, #c62828 100%)';
+          const render = () => {
+            const ic = ($icon && $icon.value) || defaultIcon;
+            const col = ($color && $color.value) || '';
+            const monto = parseFloat(($monto && $monto.value) || String(mov.monto||0));
+            const desc = ($desc && $desc.value) || '';
+            const cuentaText = $cuenta && $cuenta.options && $cuenta.selectedIndex >= 0 ? $cuenta.options[$cuenta.selectedIndex].text : (mov.cuenta || '');
+            const sign = (tipoNorm === 'ingreso' || tipoNorm === 'ahorro') ? '+' : '-';
+            const iconEl = $('#swal-prev-icon') as HTMLElement;
+            const amtEl = $('#swal-prev-amount') as HTMLElement;
+            const descEl = $('#swal-prev-desc') as HTMLElement;
+            const cuentaEl = $('#swal-prev-cuenta') as HTMLElement;
+            const badgeEl = $('#swal-prev-badge') as HTMLElement;
+            if (iconEl) iconEl.textContent = ic;
+            if (amtEl) amtEl.textContent = `${sign}S/ ${Number(monto||0).toLocaleString(undefined,{minimumFractionDigits:2})}`;
+            if (descEl) descEl.textContent = desc;
+            if (cuentaEl) cuentaEl.textContent = cuentaText;
+            if (badgeEl) {
+              badgeEl.textContent = mov.tipo;
+              const bg = tipoNorm === 'ingreso' ? '#1de9b6' : (tipoNorm === 'ahorro' ? '#4fc3f7' : '#ff8a80');
+              const fg = tipoNorm === 'ingreso' || tipoNorm === 'ahorro' ? '#222' : '#222';
+              (badgeEl as HTMLElement).style.background = bg;
+              (badgeEl as HTMLElement).style.color = fg;
+            }
+            if (prev) prev.style.background = col ? col : fallbackBg;
+          };
+          ['input','change'].forEach(ev => {
+            $icon && $icon.addEventListener(ev, render);
+            $color && $color.addEventListener(ev, render);
+            $monto && $monto.addEventListener(ev, render);
+            $desc && $desc.addEventListener(ev, render);
+            $cuenta && $cuenta.addEventListener(ev, render);
+          });
+          render();
+        },
         preConfirm: () => {
           const cuenta_id = (document.getElementById('swal-cuenta') as HTMLSelectElement).value;
           const monto = parseFloat((document.getElementById('swal-monto') as HTMLInputElement).value || '0');
           const descripcion = (document.getElementById('swal-descripcion') as HTMLInputElement).value || '';
           const fecha = (document.getElementById('swal-fecha') as HTMLInputElement).value || '';
+          const icon = (document.getElementById('swal-icon') as HTMLInputElement).value || '';
+          const color = (document.getElementById('swal-color') as HTMLInputElement).value || '';
           const categoria_id = (document.getElementById('swal-categoria') as HTMLSelectElement).value || null;
           if (!cuenta_id) { Swal.showValidationMessage('Cuenta requerida'); return false; }
           if (!monto || isNaN(monto) || monto <= 0) { Swal.showValidationMessage('Monto inválido'); return false; }
           if (!fecha) { Swal.showValidationMessage('Fecha requerida'); return false; }
-          return { cuenta_id: Number(cuenta_id), monto, descripcion, fecha, categoria_id: categoria_id ? Number(categoria_id) : null };
+          return { cuenta_id: Number(cuenta_id), monto, descripcion, fecha, categoria_id: categoria_id ? Number(categoria_id) : null, icon, color };
         }
       });
       if (!formValues) return;
-      const body = { cuenta_id: formValues.cuenta_id, tipo: mov.tipo, monto: formValues.monto, descripcion: formValues.descripcion, fecha: formValues.fecha, categoria_id: formValues.categoria_id };
+      const body = { cuenta_id: formValues.cuenta_id, tipo: mov.tipo, monto: formValues.monto, descripcion: formValues.descripcion, fecha: formValues.fecha, categoria_id: formValues.categoria_id, icon: formValues.icon, color: formValues.color };
       const res = await apiFetch(`${API_BASE}/api/transacciones/${mov.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (res.ok) {
         Swal.fire({ icon: 'success', title: 'Movimiento actualizado', timer: 1200, showConfirmButton: false });
