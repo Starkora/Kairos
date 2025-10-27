@@ -5,6 +5,33 @@ import { getToken } from '../utils/auth';
 
 
 export default function Dashboard() {
+  // Parser robusto para montos: acepta "1.234,56", "1,234.56", "1234,56", "1234.56", números y null/undefined
+  const parseMonto = (v) => {
+    if (typeof v === 'number') return v;
+    if (v === null || v === undefined) return 0;
+    let s = String(v).trim();
+    if (!s) return 0;
+    // Detectar símbolo decimal por la última aparición de ',' o '.'
+    const lastDot = s.lastIndexOf('.');
+    const lastComma = s.lastIndexOf(',');
+    let decimalSym = '';
+    if (lastDot === -1 && lastComma === -1) {
+      // Sin separadores, parsear directo
+      const n = Number(s.replace(/[^0-9\-]/g, ''));
+      return isNaN(n) ? 0 : n;
+    }
+    if (lastDot > lastComma) {
+      decimalSym = '.'; // formato tipo 1,234.56 o 1234.56
+    } else {
+      decimalSym = ','; // formato tipo 1.234,56 o 1234,56
+    }
+    const thousandsSym = decimalSym === '.' ? ',' : '.';
+    // Eliminar miles y normalizar decimal a punto
+    s = s.replace(new RegExp('\\' + thousandsSym, 'g'), '');
+    if (decimalSym === ',') s = s.replace(/,/g, '.');
+    const n = Number(s);
+    return isNaN(n) ? 0 : n;
+  };
   const [movimientos, setMovimientos] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [cuentas, setCuentas] = React.useState([]);
@@ -88,10 +115,10 @@ export default function Dashboard() {
     try {
       if (!Array.isArray(cuentas) || cuentas.length === 0) return 0;
       if (cuentaSeleccionada === 'all') {
-        return cuentas.reduce((acc, c) => acc + Number(c.saldo_actual ?? c.saldo ?? 0), 0);
+        return cuentas.reduce((acc, c) => acc + parseMonto(c.saldo_actual ?? c.saldo ?? 0), 0);
       }
       const cta = cuentas.find(c => Number(c.id) === Number(cuentaSeleccionada));
-      return Number(cta?.saldo_actual ?? cta?.saldo ?? 0);
+      return parseMonto(cta?.saldo_actual ?? cta?.saldo ?? 0);
     } catch {
       return 0;
     }
@@ -105,7 +132,7 @@ export default function Dashboard() {
   const saldoInicial = React.useMemo(() => {
     if (cuentaSeleccionada === 'all') return null;
     const cta = cuentas.find(c => Number(c.id) === Number(cuentaSeleccionada));
-    const si = Number(cta?.saldo_inicial ?? 0);
+    const si = parseMonto(cta?.saldo_inicial ?? 0);
     if (isNaN(si)) return 0;
     return si;
   }, [cuentas, cuentaSeleccionada]);
