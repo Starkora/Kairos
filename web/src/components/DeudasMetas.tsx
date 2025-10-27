@@ -189,7 +189,10 @@ export default function DeudasMetas() {
         // Registrar también un movimiento para restar el saldo de la cuenta
         try {
           const apiFetch = (await import('../utils/apiFetch')).default;
-          const descripcion = tipo === 'deuda' ? `Pago deuda #${id}` : `Aporte meta #${id}`;
+          const itemDesc = (item && (item as any).descripcion) ? String((item as any).descripcion) : '';
+          const descripcion = tipo === 'deuda'
+            ? `Pago deuda: ${itemDesc || '#' + id}`
+            : `Aporte a meta: ${itemDesc || '#' + id}`;
           await apiFetch(`${API_BASE}/api/transacciones`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
