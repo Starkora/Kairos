@@ -17,6 +17,8 @@ const upload = multer({
 
 router.get('/', auth, transaccionController.getAll);
 router.post('/', auth, transaccionController.create);
+// Transferencia entre cuentas (atómica)
+router.post('/transferir', auth, transaccionController.transferir);
 router.delete('/:id', auth, transaccionController.deleteById);
 router.put('/:id', auth, transaccionController.update);
 

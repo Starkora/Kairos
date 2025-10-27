@@ -68,14 +68,116 @@ exports.create = async (req, res) => {
   }
 };
 
+// Transferencia entre cuentas (atómica)
+exports.transferir = async (req, res) => {
+  const usuario_id = req.user && req.user.id;
+  if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  let { origen_id, destino_id, monto, fecha, descripcion } = req.body || {};
+  monto = Number(monto);
+  if (!origen_id || !destino_id || !monto || isNaN(monto) || monto <= 0 || !fecha) {
+    return res.status(400).json({ error: 'Campos requeridos: origen_id, destino_id, monto>0, fecha' });
+  }
+  if (Number(origen_id) === Number(destino_id)) {
+    return res.status(400).json({ error: 'La cuenta origen y destino deben ser diferentes' });
+  }
+  const db = require('../db');
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    // Obtener plataforma del usuario
+    const [usuarios] = await conn.query('SELECT plataforma FROM usuarios WHERE id = ?', [usuario_id]);
+    if (!usuarios || usuarios.length === 0) { await conn.rollback(); return res.status(404).json({ error: 'Usuario no encontrado' }); }
+    const plataforma = usuarios[0].plataforma;
+    // Validar cuentas y obtener nombres
+    const [[cuentaO]] = await conn.query('SELECT id, nombre, saldo_actual FROM cuentas WHERE id = ? AND usuario_id = ?', [origen_id, usuario_id]);
+    const [[cuentaD]] = await conn.query('SELECT id, nombre, saldo_actual FROM cuentas WHERE id = ? AND usuario_id = ?', [destino_id, usuario_id]);
+    if (!cuentaO || !cuentaD) { await conn.rollback(); return res.status(403).json({ error: 'Las cuentas deben pertenecer al usuario' }); }
+
+    // Decidir si aplica inmediatamente
+    const todayStr = new Date().toISOString().slice(0,10);
+    const fechaStr = String(fecha).slice(0,10);
+    const applied = fechaStr <= todayStr ? 1 : 0;
+    // Validar saldo suficiente si aplica de inmediato
+    if (applied && Number(cuentaO.saldo_actual) < monto) {
+      await conn.rollback();
+      return res.status(409).json({ code: 'INSUFFICIENT_FUNDS', error: 'Saldo insuficiente en la cuenta origen' });
+    }
+
+    const icon = '🔁';
+    const color = '#1976d2';
+    const code = 'T' + Date.now();
+
+    // Insert egreso en origen
+    const descEgreso = `Transferencia a ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''} [TRANSFER#${code}]`;
+    const [resEgreso] = await conn.query(
+      'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [usuario_id, origen_id, 'egreso', monto, descEgreso, fechaStr, null, plataforma || 'web', icon, color, applied]
+    );
+    if (applied) {
+      await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, origen_id]);
+    }
+
+    // Insert ingreso en destino
+    const descIngreso = `Transferencia desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''} [TRANSFER#${code}]`;
+    const [resIngreso] = await conn.query(
+      'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [usuario_id, destino_id, 'ingreso', monto, descIngreso, fechaStr, null, plataforma || 'web', icon, color, applied]
+    );
+    if (applied) {
+      await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, destino_id]);
+    }
+
+    await conn.commit();
+    return res.status(201).json({ success: true, egresoId: resEgreso.insertId, ingresoId: resIngreso.insertId, code });
+  } catch (err) {
+    try { await conn.rollback(); } catch {}
+    return res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
+  }
+};
+
 // Eliminar movimiento
 exports.deleteById = async (req, res) => {
   const id = req.params.id;
   const usuario_id = req.user && req.user.id;
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  const db = require('../db');
   try {
+    // Obtener info del movimiento para poder revertir pagos/aportes de deudas/metas si corresponde
+    const [rows] = await db.query('SELECT id, usuario_id, descripcion, monto FROM movimientos WHERE id = ?', [id]);
+    if (!rows || rows.length === 0) return res.status(404).json({ error: 'Movimiento no encontrado' });
+    const mov = rows[0];
+    if (mov.usuario_id !== usuario_id) return res.status(403).json({ error: 'No autorizado' });
+
     const Transaccion = require('../models/transaccion');
     await Transaccion.deleteById(id);
+
+    // Detectar marcadores ocultos en la descripción para revertir progreso de deuda/meta
+    try {
+      const desc = String(mov.descripcion || '');
+      const monto = Number(mov.monto || 0);
+      const mDeuda = desc.match(/\[DEUDA#(\d+)\]/i);
+      const mMeta = desc.match(/\[META#(\d+)\]/i);
+      if (mDeuda) {
+        const deudaId = Number(mDeuda[1]);
+        // Restar el pago y, si corresponde, marcar como no pagada
+        await db.query(
+          'UPDATE deudas SET monto_pagado = GREATEST(monto_pagado - ?, 0), pagada = CASE WHEN GREATEST(monto_pagado - ?, 0) >= monto_total THEN 1 ELSE 0 END WHERE id = ? AND usuario_id = ?',
+          [monto, monto, deudaId, usuario_id]
+        );
+      } else if (mMeta) {
+        const metaId = Number(mMeta[1]);
+        await db.query(
+          'UPDATE metas SET monto_ahorrado = GREATEST(monto_ahorrado - ?, 0), cumplida = CASE WHEN GREATEST(monto_ahorrado - ?, 0) >= monto_objetivo THEN 1 ELSE 0 END WHERE id = ? AND usuario_id = ?',
+          [monto, monto, metaId, usuario_id]
+        );
+      }
+    } catch (e) {
+      // No bloquear la eliminación si falla la reversión; solo loguear
+      console.warn('[transacciones.deleteById] No se pudo revertir deuda/meta:', e && e.message);
+    }
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

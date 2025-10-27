@@ -73,6 +73,49 @@ export default function Calendario() {
     return fechaMov === fechaSeleccionada;
   });
 
+  // Agrupar transferencias por token [TRANSFER#code] y generar un ítem único Origen -> Destino
+  const movimientosDelDiaAgrupados = React.useMemo(() => {
+    const regex = /\[TRANSFER#([^\]]+)\]/i;
+    const transfers = new Map();
+    const otros = [];
+    for (const m of movimientosDelDia) {
+      const desc = String(m.descripcion || '');
+      const match = desc.match(regex);
+      if (match) {
+        const code = match[1];
+        if (!transfers.has(code)) transfers.set(code, []);
+        transfers.get(code).push(m);
+      } else {
+        otros.push(m);
+      }
+    }
+    const agrupados = [];
+    transfers.forEach((arr, code) => {
+      if (arr.length < 2) {
+        // si no están ambas caras, mostrarlas tal cual
+        agrupados.push(...arr);
+        return;
+      }
+      const egreso = arr.find(a => (a.tipo || '').toLowerCase() === 'egreso');
+      const ingreso = arr.find(a => (a.tipo || '').toLowerCase() === 'ingreso');
+      const monto = (egreso || ingreso)?.monto || arr[0].monto;
+      const origenCuenta = egreso?.cuenta || arr[0]?.cuenta || 'Origen';
+      const destinoCuenta = ingreso?.cuenta || arr[1]?.cuenta || 'Destino';
+      agrupados.push({
+        id: `transfer-${code}`,
+        tipo: 'transferencia',
+        monto,
+        descripcion: `Transferencia: ${origenCuenta} → ${destinoCuenta}`,
+        icon: '🔁',
+        color: '#1976d2',
+        cuenta: `${origenCuenta} → ${destinoCuenta}`,
+        _transfer: { code, origenId: egreso?.id, destinoId: ingreso?.id }
+      });
+    });
+    return [...otros, ...agrupados];
+  }, [movimientosDelDia]);
+  const hayTransferenciasAgrupadas = React.useMemo(() => movimientosDelDiaAgrupados.some(m => (m.tipo || '').toLowerCase() === 'transferencia'), [movimientosDelDiaAgrupados]);
+
   const handleEditMovimiento = async (mov) => {
     try {
       // Cargar cuentas y categorias
@@ -129,10 +172,57 @@ export default function Calendario() {
   };
 
   // Manejar eliminación de movimiento
-  const handleDeleteMovimiento = async (id) => {
+  const handleDeleteMovimiento = async (mov) => {
+    // Caso especial: transferencia agrupada
+    if ((mov?.tipo || '').toLowerCase() === 'transferencia' && mov?._transfer) {
+      const { origenId, destinoId } = mov._transfer;
+      const confirmed = await Swal.fire({
+        title: '¿Eliminar transferencia?',
+        text: 'Se eliminarán ambos movimientos (egreso e ingreso) asociados a esta transferencia y se revertirán los saldos.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (!confirmed.isConfirmed) return;
+      try {
+        const apiFetch = (await import('../utils/apiFetch')).default;
+        // Borrar ambos lados; si alguno falla, reportar
+        const results = await Promise.allSettled([
+          origenId ? apiFetch(`${API_BASE}/api/transacciones/${origenId}`, { method: 'DELETE' }) : Promise.resolve({ ok: true }),
+          destinoId ? apiFetch(`${API_BASE}/api/transacciones/${destinoId}`, { method: 'DELETE' }) : Promise.resolve({ ok: true })
+        ]);
+        const anyRejected = results.some(r => r.status === 'rejected');
+        const anyNotOk = results.some(r => r.status === 'fulfilled' && r.value && r.value.ok === false);
+        if (!anyRejected && !anyNotOk) {
+          Swal.fire({ icon: 'success', title: 'Transferencia eliminada', timer: 1000, showConfirmButton: false });
+          await refreshMovimientos();
+        } else {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar completamente la transferencia.' });
+        }
+      } catch (e) {
+        // apiFetch maneja 401
+      }
+      return;
+    }
+    const desc = String(mov?.descripcion || '');
+    const isPagoDeuda = /pago\s*deuda/i.test(desc);
+    const isAporteMeta = /aporte\s*(a\s*)?meta/i.test(desc);
+    let title = '¿Eliminar movimiento?';
+    let text = 'Esta acción no se puede deshacer. Se revertirá el saldo correspondiente.';
+    if (isPagoDeuda) {
+      title = '¿Eliminar pago de deuda?';
+      // intentar extraer nombre después de ':' si existe
+      const detalle = desc.includes(':') ? desc.split(':').slice(1).join(':').trim() : desc;
+      text = `Estás eliminando el pago de la deuda ${detalle ? '"' + detalle + '"' : ''}. Se revertirá el saldo de tu cuenta y también se eliminará el pago en Deudas.`;
+    } else if (isAporteMeta) {
+      title = '¿Eliminar aporte de meta?';
+      const detalle = desc.includes(':') ? desc.split(':').slice(1).join(':').trim() : desc;
+      text = `Estás eliminando el aporte de la meta ${detalle ? '"' + detalle + '"' : ''}. Se revertirá el saldo de tu cuenta y también se eliminará el aporte en Metas.`;
+    }
     const confirmed = await Swal.fire({
-      title: '¿Eliminar movimiento?',
-      text: 'Esta acción no se puede deshacer. Se revertirá el saldo correspondiente.',
+      title,
+      text,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
@@ -141,7 +231,7 @@ export default function Calendario() {
     if (!confirmed.isConfirmed) return;
     try {
       const apiFetch = (await import('../utils/apiFetch')).default;
-      const res = await apiFetch(`${API_BASE}/api/transacciones/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`${API_BASE}/api/transacciones/${mov.id}`, { method: 'DELETE' });
       if (res.ok) {
         Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1000, showConfirmButton: false });
         await refreshMovimientos();
@@ -281,40 +371,60 @@ export default function Calendario() {
           <h2 style={{ fontSize: 22, marginBottom: 18, fontWeight: 700, color: 'var(--color-text)' }}>
             Movimientos del {fechaSeleccionada.split('-').reverse().join('/')}
           </h2>
-          {movimientosDelDia.length === 0 ? (
+          {hayTransferenciasAgrupadas && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              background: '#e3f2fd',
+              color: '#0d47a1',
+              border: '1px solid #90caf9',
+              borderRadius: 10,
+              padding: '8px 12px',
+              marginBottom: 12
+            }}>
+              <span style={{ fontSize: 18 }}>ℹ️</span>
+              <div style={{ fontSize: 14 }}>
+                Las transferencias se agrupan como un solo elemento y no se pueden editar aquí. Puedes eliminarlas y se borrarán ambos lados.
+              </div>
+            </div>
+          )}
+          {movimientosDelDiaAgrupados.length === 0 ? (
             <div style={{ color: 'var(--color-muted)', fontSize: 18 }}>No hay movimientos para este día.</div>
           ) : (
             <div style={{ maxHeight: 480, overflowY: 'auto', paddingRight: 4 }}>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                {movimientosDelDia.map(mov => (
+                {movimientosDelDiaAgrupados.map(mov => (
                   <li key={mov.id} style={{
                     marginBottom: 18,
                     padding: 22,
                     borderRadius: 18,
-                    // Normalizar tipo y tratar 'ahorro' como ingreso para la UI
-                    background: mov.color ? mov.color : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? 'linear-gradient(90deg, #1de9b6 0%, #43a047 100%)' : 'linear-gradient(90deg, #ff7043 0%, #c62828 100%)'),
-                    color: mov.color ? '#fff' : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '#fff' : '#222'),
+                    // Normalizar tipo y tratar 'ahorro' como ingreso para la UI; 'transferencia' usa su color propio
+                    background: mov.color ? mov.color : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? 'linear-gradient(90deg, #1de9b6 0%, #43a047 100%)' : ((mov.tipo || '').toLowerCase() === 'transferencia' ? '#1976d2' : 'linear-gradient(90deg, #ff7043 0%, #c62828 100%)')),
+                    color: (mov.color || (mov.tipo || '').toLowerCase() === 'transferencia') ? '#fff' : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '#fff' : '#222'),
                     display: 'flex',
                     alignItems: 'center',
                     boxShadow: '0 2px 12px #0002',
                     position: 'relative',
                   }}>
-                    <span style={{ fontSize: 36, marginRight: 18 }}>{mov.icon || (((mov.tipo || '').toLowerCase() === 'egreso') ? '💸' : '💰')}</span>
+                    <span style={{ fontSize: 36, marginRight: 18 }}>{mov.icon || (((mov.tipo || '').toLowerCase() === 'egreso') ? '💸' : ((mov.tipo || '').toLowerCase() === 'transferencia' ? '🔁' : '💰'))}</span>
                     <div className="movimiento-main" style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--color-text)' }}>{mov.descripcion}</div>
                         {/* Badge que muestra el tipo: Ahorro / Ingreso / Egreso */}
-                        <div style={{ fontSize: 12, padding: '4px 8px', borderRadius: 12, background: mov.tipo === 'ingreso' ? '#1de9b6' : (mov.tipo === 'ahorro' ? '#4fc3f7' : '#ff8a80'), color: '#222', fontWeight: 800, textTransform: 'capitalize' }}>{mov.tipo}</div>
+                        <div style={{ fontSize: 12, padding: '4px 8px', borderRadius: 12, background: mov.tipo === 'ingreso' ? '#1de9b6' : (mov.tipo === 'ahorro' ? '#4fc3f7' : (mov.tipo === 'transferencia' ? '#90caf9' : '#ff8a80')), color: mov.tipo === 'transferencia' ? '#0d47a1' : '#222', fontWeight: 800, textTransform: 'capitalize' }}>{mov.tipo}</div>
                       </div>
                       <div style={{ fontSize: 15, color: 'var(--color-muted)', marginBottom: 2 }}>{mov.cuenta}</div>
                     </div>
                     <div className="movimiento-right" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <div className="movimiento-amount" style={{ fontWeight: 800, fontSize: 22, color: ((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '#fff' : '#222', minWidth: 160, textAlign: 'right' }}>
-                        {((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '+' : '-'}S/ {mov.monto.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      <div className="movimiento-amount" style={{ fontWeight: 800, fontSize: 22, color: ((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro' || (mov.tipo || '').toLowerCase() === 'transferencia') ? '#fff' : '#222', minWidth: 160, textAlign: 'right' }}>
+                        {((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '+' : ((mov.tipo || '').toLowerCase() === 'transferencia' ? '' : '-')}S/ {Number(mov.monto).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </div>
                       <div className="movimiento-actions" style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
-                        <button onClick={() => handleEditMovimiento(mov)} style={{ background: 'rgba(255,255,255,0.14)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Editar</button>
-                        <button onClick={() => handleDeleteMovimiento(mov.id)} style={{ background: 'rgba(0,0,0,0.08)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Eliminar</button>
+                        {((mov.tipo || '').toLowerCase() !== 'transferencia') && (
+                          <button onClick={() => handleEditMovimiento(mov)} style={{ background: 'rgba(255,255,255,0.14)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Editar</button>
+                        )}
+                        <button onClick={() => handleDeleteMovimiento(mov)} style={{ background: 'rgba(0,0,0,0.08)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Eliminar</button>
                       </div>
                     </div>
                   </li>

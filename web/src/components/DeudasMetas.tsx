@@ -191,8 +191,8 @@ export default function DeudasMetas() {
           const apiFetch = (await import('../utils/apiFetch')).default;
           const itemDesc = (item && (item as any).descripcion) ? String((item as any).descripcion) : '';
           const descripcion = tipo === 'deuda'
-            ? `Pago deuda: ${itemDesc || '#' + id}`
-            : `Aporte a meta: ${itemDesc || '#' + id}`;
+            ? `Pago deuda: ${itemDesc || '#' + id} [DEUDA#${id}]`
+            : `Aporte a meta: ${itemDesc || '#' + id} [META#${id}]`;
           await apiFetch(`${API_BASE}/api/transacciones`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -427,16 +427,48 @@ export default function DeudasMetas() {
             {deudas.map(d => (
               <li key={d.id} style={{ background: 'var(--color-card)', marginBottom: 14, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px var(--card-shadow)', flexWrap: 'wrap', gap: 12, border: '1px solid var(--color-input-border)' }}>
                 <div>
-                  <div style={{ fontWeight: 700 }}>{d.descripcion}</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ fontWeight: 700 }}>{d.descripcion}</span>
+                    {(() => {
+                      const total = Number(d.monto ?? d.monto_total ?? 0);
+                      const pagado = Number(d.pagado ?? d.monto_pagado ?? 0);
+                      const pendiente = Math.max(total - pagado, 0);
+                      if (pendiente <= 0) {
+                        return <span style={{ background:'#2e7d32', color:'#fff', borderRadius:12, padding:'2px 8px', fontSize:12, fontWeight:800 }}>Completada</span>;
+                      }
+                      return null;
+                    })()}
+                  </div>
                   <div style={{ fontSize: 15, color: 'var(--color-muted)' }}>
-                    Monto: S/ {Number(d.monto ?? d.monto_total ?? 0).toFixed(2)} | Pagado: S/ {Number(d.pagado ?? d.monto_pagado ?? 0).toFixed(2)}<br />
-                    {d.fecha_inicio && <span>Inicio: {new Date(d.fecha_inicio).toLocaleDateString()} </span>}
-                    {d.fecha_vencimiento && <span>Vence: {new Date(d.fecha_vencimiento).toLocaleDateString()}</span>}
+                    {(() => {
+                      const total = Number(d.monto ?? d.monto_total ?? 0);
+                      const pagado = Number(d.pagado ?? d.monto_pagado ?? 0);
+                      const pendiente = Math.max(total - pagado, 0);
+                      return (
+                        <>
+                          Monto: S/ {total.toLocaleString(undefined, { minimumFractionDigits: 2 })} | {' '}
+                          Pagado: S/ {pagado.toLocaleString(undefined, { minimumFractionDigits: 2 })} | {' '}
+                          Pendiente: S/ {pendiente.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          <br />
+                          {d.fecha_inicio && <span>Inicio: {new Date(d.fecha_inicio).toLocaleDateString()} </span>}
+                          {d.fecha_vencimiento && <span>Vence: {new Date(d.fecha_vencimiento).toLocaleDateString()}</span>}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input type="number" step="0.01" min={0.01} max={(d.monto ?? d.monto_total ?? 0) - (d.pagado ?? d.monto_pagado ?? 0)} placeholder="Pago" style={{ width: 100, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-deuda-${d.id}`} disabled={(parseFloat(d.pagado ?? d.monto_pagado ?? 0) >= parseFloat(d.monto ?? d.monto_total ?? 0))} />
-                  <button
+                  {(() => {
+                    const total = parseFloat(d.monto ?? d.monto_total ?? 0);
+                    const pagado = parseFloat(d.pagado ?? d.monto_pagado ?? 0);
+                    const pendiente = Math.max(total - pagado, 0);
+                    if (pendiente <= 0) {
+                      return <span title="Completada" style={{ fontSize: 18 }}>✅</span>;
+                    }
+                    return (
+                      <>
+                        <input type="number" step="0.01" min={0.01} max={pendiente} placeholder="Pago" style={{ width: 100, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-deuda-${d.id}`} />
+                        <button
                     onClick={() => {
                       const val = (document.getElementById(`pago-deuda-${d.id}`) as HTMLInputElement).value;
                       const montoPago = Number(val);
@@ -453,8 +485,10 @@ export default function DeudasMetas() {
                       handlePago(d.id, 'deuda', montoPago);
                     }}
                     style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 600 }}
-                    disabled={(parseFloat(d.pagado ?? d.monto_pagado ?? 0) >= parseFloat(d.monto ?? d.monto_total ?? 0))}
                   >Pagar</button>
+                      </>
+                    );
+                  })()}
                     <button
                     onClick={() => handleEdit(d.id, 'deuda')}
                     title="Editar"
@@ -492,16 +526,48 @@ export default function DeudasMetas() {
             {metas.map(m => (
               <li key={m.id} style={{ background: 'var(--color-card)', marginBottom: 14, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px var(--card-shadow)', flexWrap: 'wrap', gap: 12, border: '1px solid var(--color-input-border)' }}>
                 <div>
-                  <div style={{ fontWeight: 700 }}>{m.descripcion}</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ fontWeight: 700 }}>{m.descripcion}</span>
+                    {(() => {
+                      const objetivo = Number(m.monto_objetivo || 0);
+                      const ahorrado = Number(m.monto_ahorrado || 0);
+                      const falta = Math.max(objetivo - ahorrado, 0);
+                      if (falta <= 0) {
+                        return <span style={{ background:'#2e7d32', color:'#fff', borderRadius:12, padding:'2px 8px', fontSize:12, fontWeight:800 }}>Completada</span>;
+                      }
+                      return null;
+                    })()}
+                  </div>
                   <div style={{ fontSize: 15, color: 'var(--color-muted)' }}>
-                    Meta: S/ {(m.monto_objetivo || 0).toLocaleString()} | Ahorrado: S/ {(m.monto_ahorrado || 0).toLocaleString()}<br />
-                    {m.fecha_inicio && <span>Inicio: {new Date(m.fecha_inicio).toLocaleDateString()} </span>}
-                    {m.fecha_objetivo && <span>Objetivo: {new Date(m.fecha_objetivo).toLocaleDateString()} </span>}
+                    {(() => {
+                      const objetivo = Number(m.monto_objetivo || 0);
+                      const ahorrado = Number(m.monto_ahorrado || 0);
+                      const falta = Math.max(objetivo - ahorrado, 0);
+                      return (
+                        <>
+                          Meta: S/ {objetivo.toLocaleString(undefined, { minimumFractionDigits: 2 })} | {' '}
+                          Ahorrado: S/ {ahorrado.toLocaleString(undefined, { minimumFractionDigits: 2 })} | {' '}
+                          Falta: S/ {falta.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          <br />
+                          {m.fecha_inicio && <span>Inicio: {new Date(m.fecha_inicio).toLocaleDateString()} </span>}
+                          {m.fecha_objetivo && <span>Objetivo: {new Date(m.fecha_objetivo).toLocaleDateString()} </span>}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input type="number" step="0.01" min={0.01} max={(m.monto_objetivo || 0) - (m.monto_ahorrado || 0)} placeholder="Aportar" style={{ width: 100, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-meta-${m.id}`} disabled={(parseFloat(m.pagado ?? m.monto_ahorrado ?? 0) >= parseFloat(m.monto_objetivo ?? 0))} />
-                  <button
+                  {(() => {
+                    const objetivo = parseFloat(m.monto_objetivo ?? 0);
+                    const ahorrado = parseFloat(m.pagado ?? m.monto_ahorrado ?? 0);
+                    const falta = Math.max(objetivo - ahorrado, 0);
+                    if (falta <= 0) {
+                      return <span title="Completada" style={{ fontSize: 18 }}>✅</span>;
+                    }
+                    return (
+                      <>
+                        <input type="number" step="0.01" min={0.01} max={falta} placeholder="Aportar" style={{ width: 100, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-meta-${m.id}`} />
+                        <button
                     onClick={() => {
                       const val = (document.getElementById(`pago-meta-${m.id}`) as HTMLInputElement).value;
                       const montoAporte = Number(val);
@@ -518,8 +584,10 @@ export default function DeudasMetas() {
                       handlePago(m.id, 'meta', montoAporte);
                     }}
                     style={{ background: '#388e3c', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 600 }}
-                    disabled={(parseFloat(m.pagado ?? m.monto_ahorrado ?? 0) >= parseFloat(m.monto_objetivo ?? 0))}
                   >Aportar</button>
+                      </>
+                    );
+                  })()}
                   <button
                     onClick={() => handleEdit(m.id, 'meta')}
                     title="Editar"
