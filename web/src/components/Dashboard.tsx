@@ -166,6 +166,18 @@ export default function Dashboard() {
       isAmount: true,
     },
     {
+      icon: '📉',
+      color: '#ff9800',
+      titulo: 'Indicadores Egresos',
+      valor: filteredMovs.filter(m => m.tipo === 'egreso').length,
+    },
+    {
+      icon: '📈',
+      color: '#388e3c',
+      titulo: 'Indicadores Ingresos',
+      valor: filteredMovs.filter(m => m.tipo === 'ingreso').length,
+    },
+    {
       icon: '',
       color: '#ff7043',
       titulo: 'Ingreso',
