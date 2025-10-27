@@ -176,7 +176,7 @@ export default function Dashboard() {
       valor: filteredMovs.filter(m => m.tipo === 'ingreso').length,
     },
     {
-      icon: '�',
+      icon: '🏦',
       color: '#ff7043',
       titulo: 'Ingreso',
       valor: `S/ ${totalIngreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
