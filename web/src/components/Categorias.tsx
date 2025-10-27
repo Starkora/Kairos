@@ -203,7 +203,7 @@ export default function Categorias() {
       }
     }).then(result => {
       if (result.isConfirmed) {
-        fetch(`/api/categorias/${id}`, {
+        fetch(`${API_BASE}/api/categorias/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -235,7 +235,7 @@ export default function Categorias() {
       confirmButtonColor: '#f44336',
     }).then(result => {
       if (result.isConfirmed) {
-        fetch(`/api/categorias/${id}`, {
+        fetch(`${API_BASE}/api/categorias/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': 'Bearer ' + getToken()
@@ -269,7 +269,7 @@ export default function Categorias() {
       }
     }).then(result => {
       if (result.isConfirmed) {
-        fetch(`/api/categorias-cuenta/${id}`, {
+        fetch(`${API_BASE}/api/categorias-cuenta/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -301,7 +301,7 @@ export default function Categorias() {
       confirmButtonColor: '#f44336',
     }).then(result => {
       if (result.isConfirmed) {
-        fetch(`/api/categorias-cuenta/${id}`, {
+        fetch(`${API_BASE}/api/categorias-cuenta/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': 'Bearer ' + getToken()

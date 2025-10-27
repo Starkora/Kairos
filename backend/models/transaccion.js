@@ -67,6 +67,8 @@ const Transaccion = {
   update: async (data) => {
     const { id, usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma } = data;
     if (!id) throw new Error('ID requerido');
+    // Normalizar tipo una sola vez para utilizarlo tanto en la lógica como en el UPDATE
+    const tipoNorm = (tipo || '').toLowerCase();
     // Obtener movimiento anterior
     const [rows] = await db.query('SELECT * FROM movimientos WHERE id = ?', [id]);
     if (!rows || rows.length === 0) throw new Error('Movimiento no encontrado');
@@ -89,7 +91,6 @@ const Transaccion = {
     const newApplied = fechaStr <= todayStr ? 1 : 0;
     // Aplicar efecto del nuevo movimiento solo si corresponde
     if (newApplied) {
-      const tipoNorm = (tipo || '').toLowerCase();
       const isIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
       if (isIngreso) {
         console.log('[transaccion.update] Aplicando SUMA en cuenta', cuenta_id, 'monto', monto, 'tipo', tipoNorm);

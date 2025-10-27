@@ -1,6 +1,7 @@
 import React from 'react';
 import API_BASE from '../utils/apiBase';
 import Swal from 'sweetalert2';
+import { getToken } from '../utils/auth';
 
 export default function CategoriasCuenta() {
   const [categorias, setCategorias] = React.useState([]);
@@ -8,8 +9,13 @@ export default function CategoriasCuenta() {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    fetch('/api/categorias-cuenta')
-      .then(res => res.json())
+    fetch(`${API_BASE}/api/categorias-cuenta`, {
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('No autorizado');
+        return res.json();
+      })
       .then(data => {
         console.log('Datos recibidos para categorías de cuenta:', data); // Depuración
         setCategorias(data);
@@ -38,16 +44,19 @@ export default function CategoriasCuenta() {
       confirmButtonColor: '#6c4fa1',
     });
     if (result.isConfirmed) {
-      const res = await fetch('/api/categorias-cuenta', {
+      const res = await fetch(`${API_BASE}/api/categorias-cuenta`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
         body: JSON.stringify(form)
       });
       if (res.ok) {
         Swal.fire({ icon: 'success', title: 'Categoría de cuenta agregada', showConfirmButton: false, timer: 1200 });
         setForm({ nombre: '' });
-        fetch(`${API_BASE}/api/categorias-cuenta`)
-          .then(res => res.json())
+        fetch(`${API_BASE}/api/categorias-cuenta`, { headers: { 'Authorization': 'Bearer ' + getToken() } })
+          .then(res => {
+            if (!res.ok) throw new Error('No autorizado');
+            return res.json();
+          })
           .then(data => setCategorias(data));
       } else {
         Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo agregar la categoría de cuenta.' });
@@ -70,10 +79,11 @@ export default function CategoriasCuenta() {
       }
     }).then(result => {
       if (result.isConfirmed) {
-        fetch(`/api/categorias-cuenta/${id}`, {
+        fetch(`${API_BASE}/api/categorias-cuenta/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + getToken()
           },
           body: JSON.stringify(result.value)
         })
@@ -101,8 +111,9 @@ export default function CategoriasCuenta() {
       confirmButtonColor: '#f44336',
     }).then(result => {
       if (result.isConfirmed) {
-        fetch(`/api/categorias-cuenta/${id}`, {
+        fetch(`${API_BASE}/api/categorias-cuenta/${id}`, {
           method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + getToken() }
         })
           .then(res => {
             if (!res.ok) throw new Error('No autorizado');
