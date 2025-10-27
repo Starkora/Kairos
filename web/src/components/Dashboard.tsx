@@ -71,7 +71,6 @@ export default function Dashboard() {
       return false;
     }
   });
-  // Toggle para incluir/excluir transferencias
   const [incluirTransferencias, setIncluirTransferencias] = React.useState(false);
   const filteredMovs = React.useMemo(() => {
     if (incluirTransferencias) return visibleMovimientos;
