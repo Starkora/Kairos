@@ -8,7 +8,7 @@ export default function Dashboard() {
   const [movimientos, setMovimientos] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [cuentas, setCuentas] = React.useState([]);
-  const [cuentasSeleccionadas, setCuentasSeleccionadas] = React.useState<number[]>([]);
+  const [cuentaSeleccionada, setCuentaSeleccionada] = React.useState<number | 'all'>('all');
   // Filtro de año
   const currentYear = new Date().getFullYear();
   const [year, setYear] = React.useState(currentYear);
@@ -40,11 +40,8 @@ export default function Dashboard() {
       .then(res => res.ok ? res.json() : [])
       .then(data => {
         setCuentas(Array.isArray(data) ? data : []);
-        // Seleccionar todas por defecto
-        try {
-          const ids = (Array.isArray(data) ? data : []).map(c => Number(c.id)).filter(n => !isNaN(n));
-          setCuentasSeleccionadas(ids);
-        } catch {}
+        // Por defecto: Todas
+        setCuentaSeleccionada('all');
       })
       .catch(() => setCuentas([]));
   }, []);
@@ -58,10 +55,10 @@ export default function Dashboard() {
       if (!m.fecha) return false;
       const movDate = new Date(m.fecha);
       if (movDate.getFullYear() !== year) return false;
-      // Filtrar por cuentas seleccionadas (si hay cuentas cargadas)
-      if (cuentasSeleccionadas && cuentasSeleccionadas.length > 0) {
+      // Filtro por cuenta (si no es 'all')
+      if (cuentaSeleccionada !== 'all') {
         const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
-        if (!isNaN(cid) && !cuentasSeleccionadas.includes(cid)) return false;
+        if (!isNaN(cid) && cid !== Number(cuentaSeleccionada)) return false;
       }
       // Si el backend ya incluye el flag `applied`, úsalo
       if (typeof m.applied !== 'undefined' && m.applied !== null) {
@@ -75,14 +72,18 @@ export default function Dashboard() {
     }
   });
 
-  // Excluir transferencias en todos los cómputos del dashboard
-  const noTransfer = visibleMovimientos.filter(m => !/\[TRANSFER#/i.test(String(m.descripcion || '')));
+  // Toggle para incluir/excluir transferencias
+  const [incluirTransferencias, setIncluirTransferencias] = React.useState(false);
+  const filteredMovs = React.useMemo(() => {
+    if (incluirTransferencias) return visibleMovimientos;
+    return visibleMovimientos.filter(m => !/\[TRANSFER#/i.test(String(m.descripcion || '')));
+  }, [visibleMovimientos, incluirTransferencias]);
 
   // Calcular totales
-  const totalIngreso = noTransfer.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
-  const totalEgreso = noTransfer.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto), 0);
+  const totalIngreso = filteredMovs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
+  const totalEgreso = filteredMovs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto), 0);
   // Ahorro registrado explícitamente (movimientos cuyo tipo es 'ahorro')
-  const totalAhorro = noTransfer.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + Number(m.monto), 0);
+  const totalAhorro = filteredMovs.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + Number(m.monto), 0);
 
   // Indicadores
   const indicadores = [
@@ -90,13 +91,13 @@ export default function Dashboard() {
       icon: '📉',
       color: '#ff9800',
       titulo: 'Indicadores Egresos',
-  valor: noTransfer.filter(m => m.tipo === 'egreso').length,
+  valor: filteredMovs.filter(m => m.tipo === 'egreso').length,
     },
     {
       icon: '📈',
       color: '#388e3c',
       titulo: 'Indicadores Ingresos',
-  valor: noTransfer.filter(m => m.tipo === 'ingreso').length,
+  valor: filteredMovs.filter(m => m.tipo === 'ingreso').length,
     },
     {
       icon: '💵',
@@ -130,7 +131,7 @@ export default function Dashboard() {
 
   // Top egresos por categoría
   const egresosPorCategoria = {};
-  noTransfer.filter(m => m.tipo === 'egreso').forEach(m => {
+  filteredMovs.filter(m => m.tipo === 'egreso').forEach(m => {
     const cat = m.categoria || 'Sin categoría';
     egresosPorCategoria[cat] = (egresosPorCategoria[cat] || 0) + Number(m.monto);
   });
@@ -147,7 +148,7 @@ export default function Dashboard() {
   // Normalizar fechas y asegurar que todos los meses estén presentes
   const data = meses.map((nombreMes, idx) => {
     // Filtrar movimientos de este mes
-    const movsMes = noTransfer.filter(m => {
+  const movsMes = filteredMovs.filter(m => {
       if (!m.fecha) return false;
       let fecha = new Date(m.fecha);
       // Si la fecha es inválida, forzar mes 0 (enero)
@@ -180,7 +181,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ overflowX: 'hidden' }}>
-  <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 8, flexWrap: 'wrap' }}>
         <h1 style={{ margin: 0 }}>Dashboard</h1>
         <div>
           <label htmlFor="dashboard-year" style={{ fontWeight: 600, marginRight: 6 }}>Año:</label>
@@ -191,37 +192,23 @@ export default function Dashboard() {
           </select>
         </div>
         <div>
-          <label htmlFor="dashboard-cuentas" style={{ fontWeight: 600, marginRight: 6 }}>Cuentas:</label>
+          <label htmlFor="dashboard-cuenta" style={{ fontWeight: 600, marginRight: 6 }}>Cuenta:</label>
           <select
-            id="dashboard-cuentas"
-            multiple
-            size={Math.min(6, Math.max(2, cuentas.length))}
-            value={cuentasSeleccionadas.map(String)}
+            id="dashboard-cuenta"
+            value={cuentaSeleccionada === 'all' ? 'all' : String(cuentaSeleccionada)}
             onChange={(e) => {
-              const opts = Array.from(e.target.selectedOptions).map(o => Number(o.value)).filter(n => !isNaN(n));
-              setCuentasSeleccionadas(opts);
+              const val = e.target.value;
+              if (val === 'all') setCuentaSeleccionada('all');
+              else setCuentaSeleccionada(Number(val));
             }}
-            style={{ padding: 4, borderRadius: 6, minWidth: 160 }}
+            style={{ padding: 4, borderRadius: 6, fontWeight: 600 }}
           >
+            <option value="all">Todas</option>
             {cuentas.map(c => (
               <option key={c.id} value={c.id}>{c.nombre}</option>
             ))}
           </select>
         </div>
-        <button
-          type="button"
-          onClick={() => setCuentasSeleccionadas(cuentas.map(c => Number(c.id)).filter(n => !isNaN(n)))}
-          style={{ padding: '6px 10px', borderRadius: 8, border: 'none', background: '#e0e0e0', cursor: 'pointer' }}
-        >
-          Seleccionar todas
-        </button>
-        <button
-          type="button"
-          onClick={() => setCuentasSeleccionadas([])}
-          style={{ padding: '6px 10px', borderRadius: 8, border: 'none', background: '#f5f5f5', cursor: 'pointer' }}
-        >
-          Limpiar
-        </button>
       </div>
       {/* Fila de indicadores/resumen */}
       <div style={{ display: 'flex', gap: 24, margin: '24px 0 32px 0', justifyContent: 'space-between', flexWrap: 'wrap' }}>
@@ -263,9 +250,13 @@ export default function Dashboard() {
             <input type="checkbox" name="Ingreso" checked={segmentos.Ingreso} onChange={handleSegmentoChange} />
             <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Ingresos</span>
           </label>
-          <div style={{ marginLeft: 'auto', fontSize: 12, color: '#666' }}>
-            Transferencias excluidas de todos los totales y gráficos.
-          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+            <input type="checkbox" checked={incluirTransferencias} onChange={e => setIncluirTransferencias(e.target.checked)} />
+            <span style={{ fontSize: 12, color: 'var(--color-text)' }}>Incluir transferencias</span>
+          </label>
+          {!incluirTransferencias && (
+            <div style={{ fontSize: 12, color: '#888' }}>Transferencias excluidas de totales y gráficos.</div>
+          )}
         </div>
   <ResponsiveContainer width="100%" height={600}>
           <BarChart data={data} layout="vertical" margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
@@ -367,12 +358,12 @@ export default function Dashboard() {
           today.setHours(0, 0, 0, 0);
           const pendientes = movimientos.filter(m => {
             try {
-              // Excluir transferencias también en programados
-              if (/\[TRANSFER#/i.test(String(m.descripcion || ''))) return false;
-              // Filtrar por cuentas seleccionadas
-              if (cuentasSeleccionadas && cuentasSeleccionadas.length > 0) {
+              // Excluir transferencias si el toggle no las incluye
+              if (!incluirTransferencias && /\[TRANSFER#/i.test(String(m.descripcion || ''))) return false;
+              // Filtro por cuenta seleccionada (si no es 'all')
+              if (cuentaSeleccionada !== 'all') {
                 const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
-                if (!isNaN(cid) && !cuentasSeleccionadas.includes(cid)) return false;
+                if (!isNaN(cid) && cid !== Number(cuentaSeleccionada)) return false;
               }
               if (typeof m.applied !== 'undefined' && m.applied !== null) {
                 return Number(m.applied) === 0;
