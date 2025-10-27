@@ -174,20 +174,49 @@ export default function Cuentas() {
       if (result.isConfirmed) {
         const token = getToken();
         console.log('Token enviado:', token); // Depuración
-  fetch(`${API_BASE}/api/cuentas/${id}`, {
+        fetch(`${API_BASE}/api/cuentas/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': 'Bearer ' + token
           }
         })
-          .then(res => {
+          .then(async res => {
             console.log('Respuesta del servidor en DELETE /api/cuentas:', res.status); // Depuración
-            if (!res.ok) throw new Error('No autorizado');
-            return res.json();
-          })
-          .then(data => {
-            console.log('Cuenta eliminada:', data); // Depuración
-            setCuentas(prevCuentas => prevCuentas.filter(c => c.id !== id)); // Actualizar el estado local
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 409 && (data.code === 'ACCOUNT_HAS_MOVEMENTS' || data.count > 0)) {
+              // Mostrar alerta para eliminar movimientos y la cuenta
+              const confirmCascade = await Swal.fire({
+                icon: 'warning',
+                title: 'No se puede eliminar la cuenta',
+                html: `La cuenta <b>${cuenta.nombre}</b> tiene <b>${data.count || 'algunos'}</b> movimientos registrados.<br/>¿Quieres eliminar <u>todos los movimientos</u> de esta cuenta para poder eliminarla?`,
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar todo',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#f44336'
+              });
+              if (confirmCascade.isConfirmed) {
+                const cascadeRes = await fetch(`${API_BASE}/api/cuentas/${id}?cascade=true`, {
+                  method: 'DELETE',
+                  headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const cascadeData = await cascadeRes.json().catch(() => ({}));
+                if (cascadeRes.ok) {
+                  setCuentas(prev => prev.filter(c => c.id !== id));
+                  Swal.fire({ icon: 'success', title: 'Cuenta y movimientos eliminados', timer: 1400, showConfirmButton: false });
+                  // Avisar a otras vistas que recarguen
+                  try { window.dispatchEvent(new Event('movimientos:refresh')); } catch(e) {}
+                } else {
+                  Swal.fire({ icon: 'error', title: 'No se pudo eliminar', text: cascadeData.error || 'Error al eliminar en cascada.' });
+                }
+              }
+              return;
+            }
+            if (!res.ok) {
+              Swal.fire({ icon: 'error', title: 'Error al eliminar', text: data.error || `HTTP ${res.status}` });
+              return;
+            }
+            // Eliminación normal
+            setCuentas(prevCuentas => prevCuentas.filter(c => c.id !== id));
             Swal.fire({ icon: 'success', title: 'Cuenta eliminada', showConfirmButton: false, timer: 1200 });
           })
           .catch(err => {

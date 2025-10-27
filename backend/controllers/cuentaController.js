@@ -44,21 +44,50 @@ exports.getAll = async (req, res) => {
 };
 
 exports.deleteById = async (req, res) => {
-  const id = req.params.id;
+  const id = Number(req.params.id);
   const usuario_id = req.user && req.user.id;
+  const cascade = String(req.query.cascade || '').toLowerCase() === 'true' || req.body?.cascade === true;
 
-  console.log('ID recibido para eliminar:', id); // Depuración
-  console.log('Usuario autenticado:', usuario_id); // Depuración
+  console.log('[cuentas.delete] ID:', id, 'user:', usuario_id, 'cascade:', cascade);
 
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  if (!id) return res.status(400).json({ error: 'ID inválido' });
 
+  const db = require('../db');
   try {
+    // 1) Verificar que la cuenta pertenezca al usuario
+    const [owns] = await db.query('SELECT id FROM cuentas WHERE id = ? AND usuario_id = ? LIMIT 1', [id, usuario_id]);
+    if (!owns || owns.length === 0) {
+      return res.status(404).json({ error: 'Cuenta no encontrada' });
+    }
+
+    // 2) Verificar si hay movimientos asociados
+    const [movs] = await db.query('SELECT COUNT(*) AS total FROM movimientos WHERE cuenta_id = ?', [id]);
+    const total = (movs && movs[0] && Number(movs[0].total)) || 0;
+    if (total > 0 && !cascade) {
+      return res.status(409).json({ code: 'ACCOUNT_HAS_MOVEMENTS', message: 'La cuenta tiene movimientos registrados', count: total });
+    }
+
+    // 3) Si cascade=true, eliminar movimientos primero dentro de una transacción
+    if (total > 0 && cascade) {
+      await db.query('START TRANSACTION');
+      try {
+        await db.query('DELETE FROM movimientos WHERE cuenta_id = ?', [id]);
+        await db.query('DELETE FROM cuentas WHERE id = ?', [id]);
+        await db.query('COMMIT');
+      } catch (e) {
+        await db.query('ROLLBACK');
+        throw e;
+      }
+      return res.json({ message: 'Cuenta y movimientos eliminados', deletedMovements: total });
+    }
+
+    // 4) Sin movimientos, eliminar normalmente
     await Cuenta.deleteById(id);
-    console.log('Cuenta eliminada:', id); // Depuración
-    res.json({ message: 'Cuenta eliminada' });
+    return res.json({ message: 'Cuenta eliminada' });
   } catch (err) {
-    console.error('Error al eliminar cuenta:', err.message); // Depuración
-    res.status(500).json({ error: err.message });
+    console.error('Error al eliminar cuenta:', err && err.message);
+    return res.status(500).json({ error: err.message || 'Error al eliminar cuenta' });
   }
 };
 
