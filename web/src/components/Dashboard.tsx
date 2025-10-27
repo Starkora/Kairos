@@ -86,32 +86,102 @@ export default function Dashboard() {
   const totalAhorro = filteredMovs.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + Number(m.monto), 0);
 
   // Indicadores
+  const saldoActual = React.useMemo(() => {
+    try {
+      if (!Array.isArray(cuentas) || cuentas.length === 0) return 0;
+      if (cuentaSeleccionada === 'all') {
+        return cuentas.reduce((acc, c) => acc + Number(c.saldo_actual ?? c.saldo ?? 0), 0);
+      }
+      const cta = cuentas.find(c => Number(c.id) === Number(cuentaSeleccionada));
+      return Number(cta?.saldo_actual ?? cta?.saldo ?? 0);
+    } catch {
+      return 0;
+    }
+  }, [cuentas, cuentaSeleccionada]);
+  const cuentaTipo = React.useMemo(() => {
+    if (cuentaSeleccionada === 'all') return '';
+    const cta = cuentas.find(c => Number(c.id) === Number(cuentaSeleccionada));
+    return String(cta?.tipo || '').trim();
+  }, [cuentas, cuentaSeleccionada]);
+  const saldoNegativo = saldoActual < 0;
+  const saldoInicial = React.useMemo(() => {
+    if (cuentaSeleccionada === 'all') return null;
+    const cta = cuentas.find(c => Number(c.id) === Number(cuentaSeleccionada));
+    const si = Number(cta?.saldo_inicial ?? 0);
+    if (isNaN(si)) return 0;
+    return si;
+  }, [cuentas, cuentaSeleccionada]);
+  const variacion = React.useMemo(() => {
+    if (cuentaSeleccionada === 'all' || saldoInicial === null) return null;
+    const delta = Number(saldoActual) - Number(saldoInicial);
+    const sign = delta > 0 ? '+' : delta < 0 ? '-' : '';
+    const abs = Math.abs(delta);
+    const perc = Number(saldoInicial) !== 0 ? (delta / Number(saldoInicial)) * 100 : null;
+    const color = delta > 0 ? '#2e7d32' : delta < 0 ? '#e53935' : 'var(--color-table-header-text)';
+    const percText = perc === null ? '' : ` (${(perc).toFixed(1)}%)`;
+    return {
+      text: `Cambio: ${sign}S/ ${abs.toLocaleString(undefined, { minimumFractionDigits: 2 })}${percText}`,
+      color
+    };
+  }, [cuentaSeleccionada, saldoActual, saldoInicial]);
+
+  // Tendencia mes actual vs mes anterior (por año seleccionado)
+  const currentMonthIdx = React.useMemo(() => (new Date().getFullYear() === year ? new Date().getMonth() : 11), [year]);
+  const prevMonthIdx = currentMonthIdx > 0 ? currentMonthIdx - 1 : null;
+  const monthTotals = React.useCallback((monthIdx) => {
+    const movs = filteredMovs.filter(m => {
+      if (!m.fecha) return false;
+      const d = new Date(m.fecha);
+      return d.getFullYear() === year && d.getMonth() === monthIdx;
+    });
+    const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto || 0), 0);
+    const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto || 0), 0);
+    return { ingreso, gasto };
+  }, [filteredMovs, year]);
+  const curr = monthTotals(currentMonthIdx);
+  const prev = prevMonthIdx !== null ? monthTotals(prevMonthIdx) : { ingreso: 0, gasto: 0 };
+  const trend = React.useMemo(() => {
+    const calc = (a, b) => {
+      const delta = a - b;
+      const sign = delta > 0 ? '+' : delta < 0 ? '-' : '';
+      const abs = Math.abs(delta);
+      const perc = b !== 0 ? (delta / b) * 100 : null;
+      const color = delta > 0 ? '#2e7d32' : delta < 0 ? '#e53935' : '#888';
+      const percText = perc === null ? '' : ` (${perc.toFixed(1)}%)`;
+      return { text: `${sign}S/ ${abs.toLocaleString(undefined, { minimumFractionDigits: 2 })}${percText}`, color };
+    };
+    return { ingreso: calc(curr.ingreso, prev.ingreso), gasto: calc(curr.gasto, prev.gasto) };
+  }, [curr, prev]);
+
   const indicadores = [
     {
-      icon: '📉',
-      color: '#ff9800',
-      titulo: 'Indicadores Egresos',
-  valor: filteredMovs.filter(m => m.tipo === 'egreso').length,
+      icon: '💳',
+      color: saldoNegativo ? '#e53935' : '#7e57c2',
+      titulo: cuentaSeleccionada === 'all' ? 'Saldo total' : 'Saldo actual',
+      valor: `S/ ${saldoActual.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      subtitle: cuentaSeleccionada !== 'all' && cuentaTipo ? `Tipo: ${cuentaTipo}` : '',
+      subtitle2: cuentaSeleccionada !== 'all' && saldoInicial !== null ? `Saldo inicial: S/ ${Number(saldoInicial).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '',
+      subtitle3: variacion ? variacion.text : '',
+      subtitle3Color: variacion ? variacion.color : undefined,
+      isAmount: true,
     },
     {
-      icon: '📈',
-      color: '#388e3c',
-      titulo: 'Indicadores Ingresos',
-  valor: filteredMovs.filter(m => m.tipo === 'ingreso').length,
-    },
-    {
-      icon: '💵',
+      icon: '',
       color: '#ff7043',
       titulo: 'Ingreso',
-    valor: `S/ ${totalIngreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-    isAmount: true,
+      valor: `S/ ${totalIngreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      subtitle3: trend.ingreso.text,
+      subtitle3Color: trend.ingreso.color,
+      isAmount: true,
     },
     {
-      icon: '🏦',
+      icon: '💸',
       color: '#26c6da',
       titulo: 'Gastos',
-    valor: `S/ ${totalEgreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-    isAmount: true,
+      valor: `S/ ${totalEgreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      subtitle3: trend.gasto.text,
+      subtitle3Color: trend.gasto.color,
+      isAmount: true,
     },
     {
       icon: '💰',
@@ -230,6 +300,15 @@ export default function Dashboard() {
             <div style={{ flex: 1 }}>
               <div style={{ color: item.color, fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{item.titulo}</div>
               <div style={{ fontWeight: 700, fontSize: 22, color: item.isAmount ? 'var(--color-amount)' : 'var(--color-text)', marginTop: 6 }}>{item.valor}</div>
+              {item.subtitle ? (
+                <div style={{ fontSize: 12, color: 'var(--color-table-header-text)', marginTop: 4 }}>{item.subtitle}</div>
+              ) : null}
+              {item.subtitle2 ? (
+                <div style={{ fontSize: 12, color: 'var(--color-table-header-text)', marginTop: 2 }}>{item.subtitle2}</div>
+              ) : null}
+              {item.subtitle3 ? (
+                <div style={{ fontSize: 12, color: item.subtitle3Color || 'var(--color-table-header-text)', marginTop: 2 }}>{item.subtitle3}</div>
+              ) : null}
             </div>
           </div>
         ))}
