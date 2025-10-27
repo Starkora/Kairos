@@ -71,6 +71,12 @@ export default function Registro() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'monto') {
+      // Aceptar coma o punto y guardar con punto para evitar NaN
+      const normalized = String(value).replace(',', '.');
+      setForm((prev) => ({ ...prev, [name]: normalized }));
+      return;
+    }
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -174,7 +180,7 @@ export default function Registro() {
       const movimiento = {
         cuenta_id: form.cuenta,
         tipo: form.tipo,
-        monto: form.monto,
+        monto: Number(form.monto),
         descripcion: form.descripcion,
         fecha: form.fecha,
         categoria_id: form.categoria,
@@ -194,7 +200,7 @@ export default function Registro() {
             body: JSON.stringify({
               cuenta_id: form.cuenta,
               tipo: form.tipo,
-              monto: form.monto,
+              monto: Number(form.monto),
               descripcion: form.descripcion,
               categoria_id: form.categoria,
               icon: form.icon,
@@ -273,7 +279,17 @@ export default function Registro() {
           <label>Monto:&nbsp;</label>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span style={{ marginRight: 4, fontWeight: 600 }}>S/</span>
-            <input type="number" name="monto" value={form.monto} onChange={handleChange} min="0" style={{ padding: 6, borderRadius: 6, width: '100%' }} />
+            <input
+              type="number"
+              name="monto"
+              value={form.monto}
+              onChange={handleChange}
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              pattern="[0-9]+([\.,][0-9]+)?"
+              style={{ padding: 6, borderRadius: 6, width: '100%' }}
+            />
           </div>
         </div>
         <div>
