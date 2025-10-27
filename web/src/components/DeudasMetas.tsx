@@ -8,11 +8,21 @@ export default function DeudasMetas() {
   const [tab, setTab] = useState('deudas');
   const [deudas, setDeudas] = useState([]);
   const [metas, setMetas] = useState([]);
+  const [cuentas, setCuentas] = useState([]);
   const [nueva, setNueva] = useState({ descripcion: '', monto: '', tipo: 'deuda', fecha_inicio: '', fecha_vencimiento: '' });
   // Eliminamos mensaje y error, usaremos SweetAlert
 
   // Cargar deudas y metas al iniciar
   useEffect(() => {
+    // Cargar cuentas para poder seleccionar desde qué cuenta pagar/aportar
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/cuentas?plataforma=web`, { headers: { 'Authorization': 'Bearer ' + getToken() } });
+        const data = await res.json();
+        setCuentas(Array.isArray(data) ? data : []);
+      } catch {}
+    })();
+
     fetch(`${API_BASE}/api/deudas?plataforma=web`, { // Agregado parámetro en query string
       method: 'GET',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken(), 'ngrok-skip-browser-warning': 'true' },
@@ -99,6 +109,61 @@ export default function DeudasMetas() {
 
   const handlePago = async (id, tipo, monto) => {
     try {
+      // Elegir cuenta desde la cual descontar
+      const cuentasOptions = (cuentas || []).map(c => `<option value="${c.id}">${c.nombre} (S/ ${(Number(c.saldo_actual)||0).toLocaleString()})</option>`).join('');
+      const { value: seleccion } = await Swal.fire({
+        title: 'Selecciona la cuenta',
+        html: `<select id="swal-cuenta" class="swal2-select">${cuentasOptions}</select>`,
+        focusConfirm: false,
+        showCancelButton: true,
+        preConfirm: () => {
+          const val = (document.getElementById('swal-cuenta') as HTMLSelectElement)?.value;
+          if (!val) { Swal.showValidationMessage('Debes seleccionar una cuenta'); return false; }
+          return { cuenta_id: Number(val) };
+        }
+      });
+      if (!seleccion) return;
+
+      // Confirmar monto a pagar/aportar antes de continuar (con detalle y restante)
+      const cuentaSel = (cuentas || []).find((c:any) => Number(c.id) === Number(seleccion.cuenta_id));
+      const cuentaNombre = cuentaSel?.nombre || 'cuenta seleccionada';
+      const accion = tipo === 'deuda' ? 'pagar' : 'aportar';
+
+      const item: any = (tipo === 'deuda')
+        ? (deudas as any[]).find((d:any) => Number(d.id) === Number(id))
+        : (metas as any[]).find((m:any) => Number(m.id) === Number(id));
+      const fmt = (n:any) => `S/ ${Number(n || 0).toFixed(2)}`;
+      let detalleHTML = '';
+      if (tipo === 'deuda' && item) {
+        const total = Number(item.monto ?? item.monto_total ?? 0);
+        const pagado = Number(item.pagado ?? item.monto_pagado ?? 0);
+        const restanteActual = Math.max(total - pagado, 0);
+        const restanteDespues = Math.max(restanteActual - Number(monto || 0), 0);
+        detalleHTML = `Descripción: <b>${item.descripcion || ''}</b><br/>
+          Total: <b>${fmt(total)}</b> · Pagado: <b>${fmt(pagado)}</b><br/>
+          Restante actual: <b>${fmt(restanteActual)}</b><br/>
+          Restante después: <b>${fmt(restanteDespues)}</b>`;
+      } else if (tipo === 'meta' && item) {
+        const objetivo = Number(item.monto_objetivo ?? 0);
+        const ahorrado = Number(item.monto_ahorrado ?? item.pagado ?? 0);
+        const faltaActual = Math.max(objetivo - ahorrado, 0);
+        const faltaDespues = Math.max(faltaActual - Number(monto || 0), 0);
+        detalleHTML = `Descripción: <b>${item.descripcion || ''}</b><br/>
+          Objetivo: <b>${fmt(objetivo)}</b> · Ahorrado: <b>${fmt(ahorrado)}</b><br/>
+          Falta actualmente: <b>${fmt(faltaActual)}</b><br/>
+          Faltará después: <b>${fmt(faltaDespues)}</b>`;
+      }
+
+      const confirm = await Swal.fire({
+        title: `¿Confirmar ${accion}?`,
+        html: `Vas a <b>${accion}</b> <b>${fmt(monto)}</b> desde <b>${cuentaNombre}</b>.<br/><br/>${detalleHTML}<br/><br/>¿Estás seguro que ese es el monto correspondiente?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, confirmar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (!confirm.isConfirmed) return;
+
       console.log('Datos enviados a handlePago:', { id, tipo, monto }); // Log para depuración
       const url = tipo === 'deuda' ? `${API_BASE}/api/deudas/pago` : `${API_BASE}/api/metas/aporte`;
       const fecha = new Date().toISOString().split('T')[0]; // Fecha actual en formato YYYY-MM-DD
@@ -121,7 +186,28 @@ export default function DeudasMetas() {
       });
       const data = await response.json();
       if (response.ok && data.success) {
-        Swal.fire({ icon: 'success', title: '¡Éxito!', text: data.message || 'Pago registrado correctamente' });
+        // Registrar también un movimiento para restar el saldo de la cuenta
+        try {
+          const apiFetch = (await import('../utils/apiFetch')).default;
+          const descripcion = tipo === 'deuda' ? `Pago deuda #${id}` : `Aporte meta #${id}`;
+          await apiFetch(`${API_BASE}/api/transacciones`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              cuenta_id: seleccion.cuenta_id,
+              tipo: 'egreso',
+              monto: Number(monto),
+              descripcion,
+              fecha,
+              categoria_id: null
+            })
+          });
+        } catch (e) {
+          // Si falla el movimiento, igual se registró el pago; informamos suavemente
+          console.warn('No se pudo registrar el movimiento para el pago/aporte:', e);
+        }
+
+        Swal.fire({ icon: 'success', title: '¡Éxito!', text: data.message || (tipo === 'deuda' ? 'Pago registrado y descontado de la cuenta' : 'Aporte registrado y descontado de la cuenta') });
         // Recargar listas después del pago
         if (tipo === 'deuda') {
           const respDeudas = await fetch(`${API_BASE}/api/deudas?plataforma=web`, {
@@ -140,6 +226,8 @@ export default function DeudasMetas() {
           const dataMetas = await respMetas.json();
           setMetas(Array.isArray(dataMetas) ? dataMetas : []);
         }
+        // Refrescar saldos de cuentas en otras vistas
+        try { window.dispatchEvent(new Event('cuentas:refresh')); } catch {}
       } else {
         Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'Error al registrar el pago' });
       }
@@ -344,7 +432,7 @@ export default function DeudasMetas() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input type="number" min={1} max={(d.monto ?? d.monto_total ?? 0) - (d.pagado ?? d.monto_pagado ?? 0)} placeholder="Pago" style={{ width: 80, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-deuda-${d.id}`} disabled={(parseFloat(d.pagado ?? d.monto_pagado ?? 0) >= parseFloat(d.monto ?? d.monto_total ?? 0))} />
+                  <input type="number" step="0.01" min={0.01} max={(d.monto ?? d.monto_total ?? 0) - (d.pagado ?? d.monto_pagado ?? 0)} placeholder="Pago" style={{ width: 100, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-deuda-${d.id}`} disabled={(parseFloat(d.pagado ?? d.monto_pagado ?? 0) >= parseFloat(d.monto ?? d.monto_total ?? 0))} />
                   <button
                     onClick={() => {
                       const val = (document.getElementById(`pago-deuda-${d.id}`) as HTMLInputElement).value;
@@ -409,7 +497,7 @@ export default function DeudasMetas() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input type="number" min={1} max={(m.monto_objetivo || 0) - (m.monto_ahorrado || 0)} placeholder="Aportar" style={{ width: 80, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-meta-${m.id}`} disabled={(parseFloat(m.pagado ?? m.monto_ahorrado ?? 0) >= parseFloat(m.monto_objetivo ?? 0))} />
+                  <input type="number" step="0.01" min={0.01} max={(m.monto_objetivo || 0) - (m.monto_ahorrado || 0)} placeholder="Aportar" style={{ width: 100, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-meta-${m.id}`} disabled={(parseFloat(m.pagado ?? m.monto_ahorrado ?? 0) >= parseFloat(m.monto_objetivo ?? 0))} />
                   <button
                     onClick={() => {
                       const val = (document.getElementById(`pago-meta-${m.id}`) as HTMLInputElement).value;
