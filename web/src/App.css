@@ -446,6 +446,16 @@ html, body, #root { max-width: 100%; }
 .categories-form { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; align-items: center; }
 @media (max-width: 768px) { .categories-form { grid-template-columns: 1fr; } }
 
+/* Mostrar todas las filas en la tabla de Categorías (sin scroll interno) */
+.categories-card .table-responsive {
+  max-height: none !important;
+  overflow: visible !important;
+}
+.categories-card .table-responsive table {
+  display: table !important; /* revertir display:block global para que no genere scroll horizontal */
+  width: 100%;
+}
+
 /* Utilidades generales responsive */
 img, video, canvas, svg {
   max-width: 100%;

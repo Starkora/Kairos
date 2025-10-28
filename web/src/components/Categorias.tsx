@@ -439,6 +439,12 @@ export default function Categorias() {
             <div>Cargando...</div>
           ) : (
             <div className="table-responsive"><table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
+              {/* Ajuste de anchos de columnas: reducimos Nombre y ampliamos Fecha de creación */}
+              <colgroup>
+                <col style={{ width: '45%' }} />
+                <col style={{ width: '35%' }} />
+                <col style={{ width: '20%' }} />
+              </colgroup>
               <thead>
                 <tr style={{ background: 'var(--color-table-header-bg)' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
@@ -450,7 +456,7 @@ export default function Categorias() {
                 {(Array.isArray(categoriasCuenta) ? categoriasCuenta : []).map(cat => (
                   <tr key={cat.id} style={{ borderBottom: '1px solid var(--color-input-border)' }}>
                     <td style={{ fontWeight: 600, padding: 8 }}>{cat.nombre}</td>
-                    <td style={{ padding: 8 }}>{cat.created_at ? cat.created_at.substring(0, 10) : ''}</td>
+                    <td style={{ padding: 8, whiteSpace: 'nowrap' }}>{cat.created_at ? cat.created_at.substring(0, 10) : ''}</td>
                     <td style={{ textAlign: 'center', padding: 8 }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <button onClick={() => handleEditCuenta(cat.id)}
