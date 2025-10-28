@@ -370,18 +370,18 @@ export default function Categorias() {
           {loading ? (
             <div>Cargando...</div>
           ) : (
-            <div className="table-responsive" style={{ width: '100%', overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto' }}><table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse', marginTop: 12 }}>
+            <div className="table-responsive" style={{ width: '100%', overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto' }}><table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
                 <tr style={{ background: 'var(--color-table-header-bg)' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
-                  <th style={{ textAlign: 'left', padding: 8 }}>Tipo</th>
-                  <th style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap', width: 120 }}>Acciones</th>
+                  <th style={{ textAlign: 'left', padding: 8, width: 120 }}>Tipo</th>
+                  <th style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap', width: 96 }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {(Array.isArray(categorias) ? categorias : []).map(cat => (
                   <tr key={cat.id} style={{ borderBottom: '1px solid var(--color-input-border)' }}>
-                    <td style={{ fontWeight: 600, padding: 8 }}>{cat.nombre}</td>
+                    <td style={{ fontWeight: 600, padding: 8, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.nombre}</td>
                     <td style={{ padding: 8 }}>{cat.tipo}</td>
                     <td style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap' }}>
                       <div style={buttonContainerStyle}>
@@ -438,18 +438,18 @@ export default function Categorias() {
           {loadingTablaCuenta ? (
             <div>Cargando...</div>
           ) : (
-            <div className="table-responsive" style={{ width: '100%', overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto' }}><table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse', marginTop: 12 }}>
+            <div className="table-responsive" style={{ width: '100%', overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto' }}><table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
                 <tr style={{ background: 'var(--color-table-header-bg)' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
                   <th style={{ textAlign: 'left', padding: 8 }}>Fecha de creación</th>
-                  <th style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap', width: 120 }}>Acciones</th>
+                  <th style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap', width: 96 }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {(Array.isArray(categoriasCuenta) ? categoriasCuenta : []).map(cat => (
                   <tr key={cat.id} style={{ borderBottom: '1px solid var(--color-input-border)' }}>
-                    <td style={{ fontWeight: 600, padding: 8 }}>{cat.nombre}</td>
+                    <td style={{ fontWeight: 600, padding: 8, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.nombre}</td>
                     <td style={{ padding: 8 }}>{cat.created_at ? cat.created_at.substring(0, 10) : ''}</td>
                     <td style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -484,10 +484,10 @@ export default function Categorias() {
       <style>{`
         /* Responsive helpers para tablas con scroll en pantallas pequeñas */
         .categories-card .table-responsive { max-width: 100%; overflow-x: auto; max-height: 60vh; overflow-y: auto; }
-        .categories-card table { min-width: 640px; }
+        .categories-card table { min-width: 560px; }
         .categories-card thead th { position: sticky; top: 0; z-index: 1; background: var(--color-table-header-bg); box-shadow: 0 1px 0 var(--color-input-border); }
         @media (max-width: 480px) {
-          .categories-card table { min-width: 520px; }
+          .categories-card table { min-width: 440px; }
           .categories-card th, .categories-card td { padding: 6px !important; }
         }
       `}</style>
