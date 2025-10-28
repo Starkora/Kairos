@@ -502,11 +502,11 @@ export default function Categorias() {
                     <td style={{ fontWeight: 600, padding: 8 }}>{cat.nombre}</td>
                     <td style={{ padding: 8, whiteSpace: 'nowrap' }}>{cat.created_at ? cat.created_at.substring(0, 10) : ''}</td>
                     <td style={{ textAlign: 'center', padding: 8 }}>
-                      <div className="acciones" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <div className="acciones-cc" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <button onClick={() => handleEditCuenta(cat.id)}
                           style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
                           aria-label="Editar" title="Editar">
-                          <svg className="icon-accion" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c4fa1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg className="icon-accion-cc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c4fa1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M12 20h9" />
                             <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
                           </svg>
@@ -514,7 +514,7 @@ export default function Categorias() {
                         <button onClick={() => handleDeleteCuenta(cat.id)}
                           style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
                           aria-label="Eliminar" title="Eliminar">
-                          <svg className="icon-accion" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f44336" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg className="icon-accion-cc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f44336" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="3 6 5 6 21 6" />
                             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                             <line x1="10" y1="11" x2="10" y2="17" />
