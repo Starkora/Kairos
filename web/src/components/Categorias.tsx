@@ -203,7 +203,7 @@ export default function Categorias() {
       }
     }).then(result => {
       if (result.isConfirmed) {
-        fetch(`${API_BASE}/api/categorias/${id}`, {
+        fetch(`/api/categorias/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -235,7 +235,7 @@ export default function Categorias() {
       confirmButtonColor: '#f44336',
     }).then(result => {
       if (result.isConfirmed) {
-        fetch(`${API_BASE}/api/categorias/${id}`, {
+        fetch(`/api/categorias/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': 'Bearer ' + getToken()
@@ -269,7 +269,7 @@ export default function Categorias() {
       }
     }).then(result => {
       if (result.isConfirmed) {
-        fetch(`${API_BASE}/api/categorias-cuenta/${id}`, {
+        fetch(`/api/categorias-cuenta/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -301,7 +301,7 @@ export default function Categorias() {
       confirmButtonColor: '#f44336',
     }).then(result => {
       if (result.isConfirmed) {
-        fetch(`${API_BASE}/api/categorias-cuenta/${id}`, {
+        fetch(`/api/categorias-cuenta/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': 'Bearer ' + getToken()
@@ -370,21 +370,20 @@ export default function Categorias() {
           {loading ? (
             <div>Cargando...</div>
           ) : (
-            <div className="scroll-area">
-              <div className="table-responsive" style={{ width: '100%', overflowX: 'auto' }}><table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', marginTop: 12 }}>
+            <div className="table-responsive"><table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
                 <tr style={{ background: 'var(--color-table-header-bg)' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
-                  <th style={{ textAlign: 'left', padding: 8, width: 120 }}>Tipo</th>
-                  <th style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap', width: 96 }}>Acciones</th>
+                  <th style={{ textAlign: 'left', padding: 8 }}>Tipo</th>
+                  <th style={{ textAlign: 'center', padding: 8 }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {(Array.isArray(categorias) ? categorias : []).map(cat => (
                   <tr key={cat.id} style={{ borderBottom: '1px solid var(--color-input-border)' }}>
-                    <td style={{ fontWeight: 600, padding: 8, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.nombre}</td>
+                    <td style={{ fontWeight: 600, padding: 8 }}>{cat.nombre}</td>
                     <td style={{ padding: 8 }}>{cat.tipo}</td>
-                    <td style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap' }}>
+                    <td style={{ textAlign: 'center', padding: 8 }}>
                       <div style={buttonContainerStyle}>
                         <button onClick={() => handleEdit(cat.id)}
                           style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
@@ -410,7 +409,6 @@ export default function Categorias() {
                 ))}
               </tbody>
             </table></div>
-            </div>
           )}
         </div>
       </div>
@@ -440,20 +438,20 @@ export default function Categorias() {
           {loadingTablaCuenta ? (
             <div>Cargando...</div>
           ) : (
-            <div className="scroll-area"><div className="table-responsive" style={{ width: '100%', overflowX: 'auto' }}><table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', marginTop: 12 }}>
+            <div className="table-responsive"><table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
                 <tr style={{ background: 'var(--color-table-header-bg)' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
-                  <th style={{ textAlign: 'left', padding: 8, width: 140, whiteSpace: 'nowrap' }}>Fecha de creación</th>
-                  <th style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap', width: 96 }}>Acciones</th>
+                  <th style={{ textAlign: 'left', padding: 8 }}>Fecha de creación</th>
+                  <th style={{ textAlign: 'center', padding: 8 }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {(Array.isArray(categoriasCuenta) ? categoriasCuenta : []).map(cat => (
                   <tr key={cat.id} style={{ borderBottom: '1px solid var(--color-input-border)' }}>
-                    <td style={{ fontWeight: 600, padding: 8, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.nombre}</td>
+                    <td style={{ fontWeight: 600, padding: 8 }}>{cat.nombre}</td>
                     <td style={{ padding: 8 }}>{cat.created_at ? cat.created_at.substring(0, 10) : ''}</td>
-                    <td style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap' }}>
+                    <td style={{ textAlign: 'center', padding: 8 }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <button onClick={() => handleEditCuenta(cat.id)}
                           style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
@@ -478,32 +476,11 @@ export default function Categorias() {
                   </tr>
                 ))}
               </tbody>
-            </table></div></div>
+            </table></div>
           )}
         </div>
       </div>
       {/* Tooltips nativos via title en los botones */}
-      <style>{`
-        /* Responsive helpers para tablas con scroll en pantallas pequeñas */
-        .categories-card .table-responsive { max-width: 100%; overflow-x: auto; }
-        /* Contenedor de scroll con altura acotada como en Movimientos programados */
-        .categories-card .scroll-area {
-          height: 320px; /* tamaño fijo estándar (igual que Movimientos programados) */
-          overflow-y: scroll; /* fuerza a mostrar el canal de scroll */
-          scrollbar-gutter: stable both-edges; /* reserva espacio para el scroll */
-          -webkit-overflow-scrolling: touch;
-        }
-        .categories-card table { min-width: 560px; }
-        .categories-card thead th { position: sticky; top: 0; z-index: 1; background: var(--color-table-header-bg); box-shadow: 0 1px 0 var(--color-input-border); }
-        @media (max-width: 480px) {
-          .categories-card table { min-width: 440px; }
-          .categories-card th, .categories-card td { padding: 6px !important; }
-          .categories-card .scroll-area { height: 260px; }
-        }
-        @media (min-width: 1200px) {
-          .categories-card .scroll-area { height: 380px; }
-        }
-      `}</style>
     </div>
   );
 }
