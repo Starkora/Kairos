@@ -370,7 +370,7 @@ export default function Categorias() {
           {loading ? (
             <div>Cargando...</div>
           ) : (
-            <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+            <div className="scroll-area">
               <div className="table-responsive" style={{ width: '100%', overflowX: 'auto' }}><table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
                 <tr style={{ background: 'var(--color-table-header-bg)' }}>
@@ -440,7 +440,7 @@ export default function Categorias() {
           {loadingTablaCuenta ? (
             <div>Cargando...</div>
           ) : (
-            <div className="table-responsive" style={{ width: '100%', overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto' }}><table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', marginTop: 12 }}>
+            <div className="scroll-area"><div className="table-responsive" style={{ width: '100%', overflowX: 'auto' }}><table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
                 <tr style={{ background: 'var(--color-table-header-bg)' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
@@ -478,19 +478,24 @@ export default function Categorias() {
                   </tr>
                 ))}
               </tbody>
-            </table></div>
+            </table></div></div>
           )}
         </div>
       </div>
       {/* Tooltips nativos via title en los botones */}
       <style>{`
         /* Responsive helpers para tablas con scroll en pantallas pequeñas */
-        .categories-card .table-responsive { max-width: 100%; overflow-x: auto; max-height: 60vh; overflow-y: auto; }
+        .categories-card .table-responsive { max-width: 100%; overflow-x: auto; }
+        .categories-card .scroll-area { height: 420px; overflow-y: auto; }
         .categories-card table { min-width: 560px; }
         .categories-card thead th { position: sticky; top: 0; z-index: 1; background: var(--color-table-header-bg); box-shadow: 0 1px 0 var(--color-input-border); }
         @media (max-width: 480px) {
           .categories-card table { min-width: 440px; }
           .categories-card th, .categories-card td { padding: 6px !important; }
+          .categories-card .scroll-area { height: 320px; }
+        }
+        @media (min-width: 1200px) {
+          .categories-card .scroll-area { height: 520px; }
         }
       `}</style>
     </div>
