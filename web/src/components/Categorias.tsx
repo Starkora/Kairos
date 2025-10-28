@@ -6,6 +6,8 @@ import { getToken } from '../utils/auth';
 export default function Categorias() {
   // Categorías de ingreso/egreso
   const [categorias, setCategorias] = React.useState([]);
+  const [pageCat, setPageCat] = React.useState(1);
+  const pageSizeCat = 12; // filas por página
   const [form, setForm] = React.useState({ nombre: '', tipo: 'ingreso' });
   const [loading, setLoading] = React.useState(true);
   // Categoría de cuenta
@@ -34,6 +36,19 @@ export default function Categorias() {
         setLoadingTablaCuenta(false);
       });
   }, []);
+
+  // Derivar paginación de categorías (ingreso/egreso)
+  const totalPagesCat = Math.max(1, Math.ceil(((Array.isArray(categorias) ? categorias.length : 0)) / pageSizeCat));
+  const pageCategorias = React.useMemo(() => {
+    const lista = Array.isArray(categorias) ? categorias : [];
+    const start = (pageCat - 1) * pageSizeCat;
+    return lista.slice(start, start + pageSizeCat);
+  }, [categorias, pageCat]);
+
+  // Asegurar que la página actual esté dentro de rango cuando cambie la cantidad
+  React.useEffect(() => {
+    if (pageCat > totalPagesCat) setPageCat(totalPagesCat);
+  }, [totalPagesCat, pageCat]);
 
   React.useEffect(() => {
     fetch(`${API_BASE}/api/categorias?plataforma=web`, {
@@ -370,6 +385,7 @@ export default function Categorias() {
           {loading ? (
             <div>Cargando...</div>
           ) : (
+            <>
             <div className="table-responsive"><table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
                 <tr style={{ background: 'var(--color-table-header-bg)' }}>
@@ -379,7 +395,7 @@ export default function Categorias() {
                 </tr>
               </thead>
               <tbody>
-                {(Array.isArray(categorias) ? categorias : []).map(cat => (
+                {pageCategorias.map(cat => (
                   <tr key={cat.id} style={{ borderBottom: '1px solid var(--color-input-border)' }}>
                     <td style={{ fontWeight: 600, padding: 8 }}>{cat.nombre}</td>
                     <td style={{ padding: 8 }}>{cat.tipo}</td>
@@ -409,6 +425,34 @@ export default function Categorias() {
                 ))}
               </tbody>
             </table></div>
+            {/* Controles de paginación */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+              <span style={{ color: 'var(--color-muted)', fontSize: 13 }}>
+                {(() => {
+                  const total = Array.isArray(categorias) ? categorias.length : 0;
+                  const start = total ? (pageCat - 1) * pageSizeCat + 1 : 0;
+                  const end = Math.min(pageCat * pageSizeCat, total);
+                  return `Mostrando ${start}-${end} de ${total}`;
+                })()}
+              </span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setPageCat(p => Math.max(1, p - 1))}
+                  disabled={pageCat <= 1}
+                  style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', cursor: pageCat <= 1 ? 'not-allowed' : 'pointer' }}>
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPageCat(p => Math.min(totalPagesCat, p + 1))}
+                  disabled={pageCat >= totalPagesCat}
+                  style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', cursor: pageCat >= totalPagesCat ? 'not-allowed' : 'pointer' }}>
+                  Siguiente
+                </button>
+              </div>
+            </div>
+            </>
           )}
         </div>
       </div>
