@@ -518,7 +518,7 @@ html, body, #root { max-width: 100%; }
   table.tabla-categorias-cuenta thead th:nth-child(3),
   table.tabla-categorias-cuenta tbody td:nth-child(3) { width: 24%; text-align: center; }
   table.tabla-categorias-cuenta thead th:nth-child(3) { font-size: 0.9rem; }
-  table.tabla-categorias-cuenta tbody td:nth-child(3) .acciones-cc { gap: 14px; }
+  table.tabla-categorias-cuenta tbody td:nth-child(3) .acciones-cc { gap: 14px; width: 120%; justify-content: center; }
   table.tabla-categorias-cuenta .acciones-cc .icon-accion-cc { width: 28px !important; height: 28px !important; }
   .tabla-categorias-cuenta-wrapper { width: 120% !important; margin-left: -10% !important; max-width: none; }
 }
