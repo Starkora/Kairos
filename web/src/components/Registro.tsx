@@ -22,6 +22,22 @@ export default function Registro() {
     icon: '💸',
     color: '#c62828'
   });
+  // Paletas rápidas y colores por defecto por tipo
+  const ICON_OPTIONS = React.useMemo(() => ['💸','💰','🏦','🛒','🍽️','🚗','🏠','💳','📈','📉','🎁','🔌','🏥','🎮','✈️','🛠️'], []);
+  const DEFAULT_COLOR_BY_TIPO: Record<string,string> = React.useMemo(() => ({
+    ingreso: '#2e7d32',   // verde
+    egreso: '#c62828',    // rojo
+    ahorro: '#ff9800',    // naranja
+    transferencia: '#1976d2' // azul (referencial en UI)
+  }), []);
+  const COLOR_OPTIONS = React.useMemo(() => ([
+    { label: 'Verde', value: '#2e7d32' },
+    { label: 'Rojo', value: '#c62828' },
+    { label: 'Naranja', value: '#ff9800' },
+    { label: 'Azul', value: '#1976d2' },
+    { label: 'Morado', value: '#6c4fa1' },
+    { label: 'Gris', value: '#607d8b' },
+  ]), []);
   const [repetir, setRepetir] = React.useState(false);
   const [repeticion, setRepeticion] = React.useState({
     frecuencia: 'mensual', // mensual, semanal, diaria
@@ -79,6 +95,11 @@ export default function Registro() {
       // Aceptar coma o punto y guardar con punto para evitar NaN
       const normalized = String(value).replace(',', '.');
       setForm((prev) => ({ ...prev, [name]: normalized }));
+      return;
+    }
+    if (name === 'tipo') {
+      // Ajustar color por defecto según tipo al cambiar
+      setForm((prev) => ({ ...prev, tipo: value, color: DEFAULT_COLOR_BY_TIPO[value] || prev.color }));
       return;
     }
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -355,9 +376,14 @@ export default function Registro() {
             <label>Icono:&nbsp;</label>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               <select name="icon" value={form.icon} onChange={handleChange} style={{ padding: 6, borderRadius: 6 }}>
-                {['💸','💰','🏦','🍎','🚗','💳','🔌','🎁','🛒','🏥'].map(i => <option key={i} value={i}>{i}</option>)}
+                {ICON_OPTIONS.map(i => <option key={i} value={i}>{i}</option>)}
               </select>
-              <input type="color" name="color" value={form.color} onChange={handleChange} style={{ width: 48, height: 36, padding: 0, border: 'none', background: 'transparent' }} />
+              <select name="color" value={form.color} onChange={handleChange} style={{ padding: 6, borderRadius: 6 }}>
+                {COLOR_OPTIONS.map(c => (
+                  <option key={c.value} value={c.value}>{c.label} ({c.value})</option>
+                ))}
+              </select>
+              <span title={form.color} style={{ display:'inline-block', width: 22, height: 22, borderRadius: '50%', background: form.color, border: '1px solid #888' }} />
             </div>
           </div>
         ) : (
@@ -365,7 +391,7 @@ export default function Registro() {
             <label>Icono:&nbsp;</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 24 }}>🔁</span>
-              <span style={{ fontSize: 12, color: 'var(--color-muted)' }}>(se asigna automáticamente)</span>
+              <span style={{ fontSize: 12, color: 'var(--color-muted)' }}>(se asigna automáticamente, color azul)</span>
             </div>
           </div>
         )}
