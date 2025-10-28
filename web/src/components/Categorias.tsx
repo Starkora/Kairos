@@ -92,8 +92,8 @@ export default function Categorias() {
         Swal.fire({ icon: 'success', title: 'Categoría agregada', showConfirmButton: false, timer: 1200 });
         setForm({ nombre: '', tipo: 'ingreso' });
         // Refrescar tabla
-  setLoading(true);
-  fetch(`${API_BASE}/api/categorias?plataforma=all`, {
+        setLoading(true);
+        fetch(`${API_BASE}/api/categorias?plataforma=all`, {
           headers: {
             'Authorization': 'Bearer ' + getToken()
           }
@@ -197,8 +197,8 @@ export default function Categorias() {
       confirmButtonText: 'Guardar',
       cancelButtonText: 'Cancelar',
       preConfirm: () => {
-  const nombre = (document.getElementById('nombre') as HTMLInputElement).value;
-  const tipo = (document.getElementById('tipo') as HTMLSelectElement).value;
+        const nombre = (document.getElementById('nombre') as HTMLInputElement).value;
+        const tipo = (document.getElementById('tipo') as HTMLSelectElement).value;
         return { nombre, tipo };
       }
     }).then(result => {
@@ -264,7 +264,7 @@ export default function Categorias() {
       confirmButtonText: 'Guardar',
       cancelButtonText: 'Cancelar',
       preConfirm: () => {
-  const nombre = (document.getElementById('nombre') as HTMLInputElement).value;
+        const nombre = (document.getElementById('nombre') as HTMLInputElement).value;
         return { nombre };
       }
     }).then(result => {
@@ -339,8 +339,8 @@ export default function Categorias() {
     <div className="card categories-card">
       {/* Bloque de Categorías ingreso/egreso */}
       <div style={{ marginBottom: 48 }}>
-  <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: 'var(--color-text)' }}>Categorías</h2>
-  <div style={{ background: 'var(--color-card)', borderRadius: 10, padding: 24, marginBottom: 32 }}>
+        <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: 'var(--color-text)' }}>Categorías</h2>
+        <div style={{ background: 'var(--color-card)', borderRadius: 10, padding: 24, marginBottom: 32 }}>
           <form onSubmit={handleSubmit} className="categories-form" style={{ marginBottom: 24 }}>
             <input
               type="text"
@@ -366,50 +366,50 @@ export default function Categorias() {
             </button>
           </form>
         </div>
-  <div style={{ background: 'var(--color-card)', borderRadius: 10, padding: 24 }}>
+        <div style={{ background: 'var(--color-card)', borderRadius: 10, padding: 24 }}>
           {loading ? (
             <div>Cargando...</div>
           ) : (
             <div className="scroll-area">
               <div className="table-responsive" style={{ width: '100%', overflowX: 'auto' }}><table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', marginTop: 12 }}>
-              <thead>
-                <tr style={{ background: 'var(--color-table-header-bg)' }}>
-                  <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
-                  <th style={{ textAlign: 'left', padding: 8, width: 120 }}>Tipo</th>
-                  <th style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap', width: 96 }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(Array.isArray(categorias) ? categorias : []).map(cat => (
-                  <tr key={cat.id} style={{ borderBottom: '1px solid var(--color-input-border)' }}>
-                    <td style={{ fontWeight: 600, padding: 8, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.nombre}</td>
-                    <td style={{ padding: 8 }}>{cat.tipo}</td>
-                    <td style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap' }}>
-                      <div style={buttonContainerStyle}>
-                        <button onClick={() => handleEdit(cat.id)}
-                          style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
-                          aria-label="Editar" title="Editar">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c4fa1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 20h9" />
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                          </svg>
-                        </button>
-                        <button onClick={() => handleDelete(cat.id)}
-                          style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
-                          aria-label="Eliminar" title="Eliminar">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f44336" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            <line x1="10" y1="11" x2="10" y2="17" />
-                            <line x1="14" y1="11" x2="14" y2="17" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
+                <thead>
+                  <tr style={{ background: 'var(--color-table-header-bg)' }}>
+                    <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
+                    <th style={{ textAlign: 'left', padding: 8, width: 120 }}>Tipo</th>
+                    <th style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap', width: 96 }}>Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table></div>
+                </thead>
+                <tbody>
+                  {(Array.isArray(categorias) ? categorias : []).map(cat => (
+                    <tr key={cat.id} style={{ borderBottom: '1px solid var(--color-input-border)' }}>
+                      <td style={{ fontWeight: 600, padding: 8, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.nombre}</td>
+                      <td style={{ padding: 8 }}>{cat.tipo}</td>
+                      <td style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap' }}>
+                        <div style={buttonContainerStyle}>
+                          <button onClick={() => handleEdit(cat.id)}
+                            style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
+                            aria-label="Editar" title="Editar">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c4fa1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                            </svg>
+                          </button>
+                          <button onClick={() => handleDelete(cat.id)}
+                            style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}
+                            aria-label="Eliminar" title="Eliminar">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f44336" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              <line x1="10" y1="11" x2="10" y2="17" />
+                              <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table></div>
             </div>
           )}
         </div>
@@ -417,7 +417,7 @@ export default function Categorias() {
 
       {/* Bloque de Categoría de Cuenta */}
       <div>
-  <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: 'var(--color-text)' }}>Categoría de Cuenta</h2>
+        <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: 'var(--color-text)' }}>Categoría de Cuenta</h2>
         <div style={{ background: 'var(--color-card)', borderRadius: 10, padding: 24, marginBottom: 32 }}>
           <form onSubmit={handleSubmitCuenta} className="categories-form" style={{ marginBottom: 0 }}>
             <input
@@ -436,7 +436,7 @@ export default function Categorias() {
           {loadingCuenta && <div style={{ marginTop: 8 }}>Guardando...</div>}
         </div>
         {/* Tabla de categorías de cuenta */}
-  <div style={{ background: 'var(--color-card)', borderRadius: 10, padding: 24 }}>
+        <div style={{ background: 'var(--color-card)', borderRadius: 10, padding: 24 }}>
           {loadingTablaCuenta ? (
             <div>Cargando...</div>
           ) : (
