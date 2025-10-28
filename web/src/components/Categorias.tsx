@@ -386,7 +386,7 @@ export default function Categorias() {
             <div>Cargando...</div>
           ) : (
             <>
-            <div className="table-responsive"><table className="tabla-categorias" style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
+            <div className="table-responsive tabla-categorias-wrapper"><table className="tabla-categorias" style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
                 <tr style={{ background: 'var(--color-table-header-bg)' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
