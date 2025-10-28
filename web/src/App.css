@@ -442,7 +442,8 @@ html, body, #root { max-width: 100%; }
 @media (max-width: 768px) { .debts-form { grid-template-columns: 1fr; } }
 
 /* Categorías */
-.categories-card { max-width: 700px; margin: 24px auto; padding: 24px; background: var(--color-card); box-shadow: 0 2px 12px var(--card-shadow); border-radius: 12px; }
+.categories-card { max-width: 900px; margin: 24px auto; padding: 24px; background: var(--color-card); box-shadow: 0 2px 12px var(--card-shadow); border-radius: 12px; }
+@media (min-width: 1200px) { .categories-card { max-width: 1000px; } }
 .categories-form { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; align-items: center; }
 @media (max-width: 768px) { .categories-form { grid-template-columns: 1fr; } }
 
@@ -484,6 +485,10 @@ html, body, #root { max-width: 100%; }
   .categories-card .table-responsive tbody td {
     padding: 8px 10px;
     font-size: 0.95rem;
+  }
+  /* Encabezado de Acciones un poco más pequeño para evitar corte */
+  .categories-card .table-responsive thead th:nth-child(3) {
+    font-size: 0.9rem;
   }
 }
 
