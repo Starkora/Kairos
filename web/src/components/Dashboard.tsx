@@ -40,7 +40,7 @@ export default function Dashboard() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = React.useState(currentYear);
   // Permitir selección múltiple de segmentos
-  const [segmentos, setSegmentos] = React.useState({ Ahorro: true, Gasto: false, Ingreso: false });
+  const [segmentos, setSegmentos] = React.useState({ Ahorro: true, Gasto: true, Ingreso: true });
 
   const handleSegmentoChange = (e) => {
     const { name, checked } = e.target;
