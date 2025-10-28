@@ -247,14 +247,20 @@ exports.descargarPlantilla = async (req, res) => {
   wsList.getCell('A1').value = 'Cuentas';
   wsList.getCell('B1').value = 'Categorias';
   wsList.getCell('C1').value = 'Tipos';
+  wsList.getCell('D1').value = 'Iconos';
+  wsList.getCell('E1').value = 'Colores';
 
-    const cuentasVals = (cuentas && cuentas.length) ? cuentas.map(c => c.nombre) : ['-'];
-    const categoriasVals = (categorias && categorias.length) ? categorias.map(c => c.nombre) : ['-'];
-    const tiposVals = tipos;
+  const cuentasVals = (cuentas && cuentas.length) ? cuentas.map(c => c.nombre) : ['-'];
+  const categoriasVals = (categorias && categorias.length) ? categorias.map(c => c.nombre) : ['-'];
+  const tiposVals = tipos;
+  const iconosVals = ['💸','💰','🏦','🍎','🚗','💳','🔌','🎁','🛒','🏥'];
+  const coloresVals = ['#2e7d32','#c62828','#ff9800','#1976d2','#6c4fa1','#607d8b'];
 
     cuentasVals.forEach((n, i) => wsList.getCell(2 + i, 1).value = n);
     categoriasVals.forEach((n, i) => wsList.getCell(2 + i, 2).value = n);
-    tiposVals.forEach((n, i) => wsList.getCell(2 + i, 3).value = n);
+  tiposVals.forEach((n, i) => wsList.getCell(2 + i, 3).value = n);
+  iconosVals.forEach((n, i) => wsList.getCell(2 + i, 4).value = n);
+  coloresVals.forEach((n, i) => wsList.getCell(2 + i, 5).value = n);
 
     // Definir rangos con nombre
   // Datos comienzan en la fila 2, por tanto fin = 1 + length
@@ -264,6 +270,8 @@ exports.descargarPlantilla = async (req, res) => {
   const cuentasRange = "'Listas'!$A$2:$A$" + cuentasEnd;
   const categoriasRange = "'Listas'!$B$2:$B$" + categoriasEnd;
   const tiposRange = "'Listas'!$C$2:$C$" + tiposEnd;
+  const iconosRange = "'Listas'!$D$2:$D$" + (1 + iconosVals.length);
+  const coloresRange = "'Listas'!$E$2:$E$" + (1 + coloresVals.length);
 
     // Estilos básicos encabezados
     ws.getRow(1).font = { bold: true };
@@ -323,6 +331,18 @@ exports.descargarPlantilla = async (req, res) => {
       // Fecha formato
       ws.getCell(r, 5).value = null;
       ws.getCell(r, 5).numFmt = 'yyyy-mm-dd';
+      // Icono
+      ws.getCell(r, 8).dataValidation = {
+        type: 'list', allowBlank: true, formulae: ['=' + iconosRange],
+        showInputMessage: true, promptTitle: 'Icono',
+        prompt: 'Opcional: selecciona un icono. En transferencias se usa 🔁.'
+      };
+      // Color (se aplicará color por defecto al importar si se deja vacío)
+      ws.getCell(r, 9).dataValidation = {
+        type: 'list', allowBlank: true, formulae: ['=' + coloresRange],
+        showInputMessage: true, promptTitle: 'Color',
+        prompt: 'Opcional: selecciona un color (hex). La importación asignará colores por defecto según el tipo.'
+      };
     }
 
     // Fila de ejemplo en la fila 2
