@@ -375,10 +375,12 @@ exports.importarExcel = async (req, res) => {
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   if (!req.file) return res.status(400).json({ error: 'Falta archivo (field name: file)' });
   try {
+    // Leer Excel; permitimos fechas como números o como objetos Date según cómo venga el archivo
     const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheetName = wb.SheetNames[0];
     const ws = wb.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+  // defval: '' para que columnas vacías no sean undefined. No usamos raw:false para mantener control propio sobre fechas.
+  const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
     if (!Array.isArray(rows) || rows.length === 0) {
       return res.status(400).json({ error: 'La hoja está vacía' });
     }
@@ -408,6 +410,51 @@ exports.importarExcel = async (req, res) => {
     const defaultIconByTipo = {
       transferencia: '🔁',
     };
+    // Utilidad: normalizar fecha desde Excel (serial, Date o string) a YYYY-MM-DD
+    const toISODate = (val) => {
+      if (!val && val !== 0) return '';
+      // Si ya es Date
+      if (val instanceof Date && !isNaN(val)) {
+        const d = val;
+        const tz = d.getTimezoneOffset() * 60000;
+        return new Date(d - tz).toISOString().slice(0, 10);
+      }
+      // Si es número tipo serial Excel (días desde 1899-12-30)
+      if (typeof val === 'number' && isFinite(val)) {
+        const epoch = Date.UTC(1899, 11, 30); // 1899-12-30
+        const ms = epoch + Math.round(val) * 86400000;
+        const d = new Date(ms);
+        if (!isNaN(d)) {
+          const tz = d.getTimezoneOffset() * 60000;
+          return new Date(d - tz).toISOString().slice(0, 10);
+        }
+      }
+      // Si es string, aceptar formatos comunes
+      const s = String(val).trim();
+      if (!s) return '';
+      // YYYY-MM-DD o YYYY/MM/DD
+      let m = s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+      if (m) {
+        const [_, y, mo, da] = m;
+        const yy = y.padStart(4, '0');
+        const mm = String(mo).padStart(2, '0');
+        const dd = String(da).padStart(2, '0');
+        return `${yy}-${mm}-${dd}`;
+      }
+      // DD/MM/YYYY o DD-MM-YYYY
+      m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+      if (m) {
+        const [_, da, mo, y] = m;
+        const yy = y.padStart(4, '0');
+        const mm = String(mo).padStart(2, '0');
+        const dd = String(da).padStart(2, '0');
+        return `${yy}-${mm}-${dd}`;
+      }
+      // Fallback: si ya luce como YYYY-MM-DD al inicio
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+      return '';
+    };
+
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
       // Cuenta puede venir como ID o como nombre en cuenta_id o en columna 'cuenta'
@@ -425,10 +472,10 @@ exports.importarExcel = async (req, res) => {
         if (found) cuenta_id = found;
       }
 
-  const tipo = String(r.tipo || '').toLowerCase();
-      const monto = parseFloat(r.monto);
-      const descripcion = String(r.descripcion || '').slice(0, 200);
-      const fecha = String(r.fecha || '').slice(0, 10);
+    const tipo = String(r.tipo || '').toLowerCase();
+    const monto = parseFloat(r.monto);
+    const descripcion = String(r.descripcion || '').slice(0, 200);
+    const fecha = toISODate(r.fecha);
       // Categoría puede venir como ID o como nombre (en categoria_id o 'categoria')
       let categoria_id = null;
       if (r.categoria_id !== undefined && r.categoria_id !== '') {
@@ -463,8 +510,13 @@ exports.importarExcel = async (req, res) => {
 
       // Validaciones básicas
       const tipoValido = ['ingreso','egreso','ahorro','transferencia'].includes(tipo);
-      if (!cuenta_id || !tipoValido || !monto || isNaN(monto) || !fecha) {
-        errores.push({ fila: i + 2, error: 'Campos requeridos inválidos' });
+      const missing = [];
+      if (!cuenta_id) missing.push('cuenta');
+      if (!tipoValido) missing.push('tipo');
+      if (!monto || isNaN(monto)) missing.push('monto');
+      if (!fecha) missing.push('fecha');
+      if (missing.length) {
+        errores.push({ fila: i + 2, error: 'Campos requeridos inválidos', missing });
         continue;
       }
       // Validar cuenta y categoría pertenecen al usuario (usando mapas precargados o consulta simple)
