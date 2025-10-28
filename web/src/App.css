@@ -513,10 +513,12 @@ html, body, #root { max-width: 100%; }
   table.tabla-categorias-cuenta { table-layout: fixed; width: 100%; }
   table.tabla-categorias-cuenta thead th:nth-child(1),
   table.tabla-categorias-cuenta tbody td:nth-child(1) { width: 46%; white-space: normal; word-break: break-word; }
-  table.tabla-categorias-cuenta thead th:nth-child(2),
+  /* Columna 2 (Fecha): permitir wrap en header, mantener nowrap en celdas */
+  table.tabla-categorias-cuenta thead th:nth-child(2) { width: 34%; white-space: normal; word-break: break-word; }
   table.tabla-categorias-cuenta tbody td:nth-child(2) { width: 34%; white-space: nowrap; }
   table.tabla-categorias-cuenta thead th:nth-child(3),
   table.tabla-categorias-cuenta tbody td:nth-child(3) { width: 20%; text-align: center; }
+  table.tabla-categorias-cuenta thead th:nth-child(3) { font-size: 0.9rem; }
   table.tabla-categorias-cuenta tbody td:nth-child(3) .acciones { gap: 12px; }
   table.tabla-categorias-cuenta .icon-accion { width: 20px; height: 20px; }
   .tabla-categorias-cuenta-wrapper { width: 120% !important; margin-left: -10% !important; max-width: none; }
