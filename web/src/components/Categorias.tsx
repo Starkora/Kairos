@@ -370,7 +370,8 @@ export default function Categorias() {
           {loading ? (
             <div>Cargando...</div>
           ) : (
-            <div className="table-responsive" style={{ width: '100%', overflowX: 'auto', maxHeight: '60vh', overflowY: 'auto' }}><table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', marginTop: 12 }}>
+            <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              <div className="table-responsive" style={{ width: '100%', overflowX: 'auto' }}><table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', marginTop: 12 }}>
               <thead>
                 <tr style={{ background: 'var(--color-table-header-bg)' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
@@ -409,6 +410,7 @@ export default function Categorias() {
                 ))}
               </tbody>
             </table></div>
+            </div>
           )}
         </div>
       </div>
@@ -442,14 +444,14 @@ export default function Categorias() {
               <thead>
                 <tr style={{ background: 'var(--color-table-header-bg)' }}>
                   <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
-                  <th style={{ textAlign: 'left', padding: 8 }}>Fecha de creación</th>
+                  <th style={{ textAlign: 'left', padding: 8, width: 140, whiteSpace: 'nowrap' }}>Fecha de creación</th>
                   <th style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap', width: 96 }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {(Array.isArray(categoriasCuenta) ? categoriasCuenta : []).map(cat => (
                   <tr key={cat.id} style={{ borderBottom: '1px solid var(--color-input-border)' }}>
-                    <td style={{ fontWeight: 600, padding: 8, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.nombre}</td>
+                    <td style={{ fontWeight: 600, padding: 8, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.nombre}</td>
                     <td style={{ padding: 8 }}>{cat.created_at ? cat.created_at.substring(0, 10) : ''}</td>
                     <td style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
