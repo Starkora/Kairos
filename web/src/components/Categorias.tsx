@@ -7,7 +7,7 @@ export default function Categorias() {
   // Categorías de ingreso/egreso
   const [categorias, setCategorias] = React.useState([]);
   const [pageCat, setPageCat] = React.useState(1);
-  const pageSizeCat = 12; // filas por página
+  const pageSizeCat = 6; // filas por página
   const [form, setForm] = React.useState({ nombre: '', tipo: 'ingreso' });
   const [loading, setLoading] = React.useState(true);
   // Categoría de cuenta

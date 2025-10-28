@@ -456,6 +456,31 @@ html, body, #root { max-width: 100%; }
   width: 100%;
 }
 
+/* Evitar desbordes en móviles: forzar layout fijo y anchos proporcionados */
+@media (max-width: 768px) {
+  .categories-card .table-responsive table {
+    table-layout: fixed;
+    width: 100%;
+  }
+  /* Columna 1: Nombre (puede hacer wrap) */
+  .categories-card .table-responsive thead th:nth-child(1),
+  .categories-card .table-responsive tbody td:nth-child(1) {
+    width: 58%;
+    white-space: normal;
+    word-break: break-word;
+  }
+  /* Columna 2: Tipo/Fecha */
+  .categories-card .table-responsive thead th:nth-child(2),
+  .categories-card .table-responsive tbody td:nth-child(2) {
+    width: 24%;
+  }
+  /* Columna 3: Acciones (fijo para iconos) */
+  .categories-card .table-responsive thead th:nth-child(3),
+  .categories-card .table-responsive tbody td:nth-child(3) {
+    width: 18%;
+  }
+}
+
 /* Utilidades generales responsive */
 img, video, canvas, svg {
   max-width: 100%;
