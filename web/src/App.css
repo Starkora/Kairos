@@ -465,19 +465,25 @@ html, body, #root { max-width: 100%; }
   /* Columna 1: Nombre (puede hacer wrap) */
   .categories-card .table-responsive thead th:nth-child(1),
   .categories-card .table-responsive tbody td:nth-child(1) {
-    width: 58%;
+    width: 52%;
     white-space: normal;
     word-break: break-word;
   }
   /* Columna 2: Tipo/Fecha */
   .categories-card .table-responsive thead th:nth-child(2),
   .categories-card .table-responsive tbody td:nth-child(2) {
-    width: 24%;
+    width: 20%;
   }
   /* Columna 3: Acciones (fijo para iconos) */
   .categories-card .table-responsive thead th:nth-child(3),
   .categories-card .table-responsive tbody td:nth-child(3) {
-    width: 18%;
+    width: 28%;
+  }
+  /* Compacidad en móvil */
+  .categories-card .table-responsive thead th,
+  .categories-card .table-responsive tbody td {
+    padding: 8px 10px;
+    font-size: 0.95rem;
   }
 }
 
