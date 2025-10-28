@@ -9,6 +9,7 @@ const Categoria = {
     const [rows] = await db.query('SELECT * FROM categorias WHERE tipo = ? AND usuario_id = ? AND plataforma = ? ORDER BY nombre', [tipo, usuario_id, plataforma]);
     return rows;
   },
+  
   create: async (data) => {
     const { usuario_id, nombre, tipo, plataforma } = data;
     const [result] = await db.query('INSERT INTO categorias (usuario_id, nombre, tipo, plataforma) VALUES (?, ?, ?, ?)', [usuario_id, nombre, tipo, plataforma || 'web']);

@@ -16,6 +16,7 @@ exports.getAll = async (req, res) => {
   }
 };
 
+
 exports.getByTipo = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   const plataforma = req.query.plataforma || req.body.plataforma;
