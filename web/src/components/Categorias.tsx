@@ -488,7 +488,7 @@ export default function Categorias() {
         .categories-card .table-responsive { max-width: 100%; overflow-x: auto; }
         /* Contenedor de scroll con altura acotada como en Movimientos programados */
         .categories-card .scroll-area {
-          height: 360px; /* tamaño fijo para evitar expansión */
+          height: 280px; /* tamaño fijo más compacto para que el scroll aparezca antes */
           overflow-y: auto; /* scroll vertical cuando sea necesario */
           scrollbar-gutter: stable both-edges; /* reserva espacio para el scroll */
           -webkit-overflow-scrolling: touch;
@@ -498,10 +498,10 @@ export default function Categorias() {
         @media (max-width: 480px) {
           .categories-card table { min-width: 440px; }
           .categories-card th, .categories-card td { padding: 6px !important; }
-          .categories-card .scroll-area { height: 300px; }
+          .categories-card .scroll-area { height: 240px; }
         }
         @media (min-width: 1200px) {
-          .categories-card .scroll-area { height: 440px; }
+          .categories-card .scroll-area { height: 360px; }
         }
       `}</style>
     </div>
