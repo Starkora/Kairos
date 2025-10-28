@@ -500,7 +500,7 @@ html, body, #root { max-width: 100%; }
   table.tabla-categorias thead th:nth-child(3),
   table.tabla-categorias tbody td:nth-child(3) { width: 32%; text-align: center; }
   table.tabla-categorias tbody td:nth-child(3) .acciones { gap: 14px; }
-  table.tabla-categorias .icon-accion { width: 22px; height: 22px; }
+  table.tabla-categorias .icon-accion { width: 24px !important; height: 24px !important; }
 
   /* Hacer el contenedor un 120% y desplazarlo a la izquierda para ganar aire en móvil */
   .tabla-categorias-wrapper {
@@ -514,13 +514,13 @@ html, body, #root { max-width: 100%; }
   table.tabla-categorias-cuenta thead th:nth-child(1),
   table.tabla-categorias-cuenta tbody td:nth-child(1) { width: 46%; white-space: normal; word-break: break-word; }
   /* Columna 2 (Fecha): permitir wrap en header, mantener nowrap en celdas */
-  table.tabla-categorias-cuenta thead th:nth-child(2) { width: 34%; white-space: normal; word-break: break-word; }
-  table.tabla-categorias-cuenta tbody td:nth-child(2) { width: 34%; white-space: nowrap; }
+  table.tabla-categorias-cuenta thead th:nth-child(2) { width: 32%; white-space: normal; word-break: break-word; }
+  table.tabla-categorias-cuenta tbody td:nth-child(2) { width: 32%; white-space: nowrap; }
   table.tabla-categorias-cuenta thead th:nth-child(3),
-  table.tabla-categorias-cuenta tbody td:nth-child(3) { width: 20%; text-align: center; }
+  table.tabla-categorias-cuenta tbody td:nth-child(3) { width: 22%; text-align: center; }
   table.tabla-categorias-cuenta thead th:nth-child(3) { font-size: 0.9rem; }
   table.tabla-categorias-cuenta tbody td:nth-child(3) .acciones { gap: 14px; }
-  table.tabla-categorias-cuenta .icon-accion { width: 22px !important; height: 22px !important; }
+  table.tabla-categorias-cuenta .icon-accion { width: 24px !important; height: 24px !important; }
   .tabla-categorias-cuenta-wrapper { width: 120% !important; margin-left: -10% !important; max-width: none; }
 }
 
