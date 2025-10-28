@@ -212,7 +212,7 @@ exports.descargarPlantilla = async (req, res) => {
     const [cuentas] = await db.query('SELECT id, nombre FROM cuentas WHERE usuario_id = ? ORDER BY nombre ASC', [usuario_id]);
     const [categorias] = await db.query('SELECT id, nombre FROM categorias WHERE usuario_id = ? ORDER BY nombre ASC', [usuario_id]);
 
-    const tipos = ['ingreso', 'egreso', 'ahorro'];
+  const tipos = ['ingreso', 'egreso', 'ahorro', 'transferencia'];
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('Plantilla');
@@ -237,14 +237,16 @@ exports.descargarPlantilla = async (req, res) => {
     ];
 
 
-  // Encabezados visibles más amigables; importación sigue aceptando cuenta_id/categoria_id y también cuenta/categoria
-  const headers = ['cuenta', 'tipo', 'monto', 'descripcion', 'fecha', 'categoria'];
+  // Encabezados visibles más amigables; importación sigue aceptando *_id y también por nombre
+  // Para transferencias usar también 'cuenta_destino' (o 'cuenta_destino_id').
+  // Icono y color son opcionales; en la importación el color será asignado por defecto según el tipo.
+  const headers = ['cuenta', 'tipo', 'monto', 'descripcion', 'fecha', 'categoria', 'cuenta_destino', 'icon', 'color'];
     ws.addRow(headers);
 
     // Hoja de listas: columnas A, B, C
-    wsList.getCell('A1').value = 'Cuentas';
-    wsList.getCell('B1').value = 'Categorias';
-    wsList.getCell('C1').value = 'Tipos';
+  wsList.getCell('A1').value = 'Cuentas';
+  wsList.getCell('B1').value = 'Categorias';
+  wsList.getCell('C1').value = 'Tipos';
 
     const cuentasVals = (cuentas && cuentas.length) ? cuentas.map(c => c.nombre) : ['-'];
     const categoriasVals = (categorias && categorias.length) ? categorias.map(c => c.nombre) : ['-'];
@@ -272,15 +274,21 @@ exports.descargarPlantilla = async (req, res) => {
       { header: headers[3], key: 'descripcion', width: 32 },
       { header: headers[4], key: 'fecha', width: 16 },
       { header: headers[5], key: 'categoria', width: 25 },
+      { header: headers[6], key: 'cuenta_destino', width: 25 },
+      { header: headers[7], key: 'icon', width: 12 },
+      { header: headers[8], key: 'color', width: 14 },
     ];
 
     // Notas en encabezados (ayuda)
     try {
       ws.getCell('A1').note = 'Cuenta: selecciona por nombre (lista desplegable) o ingresa el ID de la cuenta.';
-      ws.getCell('B1').note = 'Tipo: valores permitidos ingreso, egreso, ahorro.';
+      ws.getCell('B1').note = 'Tipo: valores permitidos ingreso, egreso, ahorro, transferencia.';
       ws.getCell('C1').note = 'Monto: usa punto decimal. Ej: 123.45';
       ws.getCell('E1').note = 'Fecha: formato YYYY-MM-DD. Ej: 2025-10-04';
       ws.getCell('F1').note = 'Categoría: selecciona por nombre (lista) o ingresa el ID. Opcional.';
+      ws.getCell('G1').note = 'Cuenta destino: solo requerido cuando tipo=transferencia (por nombre o ID).';
+      ws.getCell('H1').note = 'Icono: opcional, por ejemplo 💸, 💰, 🏦. Si se omite, se dejará vacío (transferencia usa 🔁).';
+      ws.getCell('I1').note = 'Color: opcional. Durante la importación se asignará por defecto según el tipo (ingreso=verde, egreso=rojo, ahorro=naranja, transferencia=azul).';
     } catch (e) { /* notas opcionales según soporte de Excel */ }
 
     // 100 filas de validaciones (desde la fila 2 a la 101)
@@ -304,7 +312,13 @@ exports.descargarPlantilla = async (req, res) => {
       ws.getCell(r, 2).dataValidation = {
         type: 'list', allowBlank: false, formulae: ['=' + tiposRange],
         showInputMessage: true, promptTitle: 'Tipo',
-        prompt: 'Valores: ingreso, egreso, ahorro.'
+        prompt: 'Valores: ingreso, egreso, ahorro, transferencia.'
+      };
+      // Cuenta destino (solo si aplica; se deja validación para ayudar)
+      ws.getCell(r, 7).dataValidation = {
+        type: 'list', allowBlank: true, formulae: ['=' + cuentasRange],
+        showInputMessage: true, promptTitle: 'Cuenta destino',
+        prompt: 'Requerido cuando el tipo es transferencia. Puedes escribir el ID también.'
       };
       // Fecha formato
       ws.getCell(r, 5).value = null;
@@ -312,10 +326,14 @@ exports.descargarPlantilla = async (req, res) => {
     }
 
     // Fila de ejemplo en la fila 2
-    ws.getCell(2, 2).value = 'ingreso';
-    ws.getCell(2, 3).value = 100.00;
-    ws.getCell(2, 4).value = 'Texto opcional';
-    ws.getCell(2, 5).value = todayISO();
+  ws.getCell(2, 2).value = 'ingreso';
+  ws.getCell(2, 3).value = 100.00;
+  ws.getCell(2, 4).value = 'Texto opcional';
+  ws.getCell(2, 5).value = todayISO();
+  // Ejemplo adicional de transferencia en fila 3
+  ws.getCell(3, 2).value = 'transferencia';
+  ws.getCell(3, 3).value = 50.00;
+  ws.getCell(3, 5).value = todayISO();
 
     res.setHeader('Content-Disposition', 'attachment; filename="plantilla_movimientos.xlsx"');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -356,6 +374,15 @@ exports.importarExcel = async (req, res) => {
 
     const errores = [];
     let insertados = 0;
+    const defaultColorByTipo = {
+      ingreso: '#2e7d32',
+      egreso: '#c62828',
+      ahorro: '#ff9800',
+      transferencia: '#1976d2',
+    };
+    const defaultIconByTipo = {
+      transferencia: '🔁',
+    };
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
       // Cuenta puede venir como ID o como nombre en cuenta_id o en columna 'cuenta'
@@ -373,7 +400,7 @@ exports.importarExcel = async (req, res) => {
         if (found) cuenta_id = found;
       }
 
-      const tipo = String(r.tipo || '').toLowerCase();
+  const tipo = String(r.tipo || '').toLowerCase();
       const monto = parseFloat(r.monto);
       const descripcion = String(r.descripcion || '').slice(0, 200);
       const fecha = String(r.fecha || '').slice(0, 10);
@@ -392,8 +419,26 @@ exports.importarExcel = async (req, res) => {
         if (foundc) categoria_id = foundc;
       }
 
+      // Resolver cuenta destino si es transferencia (por ID o nombre)
+      let cuenta_destino_id = null;
+      if (tipo === 'transferencia') {
+        if (r.cuenta_destino_id !== undefined && r.cuenta_destino_id !== '') {
+          const rawd = r.cuenta_destino_id;
+          if (/^\d+$/.test(String(rawd))) {
+            cuenta_destino_id = Number(r.cuenta_destino_id);
+          } else {
+            const foundd = mapCuentaByName.get(String(r.cuenta_destino_id).trim().toLowerCase());
+            if (foundd) cuenta_destino_id = foundd;
+          }
+        } else if (r.cuenta_destino !== undefined && r.cuenta_destino !== '') {
+          const foundd = mapCuentaByName.get(String(r.cuenta_destino).trim().toLowerCase());
+          if (foundd) cuenta_destino_id = foundd;
+        }
+      }
+
       // Validaciones básicas
-      if (!cuenta_id || !['ingreso','egreso','ahorro'].includes(tipo) || !monto || isNaN(monto) || !fecha) {
+      const tipoValido = ['ingreso','egreso','ahorro','transferencia'].includes(tipo);
+      if (!cuenta_id || !tipoValido || !monto || isNaN(monto) || !fecha) {
         errores.push({ fila: i + 2, error: 'Campos requeridos inválidos' });
         continue;
       }
@@ -405,8 +450,59 @@ exports.importarExcel = async (req, res) => {
         if (!catExiste) { errores.push({ fila: i + 2, error: 'Categoría no pertenece al usuario' }); continue; }
       }
       try {
-        await Transaccion.create({ usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma });
-        insertados++;
+        if (tipo === 'transferencia') {
+          // Validar cuenta destino
+          if (!cuenta_destino_id) { errores.push({ fila: i + 2, error: 'Transferencia: falta cuenta destino' }); continue; }
+          if (Number(cuenta_destino_id) === Number(cuenta_id)) { errores.push({ fila: i + 2, error: 'Transferencia: cuenta origen y destino no pueden ser iguales' }); continue; }
+          const cuentaODef = (cuentas || []).find(c => c.id === cuenta_id);
+          const cuentaDDef = (cuentas || []).find(c => c.id === cuenta_destino_id);
+          if (!cuentaODef || !cuentaDDef) { errores.push({ fila: i + 2, error: 'Transferencia: cuentas no pertenecen al usuario' }); continue; }
+          // Decidir si aplica inmediatamente
+          const todayStr = new Date().toISOString().slice(0,10);
+          const fechaStr = String(fecha).slice(0,10);
+          const applied = fechaStr <= todayStr ? 1 : 0;
+          // Validar saldo suficiente si aplica de inmediato
+          if (applied) {
+            const [saldoRows] = await db.query('SELECT saldo_actual FROM cuentas WHERE id = ?', [cuenta_id]);
+            const saldoAct = saldoRows && saldoRows[0] ? Number(saldoRows[0].saldo_actual) : 0;
+            if (saldoAct < monto) { errores.push({ fila: i + 2, error: 'Transferencia: saldo insuficiente en cuenta origen' }); continue; }
+          }
+          const icon = defaultIconByTipo.transferencia;
+          const color = defaultColorByTipo.transferencia;
+          const code = 'T' + Date.now() + '_' + i;
+          const descEgreso = `Transferencia a ${cuentaDDef.nombre}${descripcion ? ' - ' + descripcion : ''} [TRANSFER#${code}]`;
+          const descIngreso = `Transferencia desde ${cuentaODef.nombre}${descripcion ? ' - ' + descripcion : ''} [TRANSFER#${code}]`;
+          // Usar transacción por fila
+          const conn = await db.getConnection();
+          try {
+            await conn.beginTransaction();
+            await conn.query(
+              'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              [usuario_id, cuenta_id, 'egreso', monto, descEgreso, fechaStr, null, plataforma || 'web', icon, color, applied]
+            );
+            if (applied) {
+              await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, cuenta_id]);
+            }
+            await conn.query(
+              'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              [usuario_id, cuenta_destino_id, 'ingreso', monto, descIngreso, fechaStr, null, plataforma || 'web', icon, color, applied]
+            );
+            if (applied) {
+              await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, cuenta_destino_id]);
+            }
+            await conn.commit();
+            insertados++;
+          } catch (e2) {
+            try { await conn.rollback(); } catch {}
+            errores.push({ fila: i + 2, error: e2.message || 'Error al registrar transferencia' });
+          } finally { conn.release(); }
+        } else {
+          // Asignar color por defecto según tipo; icono opcional de archivo
+          const color = defaultColorByTipo[tipo] || null;
+          const icon = r.icon || null;
+          await Transaccion.create({ usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color });
+          insertados++;
+        }
       } catch (e) {
         errores.push({ fila: i + 2, error: e.message });
       }
