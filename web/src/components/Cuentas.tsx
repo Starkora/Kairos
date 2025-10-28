@@ -324,13 +324,13 @@ export default function Cuentas() {
         </button>
       </form>
   <div className="table-responsive">
-  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
+  <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse', marginTop: 12 }}>
         <thead>
           <tr style={{ background: 'var(--color-table-header-bg)' }}>
            <th style={{ textAlign: 'left', padding: 8, width: '45%' }}>Cuenta</th>
             <th style={{ textAlign: 'left', padding: 8, width: '20%' }}>Tipo</th>
             <th style={{ textAlign: 'right', padding: 8, width: '25%' }}>Monto Actual</th>
-            <th style={{ textAlign: 'center', padding: 8, width: '15%' }}>Funciones</th>
+            <th style={{ textAlign: 'center', padding: 8, width: '15%', whiteSpace: 'nowrap' }}>Funciones</th>
           </tr>
         </thead>
         <tbody>
@@ -366,6 +366,16 @@ export default function Cuentas() {
         </tbody>
   </table>
   </div>
+      <style>{`
+        /* Responsive helpers para tablas con scroll en Cuentas */
+        .accounts-card .table-responsive { max-width: 100%; overflow-x: auto; max-height: 60vh; overflow-y: auto; }
+        .accounts-card table { min-width: 640px; }
+        .accounts-card thead th { position: sticky; top: 0; z-index: 1; background: var(--color-table-header-bg); box-shadow: 0 1px 0 var(--color-border); }
+        @media (max-width: 480px) {
+          .accounts-card table { min-width: 520px; }
+          .accounts-card th, .accounts-card td { padding: 6px !important; }
+        }
+      `}</style>
       {editing && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={closeEdit}>
           <div style={{ background:'var(--color-card)', borderRadius:12, padding:20, width: 420 }} onClick={(e)=>e.stopPropagation()}>
