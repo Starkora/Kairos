@@ -221,10 +221,15 @@ exports.descargarPlantilla = async (req, res) => {
     wsList.state = 'veryHidden';
     // Hoja de instrucciones
     wsInfo.addRow(['Cómo usar esta plantilla']).font = { bold: true, size: 14 };
-    wsInfo.addRow(['- Rellena las filas desde la 2 hasta la 101.']).font = { italic: true };
+  wsInfo.addRow(['- Rellena las filas desde la 2 hasta la 101.']).font = { italic: true };
     wsInfo.addRow(['- En cuenta y categoría puedes escoger de la lista desplegable o escribir el ID.']);
-    wsInfo.addRow(['- Tipo debe ser uno de: ingreso, egreso, ahorro.']);
+  wsInfo.addRow(['- Tipo debe ser uno de: ingreso, egreso, ahorro, transferencia.']);
     wsInfo.addRow(['- Fecha en formato YYYY-MM-DD (ej. 2025-10-04).']);
+  wsInfo.addRow(['- Icono y Color: opcionales. Puedes seleccionarlos del desplegable.']);
+  wsInfo.addRow(['  Si los dejas vacíos, en la importación se aplicarán colores por defecto según el tipo.']);
+  wsInfo.addRow(['  Colores por defecto: ingreso=verde (#2e7d32), egreso=rojo (#c62828), ahorro=naranja (#ff9800), transferencia=azul (#1976d2).']);
+  wsInfo.addRow(['  Icono en transferencias se fija a 🔁 automáticamente.']);
+  wsInfo.addRow(['Iconos disponibles: 💸  💰  🏦  🍎  🚗  💳  🔌  🎁  🛒  🏥']);
     wsInfo.addRow(['Ejemplo usando nombres:']);
     wsInfo.addRow(['cuenta', 'tipo', 'monto', 'descripcion', 'fecha', 'categoria']);
     wsInfo.addRow(['Cuenta 1', 'ingreso', '100.00', 'Texto opcional', todayISO(), 'Categoría 1']);
