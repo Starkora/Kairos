@@ -490,6 +490,17 @@ html, body, #root { max-width: 100%; }
   .categories-card .table-responsive thead th:nth-child(3) {
     font-size: 0.9rem;
   }
+
+  /* Reglas específicas SOLO para la tabla de Categorías (no afecta Categoría de Cuenta) */
+  table.tabla-categorias { table-layout: fixed; width: 100%; }
+  table.tabla-categorias thead th:nth-child(1),
+  table.tabla-categorias tbody td:nth-child(1) { width: 50%; white-space: normal; word-break: break-word; }
+  table.tabla-categorias thead th:nth-child(2),
+  table.tabla-categorias tbody td:nth-child(2) { width: 18%; }
+  table.tabla-categorias thead th:nth-child(3),
+  table.tabla-categorias tbody td:nth-child(3) { width: 32%; text-align: center; }
+  table.tabla-categorias tbody td:nth-child(3) .acciones { gap: 12px; }
+  table.tabla-categorias .icon-accion { width: 20px; height: 20px; }
 }
 
 /* Utilidades generales responsive */
