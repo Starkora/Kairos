@@ -216,7 +216,7 @@ export default function Notificaciones() {
   <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse', marginTop: 12 }}>
         <thead>
           <tr>
-            <th style={{ border: '1px solid #ccc', padding: '10px' }}>Frecuencia</th>
+            <th style={{ border: '1px solid #ccc', padding: '10px', width: 110 }}>Frecuencia</th>
             <th style={{ border: '1px solid #ccc', padding: '10px' }}>Medio</th>
             <th style={{ border: '1px solid #ccc', padding: '10px' }}>Hora de Inicio</th>
             <th style={{ border: '1px solid #ccc', padding: '10px' }}>Intervalo (Horas)</th>
@@ -228,7 +228,7 @@ export default function Notificaciones() {
           {Array.isArray(notificacionesList) && notificacionesList.length > 0 ? (
             notificacionesList.map((notificacion, index) => (
               <tr key={index}>
-                <td style={{ border: '1px solid #ccc', padding: '10px' }}>{notificacion.frecuencia}</td>
+                <td style={{ border: '1px solid #ccc', padding: '10px', width: 110 }}>{notificacion.frecuencia}</td>
                 <td style={{ border: '1px solid #ccc', padding: '10px' }}>{notificacion.medio}</td>
                 <td style={{ border: '1px solid #ccc', padding: '10px' }}>{notificacion.hora_inicio}</td>
                 <td style={{ border: '1px solid #ccc', padding: '10px' }}>{notificacion.intervalo_horas}</td>
