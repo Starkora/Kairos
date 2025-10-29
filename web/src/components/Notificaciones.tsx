@@ -263,21 +263,21 @@ export default function Notificaciones() {
   </div>
       {/* Popup Agregar */}
       {isAdding && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 999 }}>
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: '#fff', padding: 20, borderRadius: 10, boxShadow: '0 4px 8px rgba(0,0,0,0.2)', zIndex: 1000, width: 520, maxWidth: '90vw' }}>
+        <div className="notif-modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 999 }}>
+          <div className="notif-modal" style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', padding: 20, borderRadius: 10, boxShadow: '0 12px 30px rgba(0,0,0,0.25)', zIndex: 1000, width: 520, maxWidth: '90vw' }}>
             <h2 style={{ textAlign: 'center', color: '#6C4AB6' }}>Agregar Notificación</h2>
             <form style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-              <label style={{ fontSize: 16, fontWeight: 'bold' }}>
+              <label className="notif-modal-label" style={{ fontSize: 16, fontWeight: 'bold' }}>
                 Frecuencia:
-                <select name="frecuencia" value={notificaciones.frecuencia} onChange={handleNotificacionesChange} style={{ padding: 8, borderRadius: 5, border: '1px solid #ccc', marginTop: 5 }}>
+                <select className="notif-input" name="frecuencia" value={notificaciones.frecuencia} onChange={handleNotificacionesChange} style={{ padding: 8, borderRadius: 5, border: '1px solid #ccc', marginTop: 5 }}>
                   <option value="diaria">Diaria</option>
                   <option value="semanal">Semanal</option>
                 </select>
               </label>
               {notificaciones.frecuencia === 'semanal' && (
-                <label style={{ fontSize: 16, fontWeight: 'bold' }}>
+                <label className="notif-modal-label" style={{ fontSize: 16, fontWeight: 'bold' }}>
                   Día de la semana:
-                  <select name="dia" value={notificaciones.dia} onChange={handleNotificacionesChange} style={{ padding: 8, borderRadius: 5, border: '1px solid #ccc', marginTop: 5 }}>
+                  <select className="notif-input" name="dia" value={notificaciones.dia} onChange={handleNotificacionesChange} style={{ padding: 8, borderRadius: 5, border: '1px solid #ccc', marginTop: 5 }}>
                     <option value="">Seleccione un día</option>
                     <option value="lunes">Lunes</option>
                     <option value="martes">Martes</option>
@@ -289,17 +289,17 @@ export default function Notificaciones() {
                   </select>
                 </label>
               )}
-              <label style={{ fontSize: 16, fontWeight: 'bold' }}>
+              <label className="notif-modal-label" style={{ fontSize: 16, fontWeight: 'bold' }}>
                 Hora de inicio:
-                <input type="time" name="horaInicio" value={notificaciones.horaInicio} onChange={handleNotificacionesChange} style={{ padding: 8, borderRadius: 5, border: '1px solid #ccc', marginTop: 5 }} />
+                <input className="notif-input" type="time" name="horaInicio" value={notificaciones.horaInicio} onChange={handleNotificacionesChange} style={{ padding: 8, borderRadius: 5, border: '1px solid #ccc', marginTop: 5 }} />
               </label>
-              <label style={{ fontSize: 16, fontWeight: 'bold' }}>
+              <label className="notif-modal-label" style={{ fontSize: 16, fontWeight: 'bold' }}>
                 Intervalo de horas:
-                <input type="number" name="intervaloHoras" value={notificaciones.intervaloHoras} onChange={handleNotificacionesChange} style={{ padding: 8, borderRadius: 5, border: '1px solid #ccc', marginTop: 5 }} placeholder="Ejemplo: 2" />
+                <input className="notif-input" type="number" name="intervaloHoras" value={notificaciones.intervaloHoras} onChange={handleNotificacionesChange} style={{ padding: 8, borderRadius: 5, border: '1px solid #ccc', marginTop: 5 }} placeholder="Ejemplo: 2" />
               </label>
-              <label style={{ fontSize: 16, fontWeight: 'bold' }}>
+              <label className="notif-modal-label" style={{ fontSize: 16, fontWeight: 'bold' }}>
                 Medio:
-                <select name="medio" value={notificaciones.medio} onChange={handleNotificacionesChange} style={{ padding: 8, borderRadius: 5, border: '1px solid #ccc', marginTop: 5 }}>
+                <select className="notif-input" name="medio" value={notificaciones.medio} onChange={handleNotificacionesChange} style={{ padding: 8, borderRadius: 5, border: '1px solid #ccc', marginTop: 5 }}>
                   <option value="correo">Correo</option>
                   <option value="sms">SMS</option>
                 </select>
@@ -317,21 +317,21 @@ export default function Notificaciones() {
         </div>
       )}
       {isEditing && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 999 }}>
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)', zIndex: 1000, width: 520, maxWidth: '90vw' }}>
+        <div className="notif-modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 999 }}>
+          <div className="notif-modal" style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', padding: '20px', borderRadius: '10px', boxShadow: '0 12px 30px rgba(0, 0, 0, 0.25)', zIndex: 1000, width: 520, maxWidth: '90vw' }}>
           <h2 style={{ textAlign: 'center', color: '#6C4AB6' }}>Editar Notificación</h2>
           <form style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <label style={{ fontSize: '16px', fontWeight: 'bold' }}>
+            <label className="notif-modal-label" style={{ fontSize: '16px', fontWeight: 'bold' }}>
               Frecuencia:
-              <select name="frecuencia" value={notificaciones.frecuencia} onChange={handleNotificacionesChange} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginTop: '5px' }}>
+              <select className="notif-input" name="frecuencia" value={notificaciones.frecuencia} onChange={handleNotificacionesChange} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginTop: '5px' }}>
                 <option value="diaria">Diaria</option>
                 <option value="semanal">Semanal</option>
               </select>
             </label>
             {notificaciones.frecuencia === 'semanal' && (
-              <label style={{ fontSize: '16px', fontWeight: 'bold' }}>
+              <label className="notif-modal-label" style={{ fontSize: '16px', fontWeight: 'bold' }}>
                 Día de la semana:
-                <select name="dia" value={notificaciones.dia} onChange={handleNotificacionesChange} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginTop: '5px' }}>
+                <select className="notif-input" name="dia" value={notificaciones.dia} onChange={handleNotificacionesChange} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginTop: '5px' }}>
                   <option value="">Seleccione un día</option>
                   <option value="lunes">Lunes</option>
                   <option value="martes">Martes</option>
@@ -343,17 +343,17 @@ export default function Notificaciones() {
                 </select>
               </label>
             )}
-            <label style={{ fontSize: '16px', fontWeight: 'bold' }}>
+            <label className="notif-modal-label" style={{ fontSize: '16px', fontWeight: 'bold' }}>
               Hora de inicio:
-              <input type="time" name="horaInicio" value={notificaciones.horaInicio} onChange={handleNotificacionesChange} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginTop: '5px' }} />
+              <input className="notif-input" type="time" name="horaInicio" value={notificaciones.horaInicio} onChange={handleNotificacionesChange} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginTop: '5px' }} />
             </label>
-            <label style={{ fontSize: '16px', fontWeight: 'bold' }}>
+            <label className="notif-modal-label" style={{ fontSize: '16px', fontWeight: 'bold' }}>
               Intervalo de horas:
-              <input type="number" name="intervaloHoras" value={notificaciones.intervaloHoras} onChange={handleNotificacionesChange} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginTop: '5px' }} placeholder="Ejemplo: 2" />
+              <input className="notif-input" type="number" name="intervaloHoras" value={notificaciones.intervaloHoras} onChange={handleNotificacionesChange} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginTop: '5px' }} placeholder="Ejemplo: 2" />
             </label>
-            <label style={{ fontSize: '16px', fontWeight: 'bold' }}>
+            <label className="notif-modal-label" style={{ fontSize: '16px', fontWeight: 'bold' }}>
               Medio:
-              <select name="medio" value={notificaciones.medio} onChange={handleNotificacionesChange} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginTop: '5px' }}>
+              <select className="notif-input" name="medio" value={notificaciones.medio} onChange={handleNotificacionesChange} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginTop: '5px' }}>
                 <option value="correo">Correo</option>
                 <option value="sms">SMS</option>
               </select>
@@ -386,6 +386,22 @@ export default function Notificaciones() {
         @media (max-width: 480px) {
           .notifications-card table { min-width: 560px; }
           .notifications-card th, .notifications-card td { padding: 6px !important; }
+        }
+        /* Estilos del modal (modo claro por defecto) */
+        .notif-modal { background: #ffffff; color: #111827; border: 1px solid #e5e7eb; }
+        .notif-modal .notif-input { background: #ffffff; color: #111827; border: 1px solid #d1d5db; }
+        .notif-modal .notif-input::placeholder { color: #9ca3af; }
+        .notif-modal-label { color: inherit; }
+        /* Modo oscuro: si el body tiene .dark o si el SO está en dark */
+        body.dark .notifications-card thead th { background: #111827; box-shadow: 0 1px 0 #374151; color: #e5e7eb; }
+        body.dark .notif-modal { background: #111827; color: #e5e7eb; border-color: #374151; box-shadow: 0 12px 30px rgba(0,0,0,.6); }
+        body.dark .notif-modal .notif-input { background: #0b1220; color: #e5e7eb; border: 1px solid #374151; }
+        body.dark .notif-modal .notif-input::placeholder { color: #9ca3af; }
+        @media (prefers-color-scheme: dark) {
+          .notifications-card thead th { background: #111827; box-shadow: 0 1px 0 #374151; color: #e5e7eb; }
+          .notif-modal { background: #111827; color: #e5e7eb; border-color: #374151; box-shadow: 0 12px 30px rgba(0,0,0,.6); }
+          .notif-modal .notif-input { background: #0b1220; color: #e5e7eb; border: 1px solid #374151; }
+          .notif-modal .notif-input::placeholder { color: #9ca3af; }
         }
       `}</style>
     </div>
