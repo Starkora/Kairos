@@ -9,9 +9,10 @@ const fromNumber = process.env.TWILIO_PHONE_NUMBER; // SMS clásico
 const whatsappFrom = process.env.TWILIO_WHATSAPP_FROM; // ej: 'whatsapp:+14155238886' (Sandbox)
 const preferredChannel = (process.env.TWILIO_PREFERRED_CHANNEL || 'sms').toLowerCase(); // 'sms' | 'whatsapp'
 
-console.log('[Kairos][Twilio] SID:', accountSid);
-console.log('[Kairos][Twilio] TOKEN:', authToken);
-console.log('[Kairos][Twilio] FROM:', fromNumber);
+console.log('[Kairos][Twilio] SID presente:', !!accountSid);
+console.log('[Kairos][Twilio] TOKEN presente:', !!authToken);
+console.log('[Kairos][Twilio] FROM (SMS) presente:', !!fromNumber);
+console.log('[Kairos][Twilio] FROM (WA) presente:', !!whatsappFrom);
 
 let client = null;
 if (accountSid && authToken) {
@@ -54,7 +55,11 @@ async function sendWhatsApp(to, text) {
     return;
   }
   try {
-    const toWa = 'whatsapp:' + normalizeTo(to);
+    const toWa = String(to || '').startsWith('whatsapp:') ? to : 'whatsapp:' + normalizeTo(to);
+    const fromWa = whatsappFrom.startsWith('whatsapp:') ? whatsappFrom : 'whatsapp:' + fromNumber;
+    if (!whatsappFrom.startsWith('whatsapp:')) {
+      console.warn('[Kairos] Advertencia: TWILIO_WHATSAPP_FROM debe iniciar con "whatsapp:". Valor actual:', whatsappFrom);
+    }
     const res = await client.messages.create({
       body: text,
       from: whatsappFrom,
@@ -63,7 +68,13 @@ async function sendWhatsApp(to, text) {
     console.log('[Kairos] WhatsApp enviado:', res.sid);
     return res;
   } catch (e) {
-    console.error('[Kairos] Error al enviar WhatsApp:', e);
+    if (e && e.code === 21910) {
+      console.error('[Kairos] Twilio 21910: From y To deben ser del mismo canal. Asegúrate que:',
+        '\n- TWILIO_WHATSAPP_FROM sea algo como whatsapp:+14155238886 (Sandbox)',
+        '\n- El destinatario esté en formato whatsapp:+<pais><numero> (el código ya lo aplica) y haya unido el sandbox (join ...)');
+    } else {
+      console.error('[Kairos] Error al enviar WhatsApp:', e);
+    }
     throw e;
   }
 }
