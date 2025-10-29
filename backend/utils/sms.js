@@ -22,9 +22,18 @@ if (accountSid && authToken) {
 
 function normalizeTo(to) {
   // Normaliza a formato internacional +<pais><numero> (por defecto +51)
-  const digits = String(to || '').replace(/\D/g, '');
+  // Acepta entradas con prefijo 'whatsapp:' y las convierte a número plano E.164
+  let raw = String(to || '').trim();
+  if (!raw) return '';
+  if (raw.toLowerCase().startsWith('whatsapp:')) raw = raw.slice('whatsapp:'.length);
+  raw = raw.trim();
+  if (!raw) return '';
+  if (raw.startsWith('+')) return raw;
+  const digits = raw.replace(/\D/g, '');
   if (!digits) return '';
-  return to.startsWith('+') ? to : '+51' + digits;
+  // Si ya viene con código de país (por ejemplo empieza con '51'), no lo duplicamos
+  const withCountry = digits.startsWith('51') ? digits : ('51' + digits);
+  return '+' + withCountry;
 }
 
 async function sendSMS(to, text) {
