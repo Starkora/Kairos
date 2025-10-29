@@ -5,13 +5,13 @@ const twilio = require('twilio');
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
-const fromNumber = process.env.TWILIO_PHONE_NUMBER; // SMS clásico
+const smsFrom = process.env.TWILIO_SMS_FROM || process.env.TWILIO_PHONE_NUMBER; // SMS clásico
 const whatsappFrom = process.env.TWILIO_WHATSAPP_FROM; // ej: 'whatsapp:+14155238886' (Sandbox)
 const preferredChannel = (process.env.TWILIO_PREFERRED_CHANNEL || 'sms').toLowerCase(); // 'sms' | 'whatsapp'
 
 console.log('[Kairos][Twilio] SID presente:', !!accountSid);
 console.log('[Kairos][Twilio] TOKEN presente:', !!authToken);
-console.log('[Kairos][Twilio] FROM (SMS) presente:', !!fromNumber);
+console.log('[Kairos][Twilio] FROM (SMS) presente:', !!smsFrom);
 console.log('[Kairos][Twilio] FROM (WA) presente:', !!whatsappFrom);
 
 let client = null;
@@ -31,10 +31,14 @@ async function sendSMS(to, text) {
     console.error('[Kairos] Twilio no configurado. Falta TWILIO_ACCOUNT_SID o TWILIO_AUTH_TOKEN');
     return;
   }
+  if (!smsFrom) {
+    console.error('[Kairos] No hay remitente SMS configurado. Define TWILIO_SMS_FROM o TWILIO_PHONE_NUMBER en el entorno.');
+    return;
+  }
   try {
     const res = await client.messages.create({
       body: text,
-      from: fromNumber,
+  from: smsFrom,
       to: normalizeTo(to) // Asume Perú por defecto; ajustar según despliegue
     });
     console.log('[Kairos] SMS enviado:', res.sid);
@@ -56,13 +60,16 @@ async function sendWhatsApp(to, text) {
   }
   try {
     const toWa = String(to || '').startsWith('whatsapp:') ? to : 'whatsapp:' + normalizeTo(to);
-    const fromWa = whatsappFrom.startsWith('whatsapp:') ? whatsappFrom : 'whatsapp:' + fromNumber;
+    // Normaliza el FROM: si falta prefijo, úsalo directamente con prefijo sin depender de SMS
+    const fromWa = whatsappFrom.startsWith('whatsapp:')
+      ? whatsappFrom
+      : ('whatsapp:' + (whatsappFrom.startsWith('+') ? whatsappFrom : normalizeTo(whatsappFrom)));
     if (!whatsappFrom.startsWith('whatsapp:')) {
-      console.warn('[Kairos] Advertencia: TWILIO_WHATSAPP_FROM debe iniciar con "whatsapp:". Valor actual:', whatsappFrom);
+      console.warn('[Kairos] Advertencia: TWILIO_WHATSAPP_FROM debe iniciar con "whatsapp:". Se usará normalizado:', fromWa);
     }
     const res = await client.messages.create({
       body: text,
-      from: whatsappFrom,
+      from: fromWa,
       to: toWa
     });
     console.log('[Kairos] WhatsApp enviado:', res.sid);
@@ -81,7 +88,14 @@ async function sendWhatsApp(to, text) {
 
 // Envío según TWILIO_PREFERRED_CHANNEL (default sms) sin tocar llamadas existentes
 async function send(to, text) {
-  if (preferredChannel === 'whatsapp') return sendWhatsApp(to, text);
+  if (preferredChannel === 'whatsapp') {
+    if (whatsappFrom) {
+      try { return await sendWhatsApp(to, text); } catch (e) { throw e; }
+    } else {
+      console.warn('[Kairos] TWILIO_PREFERRED_CHANNEL=whatsapp pero TWILIO_WHATSAPP_FROM no está configurado. Enviando por SMS como fallback.');
+      return sendSMS(to, text);
+    }
+  }
   return sendSMS(to, text);
 }
 
