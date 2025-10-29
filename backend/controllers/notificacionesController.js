@@ -84,7 +84,9 @@ async function workerTick() {
           console.log(`[Notificaciones] Enviado correo a ${n.usuario_email} (notif ${n.id})`);
         } else if (n.medio === 'sms') {
           if (!n.usuario_telefono) { console.error('Notificación sin teléfono:', n.id); continue; }
-          await sms.send(String(n.usuario_telefono), 'Kairos: recuerda registrar tus ingresos y egresos del día.');
+          // Enviar SIEMPRE por SMS cuando el medio configurado es 'sms',
+          // ignorando TWILIO_PREFERRED_CHANNEL para respetar la preferencia por notificación.
+          await sms.sendSMS(String(n.usuario_telefono), 'Kairos: recuerda registrar tus ingresos y egresos del día.');
           console.log(`[Notificaciones] Enviado SMS a ${n.usuario_telefono} (notif ${n.id})`);
         } else {
           // Medio no soportado actualmente
