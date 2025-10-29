@@ -8,6 +8,7 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const smsFrom = process.env.TWILIO_SMS_FROM || process.env.TWILIO_PHONE_NUMBER; // SMS clásico
 const whatsappFrom = process.env.TWILIO_WHATSAPP_FROM; // ej: 'whatsapp:+14155238886' (Sandbox)
 const preferredChannel = (process.env.TWILIO_PREFERRED_CHANNEL || 'sms').toLowerCase(); // 'sms' | 'whatsapp'
+const waFallbackToSMS = String(process.env.TWILIO_WHATSAPP_FALLBACK_TO_SMS || 'false').toLowerCase() === 'true';
 
 console.log('[Kairos][Twilio] SID presente:', !!accountSid);
 console.log('[Kairos][Twilio] TOKEN presente:', !!authToken);
@@ -81,6 +82,16 @@ async function sendWhatsApp(to, text) {
         '\n- El destinatario esté en formato whatsapp:+<pais><numero> (el código ya lo aplica) y haya unido el sandbox (join ...)');
     } else {
       console.error('[Kairos] Error al enviar WhatsApp:', e);
+    }
+    // Fallback opcional a SMS si está habilitado
+    if (waFallbackToSMS) {
+      console.warn('[Kairos] Fallback habilitado: reintentando por SMS tras error en WhatsApp...');
+      try {
+        return await sendSMS(to, text);
+      } catch (e2) {
+        console.error('[Kairos] Error también al enviar SMS (fallback de WA):', e2);
+        throw e2;
+      }
     }
     throw e;
   }
