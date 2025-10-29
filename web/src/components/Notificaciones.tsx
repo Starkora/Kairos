@@ -213,11 +213,11 @@ export default function Notificaciones() {
       </div>
   <h2 style={{ textAlign: 'center', color: '#6C4AB6', marginTop: 24 }}>Notificaciones Configuradas</h2>
   <div className="table-responsive notificaciones">
-  <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse', marginTop: 12 }}>
+  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
         <thead>
           <tr>
             <th style={{ border: '1px solid #ccc', padding: '10px', width: 110 }}>Frecuencia</th>
-            <th style={{ border: '1px solid #ccc', padding: '10px' }}>Medio</th>
+            <th style={{ border: '1px solid #ccc', padding: '10px', width: 120 }}>Medio</th>
             <th style={{ border: '1px solid #ccc', padding: '10px' }}>Hora de Inicio</th>
             <th style={{ border: '1px solid #ccc', padding: '10px' }}>Intervalo (Horas)</th>
             <th style={{ border: '1px solid #ccc', padding: '10px' }}>Día</th>
@@ -229,7 +229,7 @@ export default function Notificaciones() {
             notificacionesList.map((notificacion, index) => (
               <tr key={index}>
                 <td style={{ border: '1px solid #ccc', padding: '10px', width: 110 }}>{notificacion.frecuencia}</td>
-                <td style={{ border: '1px solid #ccc', padding: '10px' }}>{notificacion.medio}</td>
+                <td style={{ border: '1px solid #ccc', padding: '10px', width: 120 }}>{notificacion.medio}</td>
                 <td style={{ border: '1px solid #ccc', padding: '10px' }}>{notificacion.hora_inicio}</td>
                 <td style={{ border: '1px solid #ccc', padding: '10px' }}>{notificacion.intervalo_horas}</td>
                 <td style={{ border: '1px solid #ccc', padding: '10px' }}>{notificacion.dia || 'N/A'}</td>
@@ -382,11 +382,11 @@ export default function Notificaciones() {
         .icon-btn .tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #222; }
         .icon-btn:hover .tooltip, .icon-btn:focus .tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }
         /* Responsividad y encabezados fijos para la tabla de notificaciones */
-        .notifications-card .table-responsive.notificaciones { max-width: 100%; overflow-x: auto; max-height: 60vh; overflow-y: auto; }
-        .notifications-card table { min-width: 720px; }
+        .notifications-card .table-responsive.notificaciones { max-width: 100%; overflow-x: hidden; max-height: 60vh; overflow-y: auto; }
+        .notifications-card table { width: 100%; }
         .notifications-card thead th { position: sticky; top: 0; z-index: 1; background: #f7f7f7; box-shadow: 0 1px 0 #ddd; }
         @media (max-width: 480px) {
-          .notifications-card table { min-width: 560px; }
+          .notifications-card table { width: 100%; }
           .notifications-card th, .notifications-card td { padding: 6px !important; }
         }
         /* Estilos del modal (modo claro por defecto) */
