@@ -302,6 +302,7 @@ export default function Notificaciones() {
                 <select className="notif-input" name="medio" value={notificaciones.medio} onChange={handleNotificacionesChange} style={{ padding: 8, borderRadius: 5, border: '1px solid #ccc', marginTop: 5 }}>
                   <option value="correo">Correo</option>
                   <option value="sms">SMS</option>
+                  <option value="whatsapp">WhatsApp</option>
                 </select>
               </label>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -356,6 +357,7 @@ export default function Notificaciones() {
               <select className="notif-input" name="medio" value={notificaciones.medio} onChange={handleNotificacionesChange} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginTop: '5px' }}>
                 <option value="correo">Correo</option>
                 <option value="sms">SMS</option>
+                <option value="whatsapp">WhatsApp</option>
               </select>
             </label>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -392,12 +394,20 @@ export default function Notificaciones() {
         .notif-modal .notif-input { background: #ffffff; color: #111827; border: 1px solid #d1d5db; }
         .notif-modal .notif-input::placeholder { color: #9ca3af; }
         .notif-modal-label { color: inherit; }
-        /* Modo oscuro: SOLO si el body tiene .dark (no forzar por SO) */
-        body.dark .notifications-card thead th { background: #111827; box-shadow: 0 1px 0 #374151; color: #e5e7eb; }
-        body.dark .notif-modal { background: #111827; color: #e5e7eb; border-color: #374151; box-shadow: 0 12px 30px rgba(0,0,0,.6); }
-        body.dark .notif-modal .notif-input { background: #0b1220; color: #e5e7eb; border: 1px solid #374151; }
-        body.dark .notif-modal .notif-input::placeholder { color: #9ca3af; }
-        /* Nota: quitamos prefers-color-scheme para que el modal obedezca SOLO al tema de la app */
+        /* Modo oscuro: si existe clase .dark en html/body o en un contenedor */
+        body.dark .notifications-card thead th,
+        html.dark .notifications-card thead th,
+        .dark .notifications-card thead th { background: #111827; box-shadow: 0 1px 0 #374151; color: #e5e7eb; }
+        body.dark .notif-modal,
+        html.dark .notif-modal,
+        .dark .notif-modal { background: #111827; color: #e5e7eb; border-color: #374151; box-shadow: 0 12px 30px rgba(0,0,0,.6); }
+        body.dark .notif-modal .notif-input,
+        html.dark .notif-modal .notif-input,
+        .dark .notif-modal .notif-input { background: #0b1220; color: #e5e7eb; border: 1px solid #374151; }
+        body.dark .notif-modal .notif-input::placeholder,
+        html.dark .notif-modal .notif-input::placeholder,
+        .dark .notif-modal .notif-input::placeholder { color: #9ca3af; }
+        /* Quitamos prefers-color-scheme para que el modal obedezca SOLO al tema de la app */
       `}</style>
     </div>
   );

@@ -88,6 +88,10 @@ async function workerTick() {
           // ignorando TWILIO_PREFERRED_CHANNEL para respetar la preferencia por notificación.
           await sms.sendSMS(String(n.usuario_telefono), 'Kairos: recuerda registrar tus ingresos y egresos del día.');
           console.log(`[Notificaciones] Enviado SMS a ${n.usuario_telefono} (notif ${n.id})`);
+        } else if (n.medio === 'whatsapp') {
+          if (!n.usuario_telefono) { console.error('Notificación sin teléfono:', n.id); continue; }
+          await sms.sendWhatsApp(String(n.usuario_telefono), 'Kairos: recuerda registrar tus ingresos y egresos del día.');
+          console.log(`[Notificaciones] Enviado WhatsApp a ${n.usuario_telefono} (notif ${n.id})`);
         } else {
           // Medio no soportado actualmente
           continue;
