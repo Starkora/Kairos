@@ -83,7 +83,7 @@ const enviarCodigoVerificacion = async (req, res) => {
     if (metodo === 'telefono') {
       console.log(`Enviando código ${codigo} por SMS al ${telDigits}`);
       try {
-        await sms.sendSMS(telDigits, `Tu código de verificación es: ${codigo}`);
+  await sms.send(telDigits, `Tu código de verificación es: ${codigo}`);
       } catch (e) {
         console.error('Error al enviar SMS:', e);
         return res.status(500).json({ error: 'No se pudo enviar el SMS' });
@@ -278,7 +278,7 @@ const register = async (req, res) => {
 
     // Enviar código por el método elegido
     if (confirmMethod === 'telefono') {
-      await sms.sendSMS(telefonoDigits, `Tu código de verificación de Kairos es: ${codigo}`);
+  await sms.send(telefonoDigits, `Tu código de verificación de Kairos es: ${codigo}`);
     } else {
       await mailer.sendMail({
         to: emailTrimmed,
@@ -467,7 +467,7 @@ const enviarCodigoRecuperacion = async (req, res) => {
 
     // Enviar por el canal seleccionado
     if (method === 'telefono') {
-      await sms.sendSMS(userRow.numero, `Tu código para recuperar contraseña de Kairos es: ${code}`);
+  await sms.send(userRow.numero, `Tu código para recuperar contraseña de Kairos es: ${code}`);
     } else {
       await mailer.sendMail({
         to: userRow.email,
@@ -579,7 +579,7 @@ const resend = async (req, res) => {
     const newHash = await bcrypt.hash(newCode, 10);
     await db.query('UPDATE usuarios_pendientes SET codigo = ? WHERE email = ?', [newHash, p.email]);
     if (p.metodo === 'sms') {
-      await sms.sendSMS(p.numero, `Tu código de verificación de Kairos es: ${newCode}`);
+  await sms.send(p.numero, `Tu código de verificación de Kairos es: ${newCode}`);
     } else {
       await mailer.sendMail({ to: p.email, subject: 'Kairos - Código de verificación', text: `Tu código de verificación es: ${newCode}` });
     }

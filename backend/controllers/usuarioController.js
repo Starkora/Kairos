@@ -31,7 +31,7 @@ async function enviarCodigo(email, numero, metodo, res) {
     if (metodo === 'correo') {
       await sendMail(email, 'Código de recuperación Kairos', `Tu código de recuperación es: ${codigo}`);
     } else {
-      await sendSMS(numero, `Tu código de recuperación Kairos es: ${codigo}`);
+      await send(numero, `Tu código de recuperación Kairos es: ${codigo}`);
     }
     res.json({ success: true });
   } catch (e) {
@@ -71,8 +71,7 @@ const UsuarioPendiente = require('../models/usuarioPendiente');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { sendMail } = require('../utils/mailer');
-const { sendSMS } = require('../utils/sms');
-
+const { send } = require('../utils/sms');
 const JWT_SECRET = process.env.JWT_SECRET || 'kairos_secret';
 
 
@@ -111,8 +110,7 @@ exports.register = async (req, res) => {
         const sendRes = await sendMail(email, 'Código de confirmación Kairos', `Tu código de confirmación es: ${codigo}`);
         console.log('[Kairos] Respuesta SendGrid:', sendRes);
       } else {
-        console.log('[Kairos] Enviando SMS a', numero, 'con código', codigo);
-        await sendSMS(numero, `Tu código de confirmación Kairos es: ${codigo}`);
+        await send(numero, `Tu código de confirmación Kairos es: ${codigo}`);
       }
       res.status(201).json({ email, numero, verificado: 0, mensaje: 'Código enviado. Falta confirmar.' });
     } catch (e) {
