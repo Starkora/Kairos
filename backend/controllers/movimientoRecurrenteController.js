@@ -26,6 +26,7 @@ exports.eliminar = async (req, res) => {
   }
 };
 const MovimientoRecurrente = require('../models/movimientoRecurrente');
+const Transaccion = require('../models/transaccion');
 
 // Crear movimiento recurrente
 exports.crear = async (req, res) => {
@@ -39,6 +40,27 @@ exports.crear = async (req, res) => {
     const nuevo = await MovimientoRecurrente.create({
       cuenta_id, tipo, monto, descripcion, categoria_id, icon, color, frecuencia, inicio, fin, indefinido, usuario_id
     });
+    // Si la fecha de inicio es hoy o ya pasó, materializar el movimiento de HOY para que afecte el saldo
+    try {
+      const todayStr = new Date().toISOString().slice(0,10);
+      const inicioStr = String(inicio).slice(0,10);
+      if (inicioStr <= todayStr) {
+        await Transaccion.create({
+          usuario_id,
+          cuenta_id,
+          tipo,
+          monto,
+          descripcion: (descripcion || '').trim() ? `${descripcion} [RECURRENTE#${nuevo.id}]` : `[RECURRENTE#${nuevo.id}]`,
+          fecha: inicioStr,
+          categoria_id: categoria_id || null,
+          plataforma: req.body.plataforma || 'web',
+          icon: icon || null,
+          color: color || null
+        });
+      }
+    } catch (e) {
+      console.warn('[movimientosRecurrentes.crear] No se pudo materializar movimiento de hoy:', e && e.message);
+    }
     res.status(201).json(nuevo);
   } catch (err) {
     console.error('[movimientosRecurrentes.crear] Error:', err);

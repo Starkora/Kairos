@@ -243,6 +243,14 @@ setupCleanupJob();
 async function applyPendingJob() {
   try {
     const Transaccion = require('./models/transaccion');
+    const MovimientoRecurrente = require('./models/movimientoRecurrente');
+    // Primero materializamos las ocurrencias recurrentes de HOY
+    try {
+      const mat = await (MovimientoRecurrente.materializeDueForToday && MovimientoRecurrente.materializeDueForToday());
+      if (mat > 0) console.log(`[applyPendingJob] Ocurrencias recurrentes materializadas: ${mat}`);
+    } catch (e) {
+      console.error('[applyPendingJob] Error materializando recurrentes:', e && e.message);
+    }
     const appliedCount = await Transaccion.applyPendingMovements();
     if (appliedCount > 0) console.log(`[applyPendingJob] Movimientos aplicados: ${appliedCount}`);
   } catch (e) {
