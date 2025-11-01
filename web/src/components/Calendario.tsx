@@ -117,6 +117,22 @@ export default function Calendario() {
   const hayTransferenciasAgrupadas = React.useMemo(() => movimientosDelDiaAgrupados.some(m => (m.tipo || '').toLowerCase() === 'transferencia'), [movimientosDelDiaAgrupados]);
 
   const handleEditMovimiento = async (mov) => {
+    // Si es instancia de movimiento recurrente, redirigir/derivar a edición de serie
+    if (mov && (mov._recurrente || mov.frecuencia)) {
+      const result = await Swal.fire({
+        title: 'Movimiento recurrente',
+        html: '<div style="font-size:1rem">Esta es una ocurrencia de una serie recurrente. Puedes editar toda la serie desde la pantalla de Movimientos Recurrentes.</div>',
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Ir a Recurrentes',
+        cancelButtonText: 'Cancelar'
+      });
+      if (result.isConfirmed) {
+        // Navegar a la página de gestión de recurrentes
+        window.location.href = '/movimientos-recurrentes';
+      }
+      return;
+    }
     try {
       // Cargar cuentas y categorias
       const apiFetch = (await import('../utils/apiFetch')).default;
@@ -235,6 +251,32 @@ export default function Calendario() {
 
   // Manejar eliminación de movimiento
   const handleDeleteMovimiento = async (mov) => {
+    // Eliminar serie si es instancia recurrente
+    if (mov && (mov._recurrente || mov.frecuencia)) {
+      const confirmed = await Swal.fire({
+        title: '¿Eliminar serie recurrente?',
+        text: 'Se eliminará la serie completa y dejará de generarse en el calendario.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (!confirmed.isConfirmed) return;
+      try {
+        const apiFetch = (await import('../utils/apiFetch')).default;
+        const res = await apiFetch(`${API_BASE}/api/movimientos-recurrentes/${mov.id}`, { method: 'DELETE' });
+        if (res.ok) {
+          Swal.fire({ icon: 'success', title: 'Serie eliminada', timer: 1000, showConfirmButton: false });
+          await refreshMovimientos();
+        } else {
+          const data = await res.json().catch(() => ({}));
+          Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo eliminar la serie.' });
+        }
+      } catch (e) {
+        // apiFetch maneja 401
+      }
+      return;
+    }
     // Caso especial: transferencia agrupada
     if ((mov?.tipo || '').toLowerCase() === 'transferencia' && mov?._transfer) {
       const { origenId, destinoId } = mov._transfer;
@@ -484,9 +526,13 @@ export default function Calendario() {
                       </div>
                       <div className="movimiento-actions" style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
                         {((mov.tipo || '').toLowerCase() !== 'transferencia') && (
-                          <button onClick={() => handleEditMovimiento(mov)} style={{ background: 'rgba(255,255,255,0.14)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Editar</button>
+                          <button onClick={() => handleEditMovimiento(mov)} style={{ background: 'rgba(255,255,255,0.14)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
+                            {mov && (mov._recurrente || mov.frecuencia) ? 'Editar serie' : 'Editar'}
+                          </button>
                         )}
-                        <button onClick={() => handleDeleteMovimiento(mov)} style={{ background: 'rgba(0,0,0,0.08)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Eliminar</button>
+                        <button onClick={() => handleDeleteMovimiento(mov)} style={{ background: 'rgba(0,0,0,0.08)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
+                          {mov && (mov._recurrente || mov.frecuencia) ? 'Eliminar serie' : 'Eliminar'}
+                        </button>
                       </div>
                     </div>
                   </li>

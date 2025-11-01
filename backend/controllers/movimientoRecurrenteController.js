@@ -101,11 +101,25 @@ exports.instanciasCalendario = async (req, res) => {
     // Opcional: puedes recibir rangoInicio/rangoFin por query para limitar el rango
     const rangoInicio = req.query.rangoInicio;
     const rangoFin = req.query.rangoFin;
+
+    // Obtener un mapa de cuentas para adjuntar el nombre de la cuenta en cada instancia
+    const db = require('../db');
+    let cuentasMap = {};
+    try {
+      const [cuentas] = await db.query('SELECT id, nombre FROM cuentas WHERE usuario_id = ?', [usuario_id]);
+      cuentasMap = (cuentas || []).reduce((acc, c) => { acc[c.id] = c.nombre; return acc; }, {});
+    } catch (e) {
+      // Si falla, dejamos el mapa vacío y seguimos devolviendo las instancias
+      cuentasMap = {};
+    }
+
     const instancias = lista.flatMap(mov => {
       const fechas = generarFechasRecurrentes(mov, rangoInicio, rangoFin);
       return fechas.map(fecha => ({
         ...mov.dataValues,
-        fecha: fecha.toISOString().slice(0,10)
+        fecha: fecha.toISOString().slice(0, 10),
+        cuenta: cuentasMap[mov.cuenta_id] || null, // nombre de la cuenta para UI del calendario
+        _recurrente: true, // marca para distinguir en el frontend
       }));
     });
     res.json(instancias);
