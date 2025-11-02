@@ -565,7 +565,7 @@ export default function Dashboard() {
           <h3 style={{ marginBottom: 16, color: 'var(--color-text)' }}>Acciones Rápidas</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
             <button
-              onClick={() => navigate('/transacciones')}
+              onClick={() => navigate('/Registro')}
               style={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: '#fff',
@@ -595,7 +595,7 @@ export default function Dashboard() {
             </button>
 
             <button
-              onClick={() => navigate('/asesor-financiero')}
+              onClick={() => navigate('./pages/asesor')}
               style={{
                 background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
                 color: '#fff',
@@ -655,7 +655,7 @@ export default function Dashboard() {
             </button>
 
             <button
-              onClick={() => navigate('/metas')}
+              onClick={() => navigate('/DeudasMetas')}
               style={{
                 background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
                 color: '#fff',
