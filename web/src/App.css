@@ -100,6 +100,7 @@
 }
 :root {
   --color-primary: #6c4fa1;
+  --color-caret: var(--color-primary);
   --color-secondary: #f5f5f5;
   --color-accent: #ff9800;
   --color-success: #4caf50;
@@ -125,6 +126,7 @@
 /* Modo oscuro: al aplicar la clase .dark en <html> se re-definen variables */
 .dark {
   --color-primary: #2b2b2b;
+  --color-caret: var(--color-text);
   --color-secondary: #1f1f23;
   --color-accent: #ffb74d;
   --color-success: #4caf50;
@@ -537,7 +539,14 @@ input, textarea, select {
   padding: 8px;
   border-radius: 8px;
 }
-input::placeholder, textarea::placeholder { color: var(--color-placeholder); }
+/* Placeholder theming (cross-browser) */
+input::placeholder, textarea::placeholder { color: var(--color-placeholder); opacity: 1; }
+input::-webkit-input-placeholder, textarea::-webkit-input-placeholder { color: var(--color-placeholder); }
+input:-ms-input-placeholder, textarea:-ms-input-placeholder { color: var(--color-placeholder); }
+input::-ms-input-placeholder, textarea::-ms-input-placeholder { color: var(--color-placeholder); }
+
+/* Caret color theming */
+input, textarea { caret-color: var(--color-caret); }
 
 /* SweetAlert2: adaptar popup e inputs al tema (claro/oscuro) */
 .swal2-popup {

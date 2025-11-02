@@ -348,13 +348,14 @@ const Login = ({ onLogin }) => {
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      background: '#f7f7fa'
+      // Usar el fondo global del tema (soporta modo oscuro)
+      background: 'var(--color-bg)'
     }}>
       <div style={{
-  background: 'var(--color-card)',
+        background: 'var(--color-card)',
         padding: '2.5rem 2rem',
         borderRadius: '12px',
-        boxShadow: '0 2px 16px rgba(0,0,0,0.08)',
+        boxShadow: '0 2px 16px var(--card-shadow)',
         minWidth: '340px',
         maxWidth: 400
       }}>
@@ -365,7 +366,8 @@ const Login = ({ onLogin }) => {
               marginBottom: '2rem',
               fontSize: '2.2rem',
               fontWeight: 700,
-              color: '#4B2E83'
+              // Texto del título según tema
+              color: 'var(--color-text)'
             }}>Iniciar Sesión</h2>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
               <input
@@ -377,7 +379,9 @@ const Login = ({ onLogin }) => {
                 style={{
                   padding: '0.7rem',
                   borderRadius: '6px',
-                  border: '1px solid #ccc',
+                  border: '1px solid var(--color-input-border)',
+                  background: 'var(--color-input-bg)',
+                  color: 'var(--color-text)',
                   fontSize: '1rem'
                 }}
               />
@@ -390,7 +394,9 @@ const Login = ({ onLogin }) => {
                 style={{
                   padding: '0.7rem',
                   borderRadius: '6px',
-                  border: '1px solid #ccc',
+                  border: '1px solid var(--color-input-border)',
+                  background: 'var(--color-input-bg)',
+                  color: 'var(--color-text)',
                   fontSize: '1rem'
                 }}
               />
@@ -410,7 +416,7 @@ const Login = ({ onLogin }) => {
                 style={{
                   padding: '0.7rem',
                   borderRadius: '6px',
-                  background: '#6C4AB6',
+                  background: 'var(--color-primary)',
                   color: '#fff',
                   fontWeight: 600,
                   fontSize: '1.1rem',
@@ -429,17 +435,17 @@ const Login = ({ onLogin }) => {
             )}
             <GoogleAuthButton onLogin={onLogin} />
             <div style={{ textAlign: 'center', marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button onClick={() => setShowRegister(true)} style={{ background: 'none', border: 'none', color: '#6C4AB6', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+              <button onClick={() => setShowRegister(true)} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
                 ¿No tienes cuenta? Regístrate
               </button>
-              <button onClick={() => window.location.href = '/recuperar-password'} style={{ background: 'none', border: 'none', color: '#6C4AB6', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+              <button onClick={() => window.location.href = '/recuperar-password'} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
           </>
         ) : (
           <>
-            <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '2rem', color: '#4B2E83' }}>Registro</h2>
+            <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '2rem', color: 'var(--color-text)' }}>Registro</h2>
             {!registroEnviado ? (
               <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <input
@@ -452,7 +458,7 @@ const Login = ({ onLogin }) => {
                   }}
                   maxLength={50}
                   required
-                  style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }}
+                  style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }}
                 />
                 <input
                   type="text"
@@ -463,9 +469,9 @@ const Login = ({ onLogin }) => {
                     setApellido(v);
                   }}
                   maxLength={50}
-                  style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }}
+                  style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }}
                 />
-                <input type="email" placeholder="Correo electrónico" value={correo} onChange={e => setCorreo(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }} />
+                <input type="email" placeholder="Correo electrónico" value={correo} onChange={e => setCorreo(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
                 <input
                   type="tel"
                   placeholder="Teléfono (9 dígitos)"
@@ -476,10 +482,10 @@ const Login = ({ onLogin }) => {
                   }}
                   maxLength={9}
                   required
-                  style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }}
+                  style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }}
                 />
-                <input type="password" placeholder="Contraseña" value={regPassword} onChange={e => setRegPassword(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }} />
-                <input type="password" placeholder="Confirmar contraseña" value={regPassword2} onChange={e => setRegPassword2(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }} />
+                <input type="password" placeholder="Contraseña" value={regPassword} onChange={e => setRegPassword(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+                <input type="password" placeholder="Confirmar contraseña" value={regPassword2} onChange={e => setRegPassword2(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center', margin: '0.5rem 0' }}>
                   <span>Confirmar vía:</span>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -489,7 +495,7 @@ const Login = ({ onLogin }) => {
                     <input type="radio" name="confirmMethod" value="telefono" checked={confirmMethod === 'telefono'} onChange={() => setConfirmMethod('telefono')} /> Teléfono
                   </label>
                 </div>
-                <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: '#6C4AB6', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
+                <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: 'var(--color-primary)', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
                   {loading ? 'Registrando...' : 'Registrarme'}
                 </button>
                 {CAPTCHA_ENABLED && CAPTCHA_PROVIDER === 'recaptcha' && RECAPTCHA_VERSION === 'v2' && (
@@ -502,30 +508,30 @@ const Login = ({ onLogin }) => {
                     />
                   </div>
                 )}
-                <button type="button" onClick={() => setShowRegister(false)} style={{ background: 'none', border: 'none', color: '#6C4AB6', fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>Volver a iniciar sesión</button>
+                <button type="button" onClick={() => setShowRegister(false)} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>Volver a iniciar sesión</button>
               </form>
             ) : (
               <form onSubmit={handleConfirm} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ marginBottom: 8 }}>Ingresa el código que recibiste por {confirmMethod === 'correo' ? 'correo' : 'teléfono'}:</div>
-                <input type="text" placeholder="Código de confirmación" value={codigo} onChange={e => setCodigo(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }} />
-                <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: '#6C4AB6', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
+                <div style={{ marginBottom: 8, color: 'var(--color-text)' }}>Ingresa el código que recibiste por {confirmMethod === 'correo' ? 'correo' : 'teléfono'}:</div>
+                <input type="text" placeholder="Código de confirmación" value={codigo} onChange={e => setCodigo(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+                <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: 'var(--color-primary)', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
                   {loading ? 'Validando...' : 'Confirmar registro'}
                 </button>
                 <button
                   type="button"
                   onClick={handleResend}
                   disabled={resendLoading || cooldownSeconds > 0}
-                  style={{ padding: '0.6rem', borderRadius: 6, background: cooldownSeconds > 0 ? '#b9a8e6' : '#6C4AB6', color: '#fff', fontWeight: 600, fontSize: '1rem', border: 'none', cursor: resendLoading || cooldownSeconds > 0 ? 'not-allowed' : 'pointer' }}
+                  style={{ padding: '0.6rem', borderRadius: 6, background: 'var(--color-primary)', opacity: resendLoading || cooldownSeconds > 0 ? 0.6 : 1, color: '#fff', fontWeight: 600, fontSize: '1rem', border: 'none', cursor: resendLoading || cooldownSeconds > 0 ? 'not-allowed' : 'pointer' }}
                 >
                   {resendLoading ? 'Enviando...' : (cooldownSeconds > 0 ? `Reenviar código (${cooldownSeconds}s)` : 'Reenviar código')}
                 </button>
-                <button type="button" onClick={() => { setRegistroEnviado(false); setCodigo(''); }} style={{ background: 'none', border: 'none', color: '#6C4AB6', fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>Volver al registro</button>
+                <button type="button" onClick={() => { setRegistroEnviado(false); setCodigo(''); }} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>Volver al registro</button>
               </form>
             )}
           </>
         )}
         <div style={{ marginTop: 16, textAlign: 'center' }}>
-          <a href="/acerca" style={{ color: '#6C4AB6', textDecoration: 'underline', fontSize: '0.95rem' }}>Acerca de Kairos</a>
+          <a href="/acerca" style={{ color: 'var(--color-primary)', textDecoration: 'underline', fontSize: '0.95rem' }}>Acerca de Kairos</a>
         </div>
       </div>
     </div>

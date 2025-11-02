@@ -28,3 +28,21 @@ SET @sql := IF(@idx_exists = 0,
   'SELECT 1'
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Asegurar la llave foránea a usuarios(id) sobre usuario_id (idempotente)
+SET @fk_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
+  JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+    ON rc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+   AND rc.CONSTRAINT_SCHEMA = kcu.CONSTRAINT_SCHEMA
+   AND rc.TABLE_NAME = kcu.TABLE_NAME
+  WHERE rc.CONSTRAINT_SCHEMA = DATABASE()
+    AND rc.TABLE_NAME = 'usuarios_preferencias'
+    AND kcu.COLUMN_NAME = 'usuario_id'
+);
+SET @sql := IF(@fk_exists = 0,
+  'ALTER TABLE usuarios_preferencias\n     ADD CONSTRAINT fk_usuarios_preferencias_usuario\n     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)\n     ON DELETE CASCADE',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
