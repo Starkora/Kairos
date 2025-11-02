@@ -463,7 +463,7 @@ export default function Asesor() {
                                   else newSet.add(f.days);
                                   setExpandedHorizons(newSet);
                                 }}
-                                style={{ background: 'none', border: 'none', color: 'var(--color-primary, #60a5fa)', cursor: 'pointer', padding: 0, marginRight: 8 }}
+                                style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', padding: 0, marginRight: 8, fontSize: 14, fontWeight: 700 }}
                               >
                                 {isExpanded ? '▼' : '▶'}
                               </button>
