@@ -68,6 +68,41 @@ export default function Presupuestos() {
     await cargar();
   };
 
+  // Copiar los montos presupuestados del mes anterior
+  const copiarDelMesPasado = async () => {
+    let prevAnio = anio;
+    let prevMes = mes - 1;
+    if (prevMes <= 0) { prevMes = 12; prevAnio = anio - 1; }
+
+    const pick = await Swal.fire({
+      title: 'Copiar del mes pasado',
+      text: `Vamos a traer ${prevAnio}-${String(prevMes).padStart(2,'0')} al mes actual.`,
+      icon: 'question',
+      showDenyButton: true,
+      showCancelButton: true,
+      confirmButtonText: 'Sobrescribir todos',
+      denyButtonText: 'Sólo donde esté en 0',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#2563eb'
+    });
+    if (!pick.isConfirmed && !pick.isDenied) return;
+
+    const resPrev = await fetch(`${API_BASE}/api/presupuestos?anio=${prevAnio}&mes=${prevMes}`, { headers: { 'Authorization': 'Bearer ' + getToken() } });
+    const ct = resPrev.headers.get('content-type') || '';
+    const prevData: any[] = /application\/json/i.test(ct) ? await resPrev.json() : [];
+    const mapPrev = new Map<number, number>();
+    (prevData || []).forEach(b => mapPrev.set(Number(b.categoria_id), Number(b.monto || 0)));
+
+    const updated = items.map(it => {
+      const prev = mapPrev.get(it.categoria_id);
+      if (prev === undefined) return it;
+      if (pick.isDenied && Number(it.monto || 0) > 0) return it; // sólo llenar ceros
+      return { ...it, monto: prev };
+    });
+    setItems(updated);
+    Swal.fire({ icon: 'success', title: 'Montos copiados', text: 'Revisa y guarda para aplicar.', timer: 1400, showConfirmButton: false });
+  };
+
   // Guarda todos los montos visibles en una sola acción
   const armarPresupuesto = async () => {
     const res = await Swal.fire({
@@ -97,6 +132,20 @@ export default function Presupuestos() {
     return [y-1, y, y+1];
   }, [hoy]);
 
+  // Alertas de consumo (80% / 100%)
+  const stats = useMemo(() => {
+    let warn80 = 0, warn100 = 0;
+    items.forEach(it => {
+      const m = Number(it.monto || 0);
+      const g = Number(it.gastado || 0);
+      if (m > 0) {
+        const p = (g / m) * 100;
+        if (p >= 100) warn100++; else if (p >= 80) warn80++;
+      }
+    });
+    return { warn80, warn100 };
+  }, [items]);
+
   return (
     <div className="card">
       <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 16 }}>Presupuestos</h2>
@@ -108,10 +157,19 @@ export default function Presupuestos() {
           {meses.map((n,i) => <option key={i+1} value={i+1}>{n}</option>)}
         </select>
         <div style={{ flex: 1 }} />
+        <button onClick={copiarDelMesPasado} style={{ padding: '8px 14px', borderRadius: 10, background: '#4b5563', color: '#fff', border: 'none', fontWeight: 600 }}>
+          Copiar del mes pasado
+        </button>
         <button onClick={armarPresupuesto} style={{ padding: '8px 14px', borderRadius: 10, background: '#2563eb', color: '#fff', border: 'none', fontWeight: 600 }}>
           Armar presupuesto
         </button>
       </div>
+      {(stats.warn80 > 0 || stats.warn100 > 0) && (
+        <div style={{ background: stats.warn100 > 0 ? '#7f1d1d' : '#78350f', color: '#fff', borderRadius: 10, padding: '10px 12px', marginBottom: 12 }}>
+          {stats.warn100 > 0 && <span style={{ marginRight: 12 }}>⚠️ {stats.warn100} categoría(s) superaron el 100%.</span>}
+          {stats.warn80 > 0 && <span>⏳ {stats.warn80} categoría(s) están sobre el 80%.</span>}
+        </div>
+      )}
       {loading ? (
         <div>Cargando…</div>
       ) : (
@@ -128,7 +186,8 @@ export default function Presupuestos() {
             </thead>
             <tbody>
               {items.map((it, idx) => {
-                const pct = it.monto > 0 ? Math.min(100, Math.round(100 * (Number(it.gastado||0) / Number(it.monto)))) : 0;
+                const pctReal = it.monto > 0 ? Math.round(100 * (Number(it.gastado||0) / Number(it.monto))) : 0;
+                const pct = it.monto > 0 ? Math.min(100, Math.max(0, pctReal)) : 0;
                 const warn = pct >= 100 ? '#ef4444' : (pct >= 80 ? '#f59e0b' : '#22c55e');
                 return (
                   <tr key={it.categoria_id} style={{ background: idx%2? '#1f2937':'#111827' }}>
@@ -143,6 +202,11 @@ export default function Presupuestos() {
                       <div style={{ background: '#374151', height: 12, borderRadius: 8, overflow: 'hidden' }}>
                         <div style={{ width: `${pct}%`, background: warn, height: 12 }} />
                       </div>
+                      {(pctReal >= 80) && (
+                        <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: pctReal >= 100 ? '#ef4444' : '#f59e0b' }}>
+                          {pctReal >= 100 ? 'Sobre el 100%' : 'Sobre el 80%'}
+                        </div>
+                      )}
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'center' }}>
                       <button onClick={() => guardar(it.categoria_id, it.monto)} style={{ padding: '6px 10px', borderRadius: 8 }}>Guardar</button>

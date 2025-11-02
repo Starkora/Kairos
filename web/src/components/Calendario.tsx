@@ -22,6 +22,9 @@ export default function Calendario() {
   const [movimientos, setMovimientos] = React.useState([]);
   const [movimientosRecurrentes, setMovimientosRecurrentes] = React.useState([]);
   const [exportMode, setExportMode] = React.useState(false);
+  // Filtros y búsqueda
+  const [filters, setFilters] = React.useState({ ingreso: true, egreso: true, ahorro: true, transferencia: true });
+  const [search, setSearch] = React.useState('');
 
   // Función para cargar movimientos y asignar iconos/colores
   const refreshMovimientos = React.useCallback(async () => {
@@ -115,6 +118,18 @@ export default function Calendario() {
     return [...otros, ...agrupados];
   }, [movimientosDelDia]);
   const hayTransferenciasAgrupadas = React.useMemo(() => movimientosDelDiaAgrupados.some(m => (m.tipo || '').toLowerCase() === 'transferencia'), [movimientosDelDiaAgrupados]);
+
+  // Aplicar filtros y búsqueda sobre los movimientos del día
+  const movimientosFiltrados = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return movimientosDelDiaAgrupados.filter(m => {
+      const tipo = String(m.tipo || '').toLowerCase();
+      if (!filters[tipo as keyof typeof filters]) return false;
+      if (!q) return true;
+      const txt = `${m.descripcion || ''} ${m.cuenta || ''}`.toLowerCase();
+      return txt.includes(q);
+    });
+  }, [movimientosDelDiaAgrupados, filters, search]);
 
   const handleEditMovimiento = async (mov) => {
     // Si es instancia de movimiento recurrente, redirigir/derivar a edición de serie
@@ -519,6 +534,26 @@ export default function Calendario() {
           <h2 style={{ fontSize: 22, marginBottom: 18, fontWeight: 700, color: 'var(--color-text)' }}>
             Movimientos del {fechaSeleccionada.split('-').reverse().join('/')}
           </h2>
+          {/* Controles de filtro y búsqueda */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+            {(['ingreso','egreso','ahorro','transferencia'] as const).map(t => (
+              <button key={t}
+                onClick={() => setFilters(f => ({ ...f, [t]: !f[t] }))}
+                style={{
+                  padding: '6px 10px', borderRadius: 999, border: '1px solid var(--color-input-border)',
+                  background: filters[t] ? 'var(--color-primary)' : 'var(--color-card)',
+                  color: filters[t] ? '#fff' : 'var(--color-text)', fontWeight: 700
+                }}>
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar..."
+              style={{ marginLeft: 'auto', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', minWidth: 180 }}
+            />
+          </div>
           {hayTransferenciasAgrupadas && (
             <div style={{
               display: 'flex',
@@ -537,12 +572,12 @@ export default function Calendario() {
               </div>
             </div>
           )}
-          {movimientosDelDiaAgrupados.length === 0 ? (
+          {movimientosFiltrados.length === 0 ? (
             <div style={{ color: 'var(--color-muted)', fontSize: 18 }}>No hay movimientos para este día.</div>
           ) : (
             <div style={{ maxHeight: 480, overflowY: 'auto', paddingRight: 4 }}>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                {movimientosDelDiaAgrupados.map(mov => (
+                {movimientosFiltrados.map(mov => (
                   <li key={mov.id} style={{
                     marginBottom: 18,
                     padding: 22,
