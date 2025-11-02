@@ -2,7 +2,7 @@ import React from 'react';
 import API_BASE from '../utils/apiBase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { getToken } from '../utils/auth';
-import { FaWallet, FaArrowDown, FaArrowUp, FaUniversity, FaMoneyBillWave, FaPiggyBank, FaCalendarAlt, FaPlus, FaChartLine, FaBullseye, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
+import { FaWallet, FaArrowDown, FaArrowUp, FaUniversity, FaMoneyBillWave, FaPiggyBank, FaCalendarAlt, FaPlus, FaChartLine, FaBullseye, FaExclamationTriangle, FaCheckCircle, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import type { IconType } from 'react-icons';
 import { useNavigate } from 'react-router-dom';
 
@@ -44,6 +44,7 @@ export default function Dashboard() {
   const [presupuestos, setPresupuestos] = React.useState([]);
   const [metas, setMetas] = React.useState([]);
   const [deudas, setDeudas] = React.useState([]);
+  const [categoriasExpandidas, setCategoriasExpandidas] = React.useState<Set<string>>(new Set());
   // Filtro de año
   const currentYear = new Date().getFullYear();
   const [year, setYear] = React.useState(currentYear);
@@ -984,7 +985,7 @@ export default function Dashboard() {
       {/* Gráfico de Distribución por Categorías */}
       <div className="card" style={{ marginTop: 24 }}>
         <h3 style={{ marginBottom: 16, color: 'var(--color-text)' }}>Distribución de Gastos por Categoría</h3>
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
           {/* Gráfico de Pie */}
           <div style={{ flex: 1, minWidth: 300, display: 'flex', justifyContent: 'center' }}>
             <ResponsiveContainer width="100%" height={300}>
@@ -1007,24 +1008,137 @@ export default function Dashboard() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          {/* Leyenda */}
-          <div style={{ flex: 1, minWidth: 250, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {pieData.map((entry, index) => (
-              <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ 
-                  width: 20, 
-                  height: 20, 
-                  borderRadius: 4, 
-                  background: COLORS[index % COLORS.length],
-                  display: 'inline-block',
-                  flexShrink: 0
-                }}></span>
-                <span style={{ color: 'var(--color-text)', fontWeight: 500, flex: 1 }}>{entry.name}</span>
-                <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>
-                  S/ {Number(entry.value).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
+          {/* Leyenda con detalles expandibles */}
+          <div style={{ flex: 1, minWidth: 300, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {pieData.map((entry, index) => {
+              const isExpanded = categoriasExpandidas.has(entry.name);
+              const gastosCategoria = filteredMovs
+                .filter(m => m.tipo === 'egreso' && (m.categoria || 'Sin categoría') === entry.name)
+                .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+              
+              return (
+                <div key={entry.name} style={{ 
+                  border: `2px solid ${COLORS[index % COLORS.length]}33`,
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  background: 'var(--color-card-alt)'
+                }}>
+                  {/* Header de la categoría */}
+                  <div 
+                    onClick={() => {
+                      const newSet = new Set(categoriasExpandidas);
+                      if (isExpanded) {
+                        newSet.delete(entry.name);
+                      } else {
+                        newSet.add(entry.name);
+                      }
+                      setCategoriasExpandidas(newSet);
+                    }}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 12,
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s',
+                      background: `${COLORS[index % COLORS.length]}15`
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = `${COLORS[index % COLORS.length]}25`}
+                    onMouseLeave={(e) => e.currentTarget.style.background = `${COLORS[index % COLORS.length]}15`}
+                  >
+                    <span style={{ 
+                      width: 20, 
+                      height: 20, 
+                      borderRadius: 4, 
+                      background: COLORS[index % COLORS.length],
+                      display: 'inline-block',
+                      flexShrink: 0
+                    }}></span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ color: 'var(--color-text)', fontWeight: 600, fontSize: 15 }}>
+                        {entry.name}
+                      </div>
+                      <div style={{ color: 'var(--color-text-secondary)', fontSize: 12, marginTop: 2 }}>
+                        {gastosCategoria.length} movimiento{gastosCategoria.length !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                    <span style={{ color: 'var(--color-text)', fontWeight: 700, fontSize: 16, marginRight: 8 }}>
+                      S/ {Number(entry.value).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                    {React.createElement(isExpanded ? FaChevronUp : FaChevronDown as any, { 
+                      size: 16, 
+                      color: COLORS[index % COLORS.length]
+                    })}
+                  </div>
+
+                  {/* Detalles expandibles */}
+                  {isExpanded && (
+                    <div style={{ 
+                      padding: '8px 16px 12px 16px',
+                      background: 'var(--color-card)',
+                      maxHeight: 300,
+                      overflowY: 'auto'
+                    }}>
+                      {gastosCategoria.length === 0 ? (
+                        <div style={{ 
+                          color: 'var(--color-text-secondary)', 
+                          fontSize: 13, 
+                          textAlign: 'center',
+                          padding: 12
+                        }}>
+                          No hay gastos en esta categoría
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {gastosCategoria.map((gasto, idx) => (
+                            <div key={gasto.id || idx} style={{ 
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              padding: '8px 12px',
+                              background: 'var(--color-card-alt)',
+                              borderRadius: 6,
+                              borderLeft: `3px solid ${COLORS[index % COLORS.length]}`
+                            }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ 
+                                  color: 'var(--color-text)', 
+                                  fontWeight: 500, 
+                                  fontSize: 13 
+                                }}>
+                                  {gasto.descripcion || 'Sin descripción'}
+                                </div>
+                                <div style={{ 
+                                  color: 'var(--color-text-secondary)', 
+                                  fontSize: 11, 
+                                  marginTop: 2 
+                                }}>
+                                  {gasto.fecha ? new Date(gasto.fecha).toLocaleDateString('es-PE', { 
+                                    day: '2-digit', 
+                                    month: 'short', 
+                                    year: 'numeric' 
+                                  }) : 'Sin fecha'}
+                                  {gasto.cuenta || gasto.cuenta_nombre ? ` • ${gasto.cuenta || gasto.cuenta_nombre}` : ''}
+                                </div>
+                              </div>
+                              <div style={{ 
+                                color: COLORS[index % COLORS.length], 
+                                fontWeight: 700, 
+                                fontSize: 14,
+                                marginLeft: 12,
+                                whiteSpace: 'nowrap'
+                              }}>
+                                S/ {Number(gasto.monto || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
