@@ -537,7 +537,7 @@ export default function Dashboard() {
                         <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
                           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                             <div style={{ color: 'var(--color-primary)', display: 'flex', alignItems: 'center' }}>
-                              <FaCalendarAlt size={20} />
+                              {React.createElement(FaCalendarAlt as any, { size: 20 })}
                             </div>
                             <div>
                               <div style={{ fontWeight: 600 }}>{p.categoria || 'Sin categoría'}</div>
