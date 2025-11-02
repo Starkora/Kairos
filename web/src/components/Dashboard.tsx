@@ -3,6 +3,7 @@ import API_BASE from '../utils/apiBase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, ResponsiveContainer, Cell } from 'recharts';
 import { getToken } from '../utils/auth';
 import { FaWallet, FaArrowDown, FaArrowUp, FaUniversity, FaMoneyBillWave, FaPiggyBank, FaCalendarAlt } from 'react-icons/fa';
+import type { IconType } from 'react-icons';
 
 
 export default function Dashboard() {
@@ -321,7 +322,7 @@ export default function Dashboard() {
       {/* Fila de indicadores/resumen */}
       <div style={{ display: 'flex', gap: 24, margin: '24px 0 32px 0', justifyContent: 'space-between', flexWrap: 'wrap' }}>
         {indicadores.map((item, idx) => {
-          const Icon = item.IconComponent;
+          const Icon = item.IconComponent as IconType;
           return (
             <div key={idx} style={{
               flex: 1,
@@ -337,7 +338,7 @@ export default function Dashboard() {
               gap: 18,
             }}>
               <div style={{ fontSize: 44, color: item.color, background: 'var(--color-input-bg)', borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {React.createElement(Icon, { size: 28 })}
+                {React.createElement(Icon as any, { size: 28 })}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ color: item.color, fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{item.titulo}</div>
