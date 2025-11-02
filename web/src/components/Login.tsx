@@ -435,10 +435,10 @@ const Login = ({ onLogin }) => {
             )}
             <GoogleAuthButton onLogin={onLogin} />
             <div style={{ textAlign: 'center', marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button onClick={() => setShowRegister(true)} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+              <button onClick={() => setShowRegister(true)} style={{ background: 'none', border: 'none', color: '#60a5fa', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
                 ¿No tienes cuenta? Regístrate
               </button>
-              <button onClick={() => window.location.href = '/recuperar-password'} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+              <button onClick={() => window.location.href = '/recuperar-password'} style={{ background: 'none', border: 'none', color: '#60a5fa', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
@@ -508,7 +508,7 @@ const Login = ({ onLogin }) => {
                     />
                   </div>
                 )}
-                <button type="button" onClick={() => setShowRegister(false)} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>Volver a iniciar sesión</button>
+                <button type="button" onClick={() => setShowRegister(false)} style={{ background: 'none', border: 'none', color: '#60a5fa', fontWeight: 600, cursor: 'pointer', marginTop: 8, textDecoration: 'underline' }}>Volver a iniciar sesión</button>
               </form>
             ) : (
               <form onSubmit={handleConfirm} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -525,13 +525,13 @@ const Login = ({ onLogin }) => {
                 >
                   {resendLoading ? 'Enviando...' : (cooldownSeconds > 0 ? `Reenviar código (${cooldownSeconds}s)` : 'Reenviar código')}
                 </button>
-                <button type="button" onClick={() => { setRegistroEnviado(false); setCodigo(''); }} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>Volver al registro</button>
+                <button type="button" onClick={() => { setRegistroEnviado(false); setCodigo(''); }} style={{ background: 'none', border: 'none', color: '#60a5fa', fontWeight: 600, cursor: 'pointer', marginTop: 8, textDecoration: 'underline' }}>Volver al registro</button>
               </form>
             )}
           </>
         )}
         <div style={{ marginTop: 16, textAlign: 'center' }}>
-          <a href="/acerca" style={{ color: 'var(--color-primary)', textDecoration: 'underline', fontSize: '0.95rem' }}>Acerca de Kairos</a>
+          <a href="/acerca" style={{ color: '#60a5fa', textDecoration: 'underline', fontSize: '0.95rem', fontWeight: 600 }}>Acerca de Kairos</a>
         </div>
       </div>
     </div>
