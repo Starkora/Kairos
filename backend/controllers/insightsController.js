@@ -5,23 +5,24 @@ const db = require('../db');
 const CACHE_TTL_MS = Number(process.env.INSIGHTS_CACHE_TTL_MS || 30_000);
 const insightsCache = new Map(); // key -> { expires: number, payload }
 
-function cacheKey(userId, includeFuture) {
+// includeVariant puede ser boolean (true/false) o una cadena diferenciadora como '1:fast'/'1'
+function cacheKey(userId, includeVariant) {
   // Cambia con el mes actual para evitar inconsistencias al cruzar de mes
   const now = new Date();
   const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  return `u:${userId}|f:${includeFuture?'1':'0'}|m:${ym}`;
+  return `u:${userId}|v:${String(includeVariant)}|m:${ym}`;
 }
 
-function getCached(userId, includeFuture) {
-  const key = cacheKey(userId, includeFuture);
+function getCached(userId, includeVariant) {
+  const key = cacheKey(userId, includeVariant);
   const rec = insightsCache.get(key);
   if (!rec) return null;
   if (Date.now() > rec.expires) { insightsCache.delete(key); return null; }
   return rec.payload;
 }
 
-function setCached(userId, includeFuture, payload) {
-  const key = cacheKey(userId, includeFuture);
+function setCached(userId, includeVariant, payload) {
+  const key = cacheKey(userId, includeVariant);
   insightsCache.set(key, { expires: Date.now() + CACHE_TTL_MS, payload });
 }
 
@@ -67,7 +68,7 @@ exports.list = async (req, res) => {
   const fastMode = String((req.query && req.query.fast) || '0') === '1';
 
     // Cache rápido para aliviar carga cuando la pantalla hace refresh o varios widgets llaman lo mismo
-    const cached = getCached(usuario_id, includeFuture + (fastMode?':fast':'') );
+    const cached = getCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''));
     if (cached) {
       return res.json(cached);
     }
@@ -150,6 +151,9 @@ exports.list = async (req, res) => {
       [usuario_id, year, month]
     );
     let inDanger = [], inWarn = [];
+    // Para la regla "no-budgets" necesitaremos saber si hay presupuestos > 0
+    const budgetsCount = (budgets || []).filter(b => Number(b.monto || 0) > 0).length;
+    // Cálculo detallado de gasto por categoría solo en modo no-rápido
     if (!fastMode) {
       const [spentRows] = await db.query(
         `SELECT categoria_id, SUM(monto) AS gastado
@@ -265,7 +269,7 @@ exports.list = async (req, res) => {
   } catch (_) { /* opcional */ }
 
     // Regla 5: Sin presupuestos configurados
-    if (!enriched || enriched.length === 0) {
+    if (budgetsCount === 0) {
       insights.push({ id: 'no-budgets', severity: 'info', title: 'Aún no configuras presupuestos', body: 'Define montos por categoría para controlar tu gasto mensual.', cta: { label: 'Configurar presupuestos', href: '/presupuestos' } });
     }
 
@@ -477,12 +481,12 @@ exports.list = async (req, res) => {
         await db.query('UPDATE usuarios_preferencias SET data = ? WHERE usuario_id = ?', [JSON.stringify(current), usuario_id]);
       }
       const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode } };
-      setCached(usuario_id, includeFuture + (fastMode?':fast':''), result);
+      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), result);
       return res.json(result);
     } catch (_) {
       // Si falla filtrado, devolver lista original
       const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode } };
-      setCached(usuario_id, includeFuture + (fastMode?':fast':''), result);
+      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), result);
       return res.json(result);
     }
   } catch (err) {
