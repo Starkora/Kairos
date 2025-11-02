@@ -2,6 +2,7 @@ import React from 'react';
 import API_BASE from '../utils/apiBase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, ResponsiveContainer, Cell } from 'recharts';
 import { getToken } from '../utils/auth';
+import { FaWallet, FaArrowDown, FaArrowUp, FaUniversity, FaMoneyBillWave, FaPiggyBank, FaCalendarAlt } from 'react-icons/fa';
 
 
 export default function Dashboard() {
@@ -180,7 +181,7 @@ export default function Dashboard() {
 
   const indicadores = [
     {
-      icon: '💳',
+      icon: <FaWallet size={24} />,
       color: saldoNegativo ? '#e53935' : '#7e57c2',
       titulo: cuentaSeleccionada === 'all' ? 'Saldo total' : 'Saldo actual',
       valor: `S/ ${saldoActual.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -191,19 +192,19 @@ export default function Dashboard() {
       isAmount: true,
     },
     {
-      icon: '📉',
+      icon: <FaArrowDown size={24} />,
       color: '#ff9800',
       titulo: 'Indicadores Egresos',
       valor: filteredMovs.filter(m => m.tipo === 'egreso').length,
     },
     {
-      icon: '📈',
+      icon: <FaArrowUp size={24} />,
       color: '#388e3c',
       titulo: 'Indicadores Ingresos',
       valor: filteredMovs.filter(m => m.tipo === 'ingreso').length,
     },
     {
-      icon: '🏦',
+      icon: <FaUniversity size={24} />,
       color: '#ff7043',
       titulo: 'Ingreso',
       valor: `S/ ${totalIngreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -212,7 +213,7 @@ export default function Dashboard() {
       isAmount: true,
     },
     {
-      icon: '💸',
+      icon: <FaMoneyBillWave size={24} />,
       color: '#26c6da',
       titulo: 'Gastos',
       valor: `S/ ${totalEgreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -221,7 +222,7 @@ export default function Dashboard() {
       isAmount: true,
     },
     {
-      icon: '💰',
+      icon: <FaPiggyBank size={24} />,
       color: '#6c4fa1',
       titulo: 'Ahorro',
       valor: `S/ ${totalAhorro.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -529,7 +530,9 @@ export default function Dashboard() {
                       }).map((p, idx) => (
                         <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
                           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            <div style={{ fontSize: 20 }}>{p.icon || '📅'}</div>
+                            <div style={{ fontSize: 20, color: 'var(--color-primary)', display: 'flex', alignItems: 'center' }}>
+                              {p.icon || <FaCalendarAlt size={20} />}
+                            </div>
                             <div>
                               <div style={{ fontWeight: 600 }}>{p.categoria || 'Sin categoría'}</div>
                               <div style={{ fontSize: 12, color: '#666' }}>{p.cuenta || p.cuenta_nombre || ''}</div>
