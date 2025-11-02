@@ -2,6 +2,7 @@ import React from 'react';
 import API_BASE from '../utils/apiBase';
 import Swal from 'sweetalert2';
 import { getToken } from '../utils/auth';
+import { FaBolt, FaRedo, FaFileDownload, FaFileUpload, FaWallet, FaExclamationTriangle, FaClipboardList, FaLightbulb } from 'react-icons/fa';
 
 
 export default function Registro() {
@@ -467,7 +468,7 @@ export default function Registro() {
           marginBottom: 24 
         }}>
           <h3 style={{ marginBottom: 16, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 24 }}>⚡</span>
+            <FaBolt style={{ fontSize: 20, color: '#f59e0b' }} />
             Plantillas Rápidas
           </h3>
           <div style={{ 
@@ -539,16 +540,18 @@ export default function Registro() {
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
             >
-              <span style={{ fontSize: 16 }}>🔄</span>
+              <FaRedo style={{ fontSize: 14 }} />
               Duplicar última
             </button>
           )}
         </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <button type="button" onClick={handleDownloadTemplate} style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 600 }}>
+        <button type="button" onClick={handleDownloadTemplate} style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <FaFileDownload />
           Descargar plantilla
         </button>
-        <button type="button" onClick={handleImportClick} disabled={uploadLoading} style={{ background: uploadLoading ? 'rgba(108,79,161,0.7)' : 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 600 }}>
+        <button type="button" onClick={handleImportClick} disabled={uploadLoading} style={{ background: uploadLoading ? 'rgba(108,79,161,0.7)' : 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <FaFileUpload />
           {uploadLoading ? 'Importando…' : 'Importar movimientos'}
         </button>
         <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleImportFileSelected} style={{ display: 'none' }} />
@@ -608,8 +611,9 @@ export default function Registro() {
                 style={{ padding: 6, borderRadius: 6, width: '100%' }}
               />
             </div>
-            <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', alignSelf: 'flex-start', paddingLeft: 26 }}>
-              💡 Puedes escribir operaciones: 50+20, 100-15, 25*4
+            <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', alignSelf: 'flex-start', paddingLeft: 26, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <FaLightbulb style={{ fontSize: 12 }} />
+              Puedes escribir operaciones: 50+20, 100-15, 25*4
             </div>
           </div>
         </div>
@@ -634,7 +638,11 @@ export default function Registro() {
             marginTop: 8
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 20 }}>{calcularSaldoProyectado.quedaNegativo ? '⚠️' : '💰'}</span>
+              {calcularSaldoProyectado.quedaNegativo ? (
+                <FaExclamationTriangle style={{ fontSize: 18, color: '#c62828' }} />
+              ) : (
+                <FaWallet style={{ fontSize: 18, color: '#2e7d32' }} />
+              )}
               <span style={{ fontWeight: 600, fontSize: 14, color: calcularSaldoProyectado.quedaNegativo ? '#c62828' : '#2e7d32' }}>
                 Vista Previa del Saldo
               </span>
@@ -669,9 +677,13 @@ export default function Registro() {
                 marginTop: 12, 
                 fontSize: 12, 
                 color: '#c62828',
-                fontWeight: 600 
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
               }}>
-                ⚠️ Advertencia: Tu saldo quedará en negativo
+                <FaExclamationTriangle />
+                Advertencia: Tu saldo quedará en negativo
               </div>
             )}
           </div>
@@ -748,7 +760,7 @@ export default function Registro() {
           marginTop: 24 
         }}>
           <h3 style={{ marginBottom: 16, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 24 }}>📝</span>
+            <FaClipboardList style={{ fontSize: 20, color: '#6c4fa1' }} />
             Transacciones Recientes
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
