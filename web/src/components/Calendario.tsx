@@ -29,6 +29,34 @@ export default function Calendario() {
   const [search, setSearch] = React.useState('');
   const [savedPresets, setSavedPresets] = React.useState<Array<{ name: string; filters: { ingreso: boolean; egreso: boolean; ahorro: boolean; transferencia: boolean } }>>([]);
   const [selectedPreset, setSelectedPreset] = React.useState<string>('');
+  const [showExportMenu, setShowExportMenu] = React.useState(false);
+  const [showQuickMenu, setShowQuickMenu] = React.useState(false);
+  const [showPresetsMenu, setShowPresetsMenu] = React.useState(false);
+  const exportMenuRef = React.useRef<HTMLDivElement|null>(null);
+  const quickMenuRef = React.useRef<HTMLDivElement|null>(null);
+  const presetsMenuRef = React.useRef<HTMLDivElement|null>(null);
+
+  // Cerrar menús al hacer click fuera o al presionar Escape
+  React.useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (
+        (exportMenuRef.current && exportMenuRef.current.contains(t)) ||
+        (quickMenuRef.current && quickMenuRef.current.contains(t)) ||
+        (presetsMenuRef.current && presetsMenuRef.current.contains(t))
+      ) return;
+      setShowExportMenu(false); setShowQuickMenu(false); setShowPresetsMenu(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setShowExportMenu(false); setShowQuickMenu(false); setShowPresetsMenu(false); }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
 
   // Persistencia de filtros y búsqueda (local) y presets (también backend)
   React.useEffect(() => {
@@ -684,47 +712,75 @@ export default function Calendario() {
   return (
     <div className="card calendar-card" style={{ color: 'var(--color-text)' }}>
       <h1 className="calendar-title ">Calendario de Movimientos</h1>
-      <div className="calendar-actions" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <button
-          type="button"
-          onClick={handleExport}
-          style={{
-            background: exportMode ? '#f9a825' : '#2e7d32',
-            color: exportMode ? '#222' : '#fff',
-            border: 'none',
-            borderRadius: 8,
-            padding: '8px 12px',
-            fontWeight: 700
-          }}
-        >
-          {exportMode ? 'Exportar (usar selección actual)' : 'Exportar movimientos (fechas seleccionadas)'}
-        </button>
-        {exportMode && (
-          <>
-            <button type="button" onClick={exportLocalCSV}
-              style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 700 }}>
-              CSV local
-            </button>
-            <button type="button" onClick={exportLocalXLSX}
-              style={{ background: '#22d3ee', color: '#083344', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 800 }}>
-              XLSX local
-            </button>
-          </>
-        )}
-        {exportMode && (
-          <button
-            type="button"
-            onClick={() => {
-              setExportMode(false);
-              if (Array.isArray(value) && value[0] instanceof Date) {
-                setValue(value[0]);
-              }
-            }}
-            style={{ background: '#e53935', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 700 }}
+      <div className="calendar-actions toolbar" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center', position: 'relative' }}>
+        <div ref={exportMenuRef} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+          <button type="button" className="btn btn-primary"
+            onClick={handleExport}
+            title={exportMode ? 'Exportar por servidor usando la selección actual' : 'Entrar en modo de selección y exportar por servidor'}
           >
-            Cancelar
+            {exportMode ? 'Exportar (servidor)' : 'Exportar'}
           </button>
-        )}
+          <button type="button" className="btn btn-ghost" aria-label="Más opciones de exportación" onClick={() => { setShowExportMenu(v => !v); setShowQuickMenu(false); setShowPresetsMenu(false); }}>
+            ▾
+          </button>
+          {showExportMenu && (
+            <div className="menu-popover" style={{ minWidth: 220 }}>
+              <div className="menu-item" onClick={() => { exportLocalCSV(); setShowExportMenu(false); }}><span>📄</span><span>Exportar CSV (local)</span></div>
+              <div className="menu-item" onClick={async () => { await exportLocalXLSX(); setShowExportMenu(false); }}><span>📊</span><span>Exportar XLSX (local)</span></div>
+              {!exportMode && <div className="menu-sep" />}
+              {!exportMode && <div className="menu-item" onClick={() => { setExportMode(true); setShowExportMenu(false); }}><span>📅</span><span>Seleccionar rango…</span></div>}
+              {exportMode && <div className="menu-item danger" onClick={() => { setExportMode(false); if (Array.isArray(value) && value[0] instanceof Date) setValue(value[0]); setShowExportMenu(false); }}><span>✖</span><span>Cancelar selección</span></div>}
+            </div>
+          )}
+        </div>
+        <div className="spacer" style={{ flex: 1 }} />
+        {/* Vistas rápidas (reemplaza botones sueltos) */}
+        <div ref={quickMenuRef} style={{ position: 'relative' }}>
+          <button type="button" className="btn" onClick={() => { setShowQuickMenu(v => !v); setShowExportMenu(false); setShowPresetsMenu(false); }}>Vistas rápidas ▾</button>
+          {showQuickMenu && (
+            <div className="menu-popover" style={{ minWidth: 220 }}>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: true }); setShowQuickMenu(false); }}><span>👀</span><span>Todos</span></div>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: false, egreso: true, ahorro: false, transferencia: false }); setShowQuickMenu(false); }}><span>💸</span><span>Solo egresos</span></div>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: false, ahorro: true, transferencia: false }); setShowQuickMenu(false); }}><span>💰</span><span>Ingresos/Ahorros</span></div>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: false }); setShowQuickMenu(false); }}><span>🚫</span><span>Sin transferencias</span></div>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: false, egreso: false, ahorro: false, transferencia: true }); setShowQuickMenu(false); }}><span>🔁</span><span>Solo transferencias</span></div>
+            </div>
+          )}
+        </div>
+        {/* Presets guardados en un popover compacto */}
+        <div ref={presetsMenuRef} style={{ position: 'relative' }}>
+          <button type="button" className="btn" onClick={() => { setShowPresetsMenu(v => !v); setShowExportMenu(false); setShowQuickMenu(false); }}>Presets ▾</button>
+          {showPresetsMenu && (
+            <div className="menu-popover" style={{ minWidth: 280 }}>
+              <div className="menu-group" style={{ padding: '4px 8px' }}>
+                <select value={selectedPreset} onChange={e => setSelectedPreset(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)' }}>
+                  <option value="">Presets guardados…</option>
+                  {savedPresets.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="menu-sep" />
+              <div className={`menu-item ${!selectedPreset ? 'disabled' : ''}`} onClick={() => { const p = savedPresets.find(x => x.name === selectedPreset); if (p) { setFilters(p.filters); setShowPresetsMenu(false); } }}><span>▶</span><span>Aplicar seleccionado</span></div>
+              <div className="menu-item" onClick={async () => {
+                const result = await Swal.fire({ title: 'Guardar preset', input: 'text', inputLabel: 'Nombre del preset', inputPlaceholder: 'Ej: Solo egresos', showCancelButton: true });
+                if (!result.isConfirmed) return; const name = (result.value || '').trim(); if (!name) return;
+                const existingIdx = savedPresets.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+                if (existingIdx >= 0) { const next = [...savedPresets]; next[existingIdx] = { name, filters }; persistPresets(next); setSelectedPreset(name); }
+                else { const next = [...savedPresets, { name, filters }]; persistPresets(next); setSelectedPreset(name); }
+                setShowPresetsMenu(false);
+                Swal.fire({ icon: 'success', title: 'Preset guardado', timer: 900, showConfirmButton: false });
+              }}><span>💾</span><span>Guardar actual…</span></div>
+              <div className={`menu-item danger ${!selectedPreset ? 'disabled' : ''}`} onClick={async () => {
+                if (!selectedPreset) return; const c = await Swal.fire({ title: 'Eliminar preset', text: `¿Eliminar "${selectedPreset}"?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Eliminar' });
+                if (!c.isConfirmed) return; const next = savedPresets.filter(p => p.name !== selectedPreset); persistPresets(next); setSelectedPreset(''); setShowPresetsMenu(false);
+              }}><span>🗑</span><span>Eliminar seleccionado</span></div>
+            </div>
+          )}
+        </div>
+        <div className="spacer" style={{ flex: 1 }} />
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." className="input" style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', minWidth: 200 }} />
+          <button className="btn" onClick={() => { setFilters(defaultFilters); setSearch(''); }}>Limpiar</button>
+        </div>
       </div>
       {exportMode && (
         <div style={{
@@ -763,7 +819,7 @@ export default function Calendario() {
           <h2 style={{ fontSize: 22, marginBottom: 18, fontWeight: 700, color: 'var(--color-text)' }}>
             Movimientos del {fechaSeleccionada.split('-').reverse().join('/')}
           </h2>
-          {/* Controles de filtro y búsqueda */}
+          {/* Controles de filtro (segmentado) */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 12 }}>
             {(['ingreso','egreso','ahorro','transferencia'] as const).map(t => (
               <button key={t}
@@ -776,98 +832,10 @@ export default function Calendario() {
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
-            {/* Presets de filtros */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 6 }}>
-              <span style={{ color: 'var(--color-muted)', fontSize: 12, fontWeight: 700 }}>Presets:</span>
-              <button onClick={() => setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: true })}
-                title="Mostrar todos"
-                style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Todos</button>
-              <button onClick={() => setFilters({ ingreso: false, egreso: true, ahorro: false, transferencia: false })}
-                title="Solo egresos"
-                style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Solo egresos</button>
-              <button onClick={() => setFilters({ ingreso: true, egreso: false, ahorro: true, transferencia: false })}
-                title="Ingresos y ahorros"
-                style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Ingresos/Ahorros</button>
-              <button onClick={() => setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: false })}
-                title="Ocultar transferencias"
-                style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Sin transferencias</button>
-              <button onClick={() => setFilters({ ingreso: false, egreso: false, ahorro: false, transferencia: true })}
-                title="Solo transferencias"
-                style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Solo transferencias</button>
-            </div>
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: 'var(--color-muted)', fontWeight: 700 }}>
                 {movimientosFiltrados.length} resultado{movimientosFiltrados.length === 1 ? '' : 's'}
               </span>
-              {/* Presets personalizados */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <select value={selectedPreset} onChange={e => setSelectedPreset(e.target.value)}
-                  style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', maxWidth: 180 }}>
-                  <option value="">Presets guardados...</option>
-                  {savedPresets.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
-                </select>
-                <button
-                  onClick={() => {
-                    const p = savedPresets.find(x => x.name === selectedPreset);
-                    if (p) setFilters(p.filters);
-                  }}
-                  disabled={!selectedPreset}
-                  style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}
-                >
-                  Aplicar
-                </button>
-                <button
-                  onClick={async () => {
-                    const result = await Swal.fire({ title: 'Guardar preset', input: 'text', inputLabel: 'Nombre del preset', inputPlaceholder: 'Ej: Solo egresos', showCancelButton: true });
-                    if (!result.isConfirmed) return;
-                    const name = (result.value || '').trim();
-                    if (!name) return;
-                    const existingIdx = savedPresets.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
-                    if (existingIdx >= 0) {
-                      // Sobrescribir
-                      const next = [...savedPresets];
-                      next[existingIdx] = { name, filters };
-                      persistPresets(next);
-                      setSelectedPreset(name);
-                      Swal.fire({ icon: 'success', title: 'Preset actualizado', timer: 1000, showConfirmButton: false });
-                    } else {
-                      const next = [...savedPresets, { name, filters }];
-                      persistPresets(next);
-                      setSelectedPreset(name);
-                      Swal.fire({ icon: 'success', title: 'Preset guardado', timer: 1000, showConfirmButton: false });
-                    }
-                  }}
-                  style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}
-                >
-                  Guardar preset
-                </button>
-                <button
-                  onClick={async () => {
-                    if (!selectedPreset) return;
-                    const c = await Swal.fire({ title: 'Eliminar preset', text: `¿Eliminar "${selectedPreset}"?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Eliminar' });
-                    if (!c.isConfirmed) return;
-                    const next = savedPresets.filter(p => p.name !== selectedPreset);
-                    persistPresets(next);
-                    setSelectedPreset('');
-                  }}
-                  disabled={!selectedPreset}
-                  style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: '#fee2e2', color: '#991b1b', fontWeight: 700 }}
-                >
-                  Eliminar
-                </button>
-              </div>
-              <button
-                onClick={() => { setFilters(defaultFilters); setSearch(''); }}
-                style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}
-              >
-                Limpiar
-              </button>
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Buscar..."
-                style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', minWidth: 180 }}
-              />
             </div>
           </div>
           {(hayTransferenciasAgrupadas && filters.transferencia) && (
@@ -946,6 +914,16 @@ export default function Calendario() {
         </div>
       </div>
       <style>{`
+        .toolbar .btn { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--color-input-border); background: var(--color-card); color: var(--color-text); font-weight: 700; cursor: pointer; }
+        .toolbar .btn:hover { filter: brightness(1.02); }
+        .toolbar .btn-primary { background: var(--color-primary); color: #fff; border: none; }
+        .toolbar .btn-ghost { background: transparent; border: 1px solid var(--color-input-border); }
+        .menu-popover { position: absolute; top: 100%; left: 0; margin-top: 6px; padding: 6px 0; background: var(--color-card); color: var(--color-text); border: 1px solid var(--color-input-border); border-radius: 10px; box-shadow: 0 12px 30px var(--card-shadow); z-index: 20; }
+  .menu-item { padding: 8px 12px; white-space: nowrap; cursor: pointer; display:flex; align-items:center; gap: 8px; }
+        .menu-item:hover { background: rgba(0,0,0,0.06); }
+        .menu-item.disabled { opacity: 0.5; pointer-events: none; }
+        .menu-item.danger { color: #b91c1c; }
+        .menu-sep { height: 1px; background: var(--color-input-border); margin: 4px 0; }
         .big-light-calendar {
           background: #fff !important;
           border-radius: 18px;
