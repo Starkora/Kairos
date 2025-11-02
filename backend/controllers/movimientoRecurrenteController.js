@@ -26,6 +26,7 @@ exports.eliminar = async (req, res) => {
   }
 };
 const MovimientoRecurrente = require('../models/movimientoRecurrente');
+const MovimientoRecurrenteExcepcion = require('../models/movimientoRecurrenteExcepcion');
 const Transaccion = require('../models/transaccion');
 
 // Crear movimiento recurrente
@@ -65,6 +66,95 @@ exports.crear = async (req, res) => {
   } catch (err) {
     console.error('[movimientosRecurrentes.crear] Error:', err);
     res.status(500).json({ error: 'No se pudo crear el movimiento recurrente.' });
+  }
+};
+
+// Aplicar ahora: crea el movimiento de hoy y registra excepción 'skip' para evitar materialización duplicada
+exports.aplicarAhora = async (req, res) => {
+  try {
+    const usuario_id = req.user.id;
+    const id = req.params.id;
+    const mov = await MovimientoRecurrente.findOne({ where: { id, usuario_id } });
+    if (!mov) return res.status(404).json({ error: 'Movimiento recurrente no encontrado.' });
+    const Transaccion = require('../models/transaccion');
+    const todayStr = new Date().toISOString().slice(0,10);
+    const marker = `[RECURRENTE#${mov.id}]`;
+    await Transaccion.create({
+      usuario_id,
+      cuenta_id: mov.cuenta_id,
+      tipo: mov.tipo,
+      monto: Number(mov.monto),
+      descripcion: (mov.descripcion && String(mov.descripcion).trim()) ? `${mov.descripcion} ${marker}` : marker,
+      fecha: todayStr,
+      categoria_id: mov.categoria_id || null,
+      plataforma: req.body.plataforma || 'web',
+      icon: mov.icon || null,
+      color: mov.color || null
+    });
+    // Excepción: saltar la ocurrencia de hoy
+    await MovimientoRecurrenteExcepcion.create({
+      movimiento_recurrente_id: mov.id,
+      usuario_id,
+      fecha_original: todayStr,
+      accion: 'skip',
+      fecha_nueva: null
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[recurrentes.aplicarAhora] Error:', err);
+    res.status(500).json({ error: 'No se pudo aplicar el movimiento.' });
+  }
+};
+
+// Saltar una vez (hoy)
+exports.saltarHoy = async (req, res) => {
+  try {
+    const usuario_id = req.user.id;
+    const id = req.params.id;
+    const mov = await MovimientoRecurrente.findOne({ where: { id, usuario_id } });
+    if (!mov) return res.status(404).json({ error: 'Movimiento recurrente no encontrado.' });
+    const todayStr = new Date().toISOString().slice(0,10);
+    await MovimientoRecurrenteExcepcion.create({
+      movimiento_recurrente_id: mov.id,
+      usuario_id,
+      fecha_original: todayStr,
+      accion: 'skip',
+      fecha_nueva: null
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo registrar la excepción.' });
+  }
+};
+
+// Posponer (hoy -> nueva fecha)
+exports.posponer = async (req, res) => {
+  try {
+    const usuario_id = req.user.id;
+    const id = req.params.id;
+    const { dias, nuevaFecha } = req.body || {};
+    const mov = await MovimientoRecurrente.findOne({ where: { id, usuario_id } });
+    if (!mov) return res.status(404).json({ error: 'Movimiento recurrente no encontrado.' });
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0,10);
+    let target = null;
+    if (nuevaFecha) {
+      target = new Date(nuevaFecha);
+    } else {
+      const offset = Number(dias || 0);
+      target = new Date(today.getFullYear(), today.getMonth(), today.getDate() + (isNaN(offset) ? 7 : offset));
+    }
+    const targetStr = target.toISOString().slice(0,10);
+    await MovimientoRecurrenteExcepcion.create({
+      movimiento_recurrente_id: mov.id,
+      usuario_id,
+      fecha_original: todayStr,
+      accion: 'postpone',
+      fecha_nueva: targetStr
+    });
+    res.json({ ok: true, nuevaFecha: targetStr });
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo registrar la posposición.' });
   }
 };
 

@@ -249,6 +249,50 @@ export default function Calendario() {
     }
   };
 
+  // Acciones rápidas para recurrentes
+  const aplicarRecurrenteHoy = async (mov) => {
+    try {
+      const apiFetch = (await import('../utils/apiFetch')).default;
+      const res = await apiFetch(`${API_BASE}/api/movimientos-recurrentes/${mov.id}/aplicar`, { method: 'POST' });
+      if (res.ok) {
+        Swal.fire({ icon: 'success', title: 'Aplicado hoy', timer: 1000, showConfirmButton: false });
+        await refreshMovimientos();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo aplicar.' });
+      }
+    } catch {}
+  };
+
+  const saltarRecurrenteHoy = async (mov) => {
+    try {
+      const apiFetch = (await import('../utils/apiFetch')).default;
+      const res = await apiFetch(`${API_BASE}/api/movimientos-recurrentes/${mov.id}/saltar`, { method: 'POST' });
+      if (res.ok) {
+        Swal.fire({ icon: 'success', title: 'Saltado hoy', timer: 1000, showConfirmButton: false });
+        await refreshMovimientos();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo registrar el salto.' });
+      }
+    } catch {}
+  };
+
+  const posponerRecurrente = async (mov, dias) => {
+    try {
+      const apiFetch = (await import('../utils/apiFetch')).default;
+      const res = await apiFetch(`${API_BASE}/api/movimientos-recurrentes/${mov.id}/posponer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dias }) });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        Swal.fire({ icon: 'success', title: 'Pospuesto', text: data.nuevaFecha ? `Nueva fecha: ${data.nuevaFecha}` : '', timer: 1300, showConfirmButton: false });
+        await refreshMovimientos();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo posponer.' });
+      }
+    } catch {}
+  };
+
   // Manejar eliminación de movimiento
   const handleDeleteMovimiento = async (mov) => {
     // Eliminar serie si es instancia recurrente
@@ -529,6 +573,14 @@ export default function Calendario() {
                           <button onClick={() => handleEditMovimiento(mov)} style={{ background: 'rgba(255,255,255,0.14)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
                             {mov && (mov._recurrente || mov.frecuencia) ? 'Editar serie' : 'Editar'}
                           </button>
+                        )}
+                        {mov && (mov._recurrente || mov.frecuencia) && (
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            <button onClick={() => aplicarRecurrenteHoy(mov)} style={{ background: 'rgba(255,255,255,0.14)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Aplicar hoy</button>
+                            <button onClick={() => saltarRecurrenteHoy(mov)} style={{ background: 'rgba(0,0,0,0.18)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Saltar hoy</button>
+                            <button onClick={() => posponerRecurrente(mov, 7)} style={{ background: 'rgba(0,0,0,0.18)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>+1 semana</button>
+                            <button onClick={() => posponerRecurrente(mov, 30)} style={{ background: 'rgba(0,0,0,0.18)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>+1 mes</button>
+                          </div>
                         )}
                         <button onClick={() => handleDeleteMovimiento(mov)} style={{ background: 'rgba(0,0,0,0.08)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
                           {mov && (mov._recurrente || mov.frecuencia) ? 'Eliminar serie' : 'Eliminar'}

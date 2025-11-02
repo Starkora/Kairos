@@ -207,6 +207,7 @@ const googleAuthRouter = require('./routes/googleAuth');
 const deudasRouter = require('./routes/deudas');
 const metasRouter = require('./routes/metas');
 const notificacionesController = require('./controllers/notificacionesController');
+const presupuestosRouter = require('./routes/presupuestos');
 // Limpieza de usuarios_pendientes expirados (usa evento MySQL si existe; si no, fallback en Node)
 let cleanupInterval = null;
 const cleanupExpiredPendings = async () => {
@@ -368,6 +369,7 @@ app.use('/api/usuarios', usuariosRouter);
 app.use('/api/usuarios/google', googleAuthRouter); // /api/usuarios/google
 app.use('/api/deudas', deudasRouter);
 app.use('/api/metas', metasRouter);
+app.use('/api/presupuestos', presupuestosRouter);
 const movimientosRecurrentesRouter = require('./routes/movimientosRecurrentes');
 app.use('/api/movimientos-recurrentes', movimientosRecurrentesRouter);
 app.use('/api/admin', adminRoutes);

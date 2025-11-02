@@ -68,6 +68,7 @@ export default function Sidebar({ className = 'sidebar', onNavigate }) {
           <NavLink to="/deudas-metas">Deudas y Metas</NavLink>
           <NavLink to="/categorias">Categorías</NavLink>
           <NavLink to="/notificaciones">Notificaciones</NavLink>
+          <NavLink to="/presupuestos">Presupuestos</NavLink>
           <NavLink to="/movimientos-recurrentes">Movimientos Recurrentes</NavLink>
           <NavLink to="/micuenta">Mi Cuenta</NavLink>
           <NavLink to="/acercade">Acerca de</NavLink>

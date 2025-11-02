@@ -2,6 +2,7 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../sequelize');
 const db = require('../db');
 const Transaccion = require('./transaccion');
+const MovimientoRecurrenteExcepcion = require('./movimientoRecurrenteExcepcion');
 
 const MovimientoRecurrente = sequelize.define('MovimientoRecurrente', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -64,10 +65,31 @@ MovimientoRecurrente.materializeDueForToday = async function materializeDueForTo
 
   // Traer todos los recurrentes; la cantidad suele ser baja por usuario
   const [rows] = await db.query('SELECT * FROM movimientos_recurrentes');
+  // Traer excepciones de hoy (original) y las que fijan hoy como nueva fecha
+  let excByRecOriginal = new Map();
+  let excByRecNew = new Map();
+  try {
+    const [excsOrig] = await db.query('SELECT * FROM movimientos_recurrentes_excepciones WHERE fecha_original = ?', [todayStr]);
+    for (const e of (excsOrig || [])) {
+      if (!excByRecOriginal.has(e.movimiento_recurrente_id)) excByRecOriginal.set(e.movimiento_recurrente_id, []);
+      excByRecOriginal.get(e.movimiento_recurrente_id).push(e);
+    }
+    const [excsNew] = await db.query('SELECT * FROM movimientos_recurrentes_excepciones WHERE fecha_nueva = ?', [todayStr]);
+    for (const e of (excsNew || [])) {
+      if (!excByRecNew.has(e.movimiento_recurrente_id)) excByRecNew.set(e.movimiento_recurrente_id, []);
+      excByRecNew.get(e.movimiento_recurrente_id).push(e);
+    }
+  } catch (_) {}
   let created = 0;
   for (const r of rows || []) {
     try {
-      if (!isDueToday(r)) continue;
+      // Si hay excepción con fecha_nueva == hoy, se debe materializar hoy sin importar la regla
+      const hasNewToday = excByRecNew.has(r.id);
+      const dueByRule = isDueToday(r);
+      // Si hay excepción en fecha_original == hoy con accion skip o postpone, no materializar hoy por la regla base
+      const excOrig = (excByRecOriginal.get(r.id) || [])[0];
+      const skipToday = !!excOrig && (excOrig.accion === 'skip' || excOrig.accion === 'postpone');
+      if (!hasNewToday && (!dueByRule || skipToday)) continue;
       const marker = `[RECURRENTE#${r.id}]`;
       // Verificar si ya existe un movimiento hoy con el marcador
       const [exists] = await db.query(
