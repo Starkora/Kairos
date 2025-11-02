@@ -539,6 +539,24 @@ input, textarea, select {
 }
 input::placeholder, textarea::placeholder { color: var(--color-placeholder); }
 
+/* SweetAlert2: adaptar popup e inputs al tema (claro/oscuro) */
+.swal2-popup {
+  background: var(--color-card) !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-input-border) !important;
+  box-shadow: 0 12px 30px var(--card-shadow) !important;
+}
+.swal2-title, .swal2-html-container { color: var(--color-text) !important; }
+.swal2-input, .swal2-select, .swal2-textarea {
+  background: var(--color-input-bg) !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-input-border) !important;
+  border-radius: 8px !important;
+}
+.swal2-actions .swal2-confirm, .swal2-actions .swal2-cancel {
+  border-radius: 10px !important;
+}
+
 /* Hamburguesa adaptativa */
 .hamburger .bar { background: var(--color-text); }
 
