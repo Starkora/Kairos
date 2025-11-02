@@ -6,23 +6,21 @@ const CACHE_TTL_MS = Number(process.env.INSIGHTS_CACHE_TTL_MS || 30_000);
 const insightsCache = new Map(); // key -> { expires: number, payload }
 
 // includeVariant puede ser boolean (true/false) o una cadena diferenciadora como '1:fast'/'1'
-function cacheKey(userId, includeVariant) {
-  // Cambia con el mes actual para evitar inconsistencias al cruzar de mes
-  const now = new Date();
-  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  return `u:${userId}|v:${String(includeVariant)}|m:${ym}`;
+function cacheKey(userId, includeVariant, ym) {
+  // ym debe ser 'YYYY-MM' del mes consultado
+  return `u:${userId}|v:${String(includeVariant)}|m:${String(ym)}`;
 }
 
-function getCached(userId, includeVariant) {
-  const key = cacheKey(userId, includeVariant);
+function getCached(userId, includeVariant, ym) {
+  const key = cacheKey(userId, includeVariant, ym);
   const rec = insightsCache.get(key);
   if (!rec) return null;
   if (Date.now() > rec.expires) { insightsCache.delete(key); return null; }
   return rec.payload;
 }
 
-function setCached(userId, includeVariant, payload) {
-  const key = cacheKey(userId, includeVariant);
+function setCached(userId, includeVariant, ym, payload) {
+  const key = cacheKey(userId, includeVariant, ym);
   insightsCache.set(key, { expires: Date.now() + CACHE_TTL_MS, payload });
 }
 
@@ -62,13 +60,25 @@ function clampDate(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate
 exports.list = async (req, res) => {
   try {
     const usuario_id = req.user.id;
-    const { year, month, day } = todayInfo();
+    const now = new Date();
+    const nowY = now.getFullYear();
+    const nowM = now.getMonth() + 1;
+    const nowD = now.getDate();
+    let year = Number(req.query?.year || nowY);
+    let month = Number(req.query?.month || nowM);
+    // Saneamiento simple
+    if (!Number.isFinite(year) || year < 2000 || year > 2100) year = nowY;
+    if (!Number.isFinite(month) || month < 1 || month > 12) month = nowM;
     const { first, last, daysInMonth } = monthBounds(year, month);
-  const includeFuture = String((req.query && req.query.includeFuture) ?? '1') !== '0';
-  const fastMode = String((req.query && req.query.fast) || '0') === '1';
+    // Para meses distintos al actual, usar el total del mes para run-rate
+    const isCurrentMonth = (year === nowY && month === nowM);
+    const day = isCurrentMonth ? nowD : daysInMonth;
+    const includeFuture = String((req.query && req.query.includeFuture) ?? '1') !== '0';
+    const fastMode = String((req.query && req.query.fast) || '0') === '1';
 
     // Cache rápido para aliviar carga cuando la pantalla hace refresh o varios widgets llaman lo mismo
-    const cached = getCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''));
+    const ymKey = `${year}-${String(month).padStart(2,'0')}`;
+    const cached = getCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey);
     if (cached) {
       return res.json(cached);
     }
@@ -481,12 +491,12 @@ exports.list = async (req, res) => {
         await db.query('UPDATE usuarios_preferencias SET data = ? WHERE usuario_id = ?', [JSON.stringify(current), usuario_id]);
       }
       const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode } };
-      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), result);
+      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey, result);
       return res.json(result);
     } catch (_) {
       // Si falla filtrado, devolver lista original
       const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode } };
-      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), result);
+      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey, result);
       return res.json(result);
     }
   } catch (err) {

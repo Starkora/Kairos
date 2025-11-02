@@ -32,6 +32,10 @@ export default function Asesor() {
   const [error, setError] = useState<string | null>(null);
   const [includeFuture, setIncludeFuture] = useState<boolean>(true);
   const [firstLoad, setFirstLoad] = useState(true);
+  // Selector de mes (YYYY-MM). Por defecto, mes actual.
+  const now = new Date();
+  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const [selectedMonth, setSelectedMonth] = useState<string>(defaultMonth);
 
   const fetchData = async () => {
     setLoading(true);
@@ -49,7 +53,9 @@ export default function Asesor() {
       // En la primera carga damos más margen por cold start del proveedor
       const timeoutMs = firstLoad ? 45000 : 15000;
       const timer = setTimeout(() => controller.abort(), timeoutMs);
-  const res = await fetch(`${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=1`, { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller.signal });
+      const [y,m] = selectedMonth.split('-');
+      const res = await fetch(`${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=1&year=${encodeURIComponent(y)}&month=${encodeURIComponent(String(parseInt(m,10)))}`,
+        { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller.signal });
       clearTimeout(timer);
       if (!res.ok) {
         const txt = await res.text();
@@ -59,6 +65,10 @@ export default function Asesor() {
       setKpis(json.kpis || null);
       setInsights(Array.isArray(json.insights) ? json.insights : []);
       setMeta(json.meta || null);
+      // Si backend devolvió otro mes (p.ej. por saneamiento), reflejarlo en el selector sin generar bucle
+      if (json?.meta?.month && typeof json.meta.month === 'string' && json.meta.month.length === 7) {
+        setSelectedMonth(prev => (prev === json.meta.month ? prev : json.meta.month));
+      }
       if (firstLoad) setFirstLoad(false);
     } catch (e: any) {
       if (e?.name === 'AbortError') {
@@ -69,6 +79,27 @@ export default function Asesor() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchDetailed = async () => {
+    setLoading(true); setError(null);
+    try {
+      const controller2 = new AbortController();
+      const t2 = setTimeout(() => controller2.abort(), 45000);
+      const [y,m] = selectedMonth.split('-');
+      const res2 = await fetch(`${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=0&year=${encodeURIComponent(y)}&month=${encodeURIComponent(String(parseInt(m,10)))}`,
+        { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller2.signal });
+      clearTimeout(t2);
+      if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
+      const json2 = await res2.json();
+      setKpis(json2.kpis || null);
+      setInsights(Array.isArray(json2.insights) ? json2.insights : []);
+      setMeta(json2.meta || null);
+      if (json2?.meta?.month && typeof json2.meta.month === 'string' && json2.meta.month.length === 7) {
+        setSelectedMonth(prev => (prev === json2.meta.month ? prev : json2.meta.month));
+      }
+    } catch (e:any) { setError(e?.message || 'No se pudo calcular el forecast'); }
+    finally { setLoading(false); }
   };
 
   // Cargar preferencia inicial desde backend/local al montar
@@ -83,7 +114,27 @@ export default function Asesor() {
     // eslint-disable-next-line
   }, []);
 
-  useEffect(() => { fetchData(); /* eslint-disable-next-line */ }, [includeFuture]);
+  useEffect(() => {
+    // Si la vista actual es detallada, respetar ese modo al alternar 'Incluir movimientos futuros'
+    if (meta && meta.fast === false) {
+      fetchDetailed();
+    } else {
+      fetchData();
+    }
+    // eslint-disable-next-line
+  }, [includeFuture]);
+  // Auto-cargar cuando cambia el mes seleccionado (con pequeño debounce)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (meta && meta.fast === false) {
+        fetchDetailed();
+      } else {
+        fetchData();
+      }
+    }, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line
+  }, [selectedMonth]);
 
   // Guardar preferencia al cambiar
   useEffect(() => {
@@ -133,8 +184,17 @@ export default function Asesor() {
         <h2 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Asesor financiero</h2>
         <div style={{ flex: 1 }} />
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-card)', border: '1px solid var(--color-input-border)', padding: '6px 10px', borderRadius: 10 }}>
+          <span style={{ fontSize: 12, opacity: 0.8 }}>Mes</span>
+          <input
+            type="month"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            style={{ background: 'transparent', color: 'var(--color-text)', border: 'none', outline: 'none' }}
+          />
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-card)', border: '1px solid var(--color-input-border)', padding: '6px 10px', borderRadius: 10 }}>
           <input type="checkbox" checked={includeFuture} onChange={e => setIncludeFuture(e.target.checked)} />
-          Incluir movimientos futuros (applied=0)
+          Incluir movimientos futuros
         </label>
         <button onClick={fetchData} style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Actualizar</button>
       </div>
@@ -156,21 +216,7 @@ export default function Asesor() {
             <div className="card" style={{ padding: 16, marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontWeight: 800 }}>Forecast detallado</div>
-                <button onClick={async () => {
-                  setLoading(true); setError(null);
-                  try {
-                    const controller2 = new AbortController();
-                    const t2 = setTimeout(() => controller2.abort(), 45000);
-                    const res2 = await fetch(`${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=0`, { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller2.signal });
-                    clearTimeout(t2);
-                    if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
-                    const json2 = await res2.json();
-                    setKpis(json2.kpis || null);
-                    setInsights(Array.isArray(json2.insights) ? json2.insights : []);
-                    setMeta(json2.meta || null);
-                  } catch (e:any) { setError(e?.message || 'No se pudo calcular el forecast'); }
-                  finally { setLoading(false); }
-                }}
+                <button onClick={fetchDetailed}
                 style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Calcular ahora</button>
               </div>
               <div style={{ opacity: 0.8 }}>Para reducir carga en servidores gratuitos, el forecast detallado se calcula bajo demanda.</div>
