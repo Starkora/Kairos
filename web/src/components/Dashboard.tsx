@@ -337,7 +337,7 @@ export default function Dashboard() {
               gap: 18,
             }}>
               <div style={{ fontSize: 44, color: item.color, background: 'var(--color-input-bg)', borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon size={28} />
+                {React.createElement(Icon, { size: 28 })}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ color: item.color, fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{item.titulo}</div>
