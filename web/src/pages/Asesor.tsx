@@ -216,12 +216,54 @@ export default function Asesor() {
             <div className="card" style={{ padding: 16, marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontWeight: 800 }}>Forecast detallado</div>
-                <button onClick={fetchDetailed} disabled={loading}
+                <button onClick={async () => {
+                  // Pedimos una versión ligera del detallado: budgets + forecast a 30 días
+                  setLoading(true); setError(null);
+                  try {
+                    const controller2 = new AbortController();
+                    const t2 = setTimeout(() => controller2.abort(), 25000); // límite menor para free-tier
+                    const [y,m] = selectedMonth.split('-');
+                    const url = `${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=0&year=${encodeURIComponent(y)}&month=${encodeURIComponent(String(parseInt(m,10)))}&details=budgets,forecast&horizons=30`;
+                    const res2 = await fetch(url, { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller2.signal });
+                    clearTimeout(t2);
+                    if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
+                    const json2 = await res2.json();
+                    setKpis(json2.kpis || null);
+                    setInsights(Array.isArray(json2.insights) ? json2.insights : []);
+                    setMeta(json2.meta || null);
+                  } catch (e:any) { setError(e?.message || 'No se pudo calcular el forecast'); }
+                  finally { setLoading(false); }
+                }} disabled={loading}
                 style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: loading ? '#374151' : 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
                   {loading ? 'Calculando…' : 'Calcular ahora'}
                 </button>
               </div>
               <div style={{ opacity: 0.8 }}>Para reducir carga en servidores gratuitos, el forecast detallado se calcula bajo demanda.</div>
+            </div>
+          )}
+          {/* Acción opcional para ampliar más detalle cuando el servidor esté libre */}
+          {meta?.fast === false && Array.isArray(meta?.forecast) && meta.forecast.length === 1 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+              <button onClick={async () => {
+                setLoading(true); setError(null);
+                try {
+                  const controller2 = new AbortController();
+                  const t2 = setTimeout(() => controller2.abort(), 45000);
+                  const [y,m] = selectedMonth.split('-');
+                  const url = `${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=0&year=${encodeURIComponent(y)}&month=${encodeURIComponent(String(parseInt(m,10)))}&details=budgets,recurrent,fees,forecast&horizons=30,60,90`;
+                  const res2 = await fetch(url, { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller2.signal });
+                  clearTimeout(t2);
+                  if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
+                  const json2 = await res2.json();
+                  setKpis(json2.kpis || null);
+                  setInsights(Array.isArray(json2.insights) ? json2.insights : []);
+                  setMeta(json2.meta || null);
+                } catch (e:any) { setError(e?.message || 'No se pudo ampliar el análisis'); }
+                finally { setLoading(false); }
+              }}
+              style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: '#374151', color: 'var(--color-text)', fontWeight: 700 }}>
+                Ampliar a 60/90 y comisiones (lento)
+              </button>
             </div>
           )}
           {Array.isArray(meta?.forecast) && meta.forecast.length > 0 && (

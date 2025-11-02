@@ -90,6 +90,18 @@ exports.list = async (req, res) => {
       ]);
     };
 
+    // Parámetros opcionales para recortar trabajo en free tier
+    // details: csv con 'budgets','recurrent','fees','forecast' (si no viene, en fast=0 se asume todo; en fast=1 se asume mínimo)
+    const detailsParam = String(req.query?.details || '').trim();
+    const hasDetails = detailsParam.length > 0 ? new Set(detailsParam.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)) : null;
+    const doBudgets = hasDetails ? hasDetails.has('budgets') : !fastMode; // por defecto solo en detallado
+    const doRecurrent = hasDetails ? hasDetails.has('recurrent') : !fastMode;
+    const doFees = hasDetails ? hasDetails.has('fees') : !fastMode;
+    const doForecast = hasDetails ? hasDetails.has('forecast') : !fastMode; // forecast pesado
+    // horizons: lista de 30/60/90
+    let horizonsParam = String(req.query?.horizons || '').trim();
+    let requestedHorizons = horizonsParam ? horizonsParam.split(',').map(s=>Number(s)).filter(n=>[30,60,90].includes(n)) : null;
+
     // Cache rápido para aliviar carga cuando la pantalla hace refresh o varios widgets llaman lo mismo
     const ymKey = `${year}-${String(month).padStart(2,'0')}`;
     const cached = getCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey);
@@ -188,7 +200,7 @@ exports.list = async (req, res) => {
     // Para la regla "no-budgets" necesitaremos saber si hay presupuestos > 0
     const budgetsCount = (budgets || []).filter(b => Number(b.monto || 0) > 0).length;
     // Cálculo detallado de gasto por categoría solo en modo no-rápido
-    if (!fastMode && timeLeft() > 300) {
+    if (doBudgets && timeLeft() > 300) {
       const [spentRows] = await db.query(
         `SELECT categoria_id, SUM(monto) AS gastado
          FROM movimientos
@@ -226,7 +238,7 @@ exports.list = async (req, res) => {
     }
 
     // Regla 3: Presión por egresos recurrentes
-    if (!fastMode && timeLeft() > 400) try {
+  if (doRecurrent && timeLeft() > 400) try {
       const [recRows] = await db.query(
         `SELECT tipo, monto, frecuencia, inicio, fin, indefinido
          FROM movimientos_recurrentes
@@ -276,7 +288,7 @@ exports.list = async (req, res) => {
     } catch (_) { /* opcional */ }
 
       // Regla 6: Comisiones/cargos bancarios elevados
-      if (!fastMode && timeLeft() > 400) try {
+  if (doFees && timeLeft() > 400) try {
         const [[feesRow]] = await db.query(
           `SELECT COALESCE(SUM(monto),0) AS total
            FROM movimientos
@@ -309,10 +321,12 @@ exports.list = async (req, res) => {
 
     // Forecast de cashflow 30/60/90 días (exacto por ocurrencias + movimientos futuros)
     let forecast = [];
-    if (!fastMode && timeLeft() > 800) try {
-      // Reducir horizontes si queda poco presupuesto de tiempo
+    let horizonsUsed = [];
+    if (doForecast && timeLeft() > 800) try {
+      // Reducir horizontes si queda poco presupuesto de tiempo o si el usuario lo pidió explícito
       const tl = timeLeft();
-      const horizons = tl < 2000 ? [30] : (tl < 4000 ? [30,60] : [30,60,90]);
+      const autoHorizons = tl < 2000 ? [30] : (tl < 4000 ? [30,60] : [30,60,90]);
+      const horizons = Array.isArray(requestedHorizons) && requestedHorizons.length>0 ? Array.from(new Set(requestedHorizons)).sort((a,b)=>a-b) : autoHorizons;
       const today = clampDate(new Date());
       const todayISO = toISODate(today);
       const maxH = Math.max(...horizons);
@@ -445,7 +459,8 @@ exports.list = async (req, res) => {
         futs = frows || [];
       }
 
-      for (const H of horizons) {
+  horizonsUsed = horizons;
+  for (const H of horizons) {
         const endH = endByH.get(H);
         let recIn = 0, recOut = 0;
         for (const r of (recAll || [])) {
@@ -489,7 +504,7 @@ exports.list = async (req, res) => {
         forecast.push({ days: H, projectedIngresos: projIn, projectedEgresos: projOut, net, startingBalance: saldoActual, projectedBalanceEnd: endBalance });
       }
       // Alertas por forecast
-      const f30 = forecast.find(f => f.days === 30);
+  const f30 = forecast.find(f => f.days === 30);
       const f60 = forecast.find(f => f.days === 60);
       if (f30 && f30.projectedBalanceEnd < 0) {
         insights.push({ id: 'forecast-30-neg', severity: 'danger', title: 'Riesgo de saldo negativo en 30 días', body: `Proyección de saldo: S/ ${f30.projectedBalanceEnd.toFixed(2)}. Reduce egresos o aumenta ingresos.`, cta: { label: 'Ajustar recurrentes', href: '/movimientos-recurrentes' } });
@@ -520,12 +535,12 @@ exports.list = async (req, res) => {
         current.insightsDismissed = dismissed;
         await db.query('UPDATE usuarios_preferencias SET data = ? WHERE usuario_id = ?', [JSON.stringify(current), usuario_id]);
       }
-      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: !fastMode && timeLeft() <= 0 } };
+      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: !fastMode && timeLeft() <= 0, detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: !!doForecast }, horizonsUsed } };
       setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);
       return res.json(result);
     } catch (_) {
       // Si falla filtrado, devolver lista original
-      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: !fastMode && timeLeft() <= 0 } };
+      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: !fastMode && timeLeft() <= 0, detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: !!doForecast }, horizonsUsed } };
       setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);
       return res.json(result);
     }
