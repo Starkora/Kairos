@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import apiFetch from '../utils/apiFetch';
+import Swal from 'sweetalert2';
 
 type Presupuesto = { id?: number; categoria_id: number; categoria?: string; anio: number; mes: number; monto: number; gastado?: number };
 
@@ -54,6 +55,29 @@ export default function Presupuestos() {
     await cargar();
   };
 
+  // Guarda todos los montos visibles en una sola acción
+  const armarPresupuesto = async () => {
+    const res = await Swal.fire({
+      title: 'Armar presupuesto',
+      text: 'Se guardarán los montos editados para todas las categorías del mes seleccionado.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar todo',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#2563eb'
+    });
+    if (!res.isConfirmed) return;
+    // Ejecutar en paralelo controlado
+    const payloads = items.map(it => ({ categoria_id: it.categoria_id, anio, mes, monto: Number(it.monto || 0) }));
+    await Promise.all(payloads.map(p => apiFetch('/api/presupuestos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(p)
+    })));
+    await cargar();
+    Swal.fire({ icon: 'success', title: 'Presupuesto armado', showConfirmButton: false, timer: 1400 });
+  };
+
   const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const years = useMemo(() => {
     const y = hoy.getFullYear();
@@ -63,13 +87,17 @@ export default function Presupuestos() {
   return (
     <div className="card">
       <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 16 }}>Presupuestos</h2>
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
         <select value={anio} onChange={e => { const v = Number(e.target.value); setAnio(v); cargar(v, mes); }}>
           {years.map(y => <option key={y} value={y}>{y}</option>)}
         </select>
         <select value={mes} onChange={e => { const v = Number(e.target.value); setMes(v); cargar(anio, v); }}>
           {meses.map((n,i) => <option key={i+1} value={i+1}>{n}</option>)}
         </select>
+        <div style={{ flex: 1 }} />
+        <button onClick={armarPresupuesto} style={{ padding: '8px 14px', borderRadius: 10, background: '#2563eb', color: '#fff', border: 'none', fontWeight: 600 }}>
+          Armar presupuesto
+        </button>
       </div>
       {loading ? (
         <div>Cargando…</div>
