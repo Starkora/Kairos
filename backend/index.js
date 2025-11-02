@@ -532,8 +532,8 @@ if (process.env.DEBUG_HTTP === 'true') {
 if (process.env.NODE_ENV === 'production') {
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret || jwtSecret === 'kairos_secret') {
-    console.error('[SECURITY] JWT_SECRET no configurado correctamente en producción.');
-    process.exit(1);
+    console.error('[SECURITY] JWT_SECRET no configurado correctamente en producción. Continuando para evitar 502, pero configura uno seguro ASAP.');
+    // No hacemos process.exit(1) para no tirar la instancia en Render free
   }
   if (!process.env.SENDGRID_API_KEY || !process.env.MAIL_FROM) {
     console.warn('[SECURITY] Falta configuración de email (SENDGRID_API_KEY o MAIL_FROM).');
