@@ -454,7 +454,7 @@ export default function Asesor() {
                       const isExpanded = expandedHorizons.has(f.days);
                       return (
                         <React.Fragment key={f.days}>
-                          <tr style={{ background: idx%2 ? '#1f2937' : '#111827' }}>
+                          <tr style={{ background: idx%2 ? 'var(--color-card-alt, #f9fafb)' : 'var(--color-card, #fff)' }}>
                             <td style={{ padding: '8px 10px' }}>
                               <button 
                                 onClick={() => {
@@ -463,7 +463,7 @@ export default function Asesor() {
                                   else newSet.add(f.days);
                                   setExpandedHorizons(newSet);
                                 }}
-                                style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', padding: 0, marginRight: 8 }}
+                                style={{ background: 'none', border: 'none', color: 'var(--color-primary, #60a5fa)', cursor: 'pointer', padding: 0, marginRight: 8 }}
                               >
                                 {isExpanded ? '▼' : '▶'}
                               </button>
@@ -483,7 +483,7 @@ export default function Asesor() {
                             </td>
                           </tr>
                           {isExpanded && (
-                            <tr style={{ background: idx%2 ? '#1f2937' : '#111827' }}>
+                            <tr style={{ background: idx%2 ? 'var(--color-card-alt, #f9fafb)' : 'var(--color-card, #fff)' }}>
                               <td colSpan={5} style={{ padding: '12px 20px' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                   {/* Ingresos Detail */}
@@ -494,7 +494,7 @@ export default function Asesor() {
                                     {Array.isArray(f.ingresosDetail) && f.ingresosDetail.length > 0 ? (
                                       <div style={{ fontSize: 13, opacity: 0.9 }}>
                                         {f.ingresosDetail.map((item: any, i: number) => (
-                                          <div key={i} style={{ marginBottom: 6, padding: '6px 8px', background: 'rgba(34,197,94,0.1)', borderRadius: 6 }}>
+                                          <div key={i} style={{ marginBottom: 6, padding: '6px 8px', background: 'rgba(34,197,94,0.15)', borderRadius: 6, border: '1px solid rgba(34,197,94,0.2)' }}>
                                             <div style={{ fontWeight: 600 }}>{item.descripcion}</div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.8 }}>
                                               <span>
@@ -520,7 +520,7 @@ export default function Asesor() {
                                     {Array.isArray(f.egresosDetail) && f.egresosDetail.length > 0 ? (
                                       <div style={{ fontSize: 13, opacity: 0.9 }}>
                                         {f.egresosDetail.map((item: any, i: number) => (
-                                          <div key={i} style={{ marginBottom: 6, padding: '6px 8px', background: 'rgba(239,68,68,0.1)', borderRadius: 6 }}>
+                                          <div key={i} style={{ marginBottom: 6, padding: '6px 8px', background: 'rgba(239,68,68,0.15)', borderRadius: 6, border: '1px solid rgba(239,68,68,0.2)' }}>
                                             <div style={{ fontWeight: 600 }}>{item.descripcion}</div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.8 }}>
                                               <span>
