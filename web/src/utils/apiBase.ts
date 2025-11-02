@@ -39,7 +39,17 @@ export const API_BASE = (() => {
       return `http://localhost:${backendPort}`;
     }
 
-    // 4) Caso genérico: mismo host con puerto backend
+    // 4) Hosting público (p.ej. Vercel): si no hay REACT_APP_API_BASE, usar un backend público por defecto
+    const isPublicHosting = /vercel\.app$/i.test(hostname) || /netlify\.app$/i.test(hostname);
+    if (isPublicHosting) {
+      const fallback = process.env.REACT_APP_PUBLIC_API_BASE || 'https://kr-backend-u06r.onrender.com';
+      if (!process.env.REACT_APP_API_BASE) {
+        try { console.warn('[apiBase] Usando fallback público:', fallback); } catch {}
+      }
+      return fallback;
+    }
+
+    // 5) Caso genérico: mismo host con puerto backend
     return `${protocol}//${hostname}:${backendPort}`;
   }
 
