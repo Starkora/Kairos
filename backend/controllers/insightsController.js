@@ -5,6 +5,7 @@ const db = require('../db');
 const CACHE_TTL_MS = Number(process.env.INSIGHTS_CACHE_TTL_MS || 30_000);
 const CACHE_TTL_DETAILS_MS = Number(process.env.INSIGHTS_CACHE_TTL_DETAILS_MS || 120_000);
 const DETAIL_TIME_BUDGET_MS = Number(process.env.INSIGHTS_DETAIL_BUDGET_MS || 8000);
+const QUICK_TIME_BUDGET_MS = Number(process.env.INSIGHTS_QUICK_BUDGET_MS || 3000);
 const insightsCache = new Map(); // key -> { expires: number, payload }
 
 // includeVariant puede ser boolean (true/false) o una cadena diferenciadora como '1:fast'/'1'
@@ -77,9 +78,11 @@ exports.list = async (req, res) => {
     const isCurrentMonth = (year === nowY && month === nowM);
     const day = isCurrentMonth ? nowD : daysInMonth;
     const includeFuture = String((req.query && req.query.includeFuture) ?? '1') !== '0';
-    const fastMode = String((req.query && req.query.fast) || '0') === '1';
+  const fastMode = String((req.query && req.query.fast) || '0') === '1';
+  const quickMode = String((req.query && req.query.quick) || '0') === '1';
     const startedAt = Date.now();
     const timeLeft = () => Math.max(0, DETAIL_TIME_BUDGET_MS - (Date.now() - startedAt));
+  const timeLeftQuick = () => Math.max(0, QUICK_TIME_BUDGET_MS - (Date.now() - startedAt));
 
     const timedQuery = async (sql, params, ms) => {
       const t = Number(ms);
@@ -96,7 +99,7 @@ exports.list = async (req, res) => {
 
     // Parámetros opcionales para recortar trabajo en free tier
     // details: csv con 'budgets','recurrent','fees','forecast' (si no viene, en fast=0 se asume todo; en fast=1 se asume mínimo)
-    const detailsParam = String(req.query?.details || '').trim();
+  const detailsParam = String(req.query?.details || '').trim();
     const hasDetails = detailsParam.length > 0 ? new Set(detailsParam.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)) : null;
     const doBudgets = hasDetails ? hasDetails.has('budgets') : !fastMode; // por defecto solo en detallado
     const doRecurrent = hasDetails ? hasDetails.has('recurrent') : !fastMode;
@@ -108,7 +111,12 @@ exports.list = async (req, res) => {
 
     // Cache rápido para aliviar carga cuando la pantalla hace refresh o varios widgets llaman lo mismo
     const ymKey = `${year}-${String(month).padStart(2,'0')}`;
-    const cached = getCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey);
+    const variant = (includeFuture ? '1' : '0')
+      + (fastMode ? ':fast' : '')
+      + (quickMode ? ':quick' : '')
+      + (detailsParam ? `:d:${detailsParam}` : '')
+      + (requestedHorizons && requestedHorizons.length ? `:h:${requestedHorizons.join('-')}` : '');
+    const cached = getCached(usuario_id, variant, ymKey);
     if (cached) {
       return res.json(cached);
     }
@@ -117,7 +125,7 @@ exports.list = async (req, res) => {
     let thresholdWarn = 80;
     let thresholdDanger = 100;
     try {
-      const [prefRows] = await timedQuery('SELECT data FROM usuarios_preferencias WHERE usuario_id = ?', [usuario_id], Math.min(1500, timeLeft()));
+  const [prefRows] = await timedQuery('SELECT data FROM usuarios_preferencias WHERE usuario_id = ?', [usuario_id], Math.min(1500, quickMode ? timeLeftQuick() : timeLeft()));
       const pdata = (Array.isArray(prefRows) && prefRows[0] && prefRows[0].data) || {};
       if (pdata && pdata.budgets) {
         if (typeof pdata.budgets.thresholdWarn === 'number') thresholdWarn = pdata.budgets.thresholdWarn;
@@ -132,7 +140,7 @@ exports.list = async (req, res) => {
       `SELECT COALESCE(SUM(monto),0) AS total FROM movimientos
        WHERE usuario_id = ? AND applied = 1 AND tipo IN ('ingreso','ahorro') AND DATE(fecha) BETWEEN ? AND ?`,
       [usuario_id, first, last],
-      Math.min(3000, timeLeft())
+  Math.min(3000, quickMode ? timeLeftQuick() : timeLeft())
     );
       incRow = row || incRow;
     } catch (_) { /* fallback 0 */ }
@@ -142,7 +150,7 @@ exports.list = async (req, res) => {
       `SELECT COALESCE(SUM(monto),0) AS total FROM movimientos
        WHERE usuario_id = ? AND applied = 1 AND tipo = 'egreso' AND DATE(fecha) BETWEEN ? AND ?`,
       [usuario_id, first, last],
-      Math.min(3000, timeLeft())
+  Math.min(3000, quickMode ? timeLeftQuick() : timeLeft())
     );
       expRow = row || expRow;
     } catch (_) { /* fallback 0 */ }
@@ -199,7 +207,7 @@ exports.list = async (req, res) => {
     let budgets = [];
     try {
       const [rowsB] = await timedQuery(
-        'SELECT p.categoria_id, p.monto, c.nombre AS categoria FROM presupuestos p LEFT JOIN categorias c ON c.id = p.categoria_id WHERE p.usuario_id = ? AND p.anio = ? AND p.mes = ?',[usuario_id, year, month], Math.min(2500, timeLeft())
+        'SELECT p.categoria_id, p.monto, c.nombre AS categoria FROM presupuestos p LEFT JOIN categorias c ON c.id = p.categoria_id WHERE p.usuario_id = ? AND p.anio = ? AND p.mes = ?',[usuario_id, year, month], Math.min(2000, quickMode ? timeLeftQuick() : timeLeft())
       );
       budgets = rowsB || [];
     } catch (_) { budgets = []; }
@@ -207,7 +215,7 @@ exports.list = async (req, res) => {
     // Para la regla "no-budgets" necesitaremos saber si hay presupuestos > 0
     const budgetsCount = (budgets || []).filter(b => Number(b.monto || 0) > 0).length;
     // Cálculo detallado de gasto por categoría solo en modo no-rápido
-    if (doBudgets && timeLeft() > 300) {
+    if (doBudgets && (quickMode ? timeLeftQuick() : timeLeft()) > 300) {
       let spentRows = [];
       try {
         const [srows] = await timedQuery(
@@ -215,7 +223,7 @@ exports.list = async (req, res) => {
          FROM movimientos
          WHERE usuario_id = ? AND tipo = 'egreso' AND applied = 1 AND DATE(fecha) BETWEEN ? AND ?
          GROUP BY categoria_id`,
-        [usuario_id, first, last], Math.min(2500, timeLeft())
+        [usuario_id, first, last], Math.min(1800, quickMode ? timeLeftQuick() : timeLeft())
         );
         spentRows = srows || [];
       } catch(_) { spentRows = []; }
@@ -297,7 +305,7 @@ exports.list = async (req, res) => {
            AND fecha_inicio IS NOT NULL
            AND fecha_inicio <= DATE_SUB(CURDATE(), INTERVAL 60 DAY)`,
         [usuario_id],
-        Math.min(1500, timeLeft())
+        Math.min(1000, quickMode ? timeLeftQuick() : timeLeft())
       );
       const cnt = Number((rowCount && rowCount.cnt) || 0);
       if (cnt > 0) {
@@ -340,7 +348,75 @@ exports.list = async (req, res) => {
     // Forecast de cashflow 30/60/90 días (exacto por ocurrencias + movimientos futuros)
     let forecast = [];
     let horizonsUsed = [];
-    if (doForecast && timeLeft() > 800) try {
+    if (quickMode) {
+      try {
+        // Quick forecast 30 días: aproximado, sin excepciones de recurrentes (ultra-rápido)
+        const tl = timeLeftQuick();
+        if (tl <= 200) throw new Error('budget_exhausted');
+        const H = 30; horizonsUsed = [30];
+        const [[saldoRow]] = await timedQuery('SELECT COALESCE(SUM(saldo_actual),0) AS saldo FROM cuentas WHERE usuario_id = ?', [usuario_id], Math.min(800, timeLeftQuick()));
+        const saldoActual = Number((saldoRow && saldoRow.saldo) || 0);
+        // Recurrentes: estimación mensual por frecuencia
+        const [recRowsQ] = await timedQuery(
+          `SELECT tipo, monto, frecuencia, inicio, fin, indefinido
+           FROM movimientos_recurrentes
+           WHERE usuario_id = ?`,
+          [usuario_id],
+          Math.min(800, timeLeftQuick())
+        );
+        let recIn = 0, recOut = 0;
+        const nowISO = toISODate(new Date());
+        for (const r of (recRowsQ || [])) {
+          // activo hoy o sin fin
+          const inicio = r.inicio ? String(r.inicio).slice(0,10) : null;
+          const fin = r.fin ? String(r.fin).slice(0,10) : null;
+          const indef = !!r.indefinido;
+          const active = (!inicio || inicio <= nowISO) && (indef || (fin && fin >= nowISO));
+          if (!active) continue;
+          const freq = String(r.frecuencia||'').toLowerCase();
+          const factor = (freq === 'mensual') ? 1 : (freq === 'semanal') ? 4.33 : (freq === 'diaria') ? 30 : 0;
+          const amount = Number(r.monto||0) * factor;
+          const tipo = String(r.tipo||'').toLowerCase();
+          if (tipo === 'ingreso' || tipo === 'ahorro') recIn += amount; else if (tipo === 'egreso') recOut += amount;
+        }
+        // Movimientos futuros agregados (applied=0) a 30 días
+        let futIn = 0, futOut = 0;
+        if (includeFuture) {
+          const [[fAgg]] = await timedQuery(
+            `SELECT 
+               COALESCE(SUM(CASE WHEN tipo IN ('ingreso','ahorro') THEN monto END),0) AS fin,
+               COALESCE(SUM(CASE WHEN tipo = 'egreso' THEN monto END),0) AS fout
+             FROM movimientos
+             WHERE usuario_id = ? AND applied = 0 AND DATE(fecha) >= CURDATE() AND DATE(fecha) <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)`,
+            [usuario_id],
+            Math.min(800, timeLeftQuick())
+          );
+          futIn = Number((fAgg && fAgg.fin) || 0); futOut = Number((fAgg && fAgg.fout) || 0);
+        }
+        // Deudas a 30 días
+        let due = 0;
+        try {
+          const [[dueRow]] = await timedQuery(
+            `SELECT COALESCE(SUM(monto_total - COALESCE(monto_pagado,0)),0) AS due
+             FROM deudas
+             WHERE usuario_id = ? AND (pagada = 0 OR pagada IS NULL)
+               AND fecha_vencimiento IS NOT NULL
+               AND fecha_vencimiento > CURDATE() AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)`,
+            [usuario_id],
+            Math.min(800, timeLeftQuick())
+          );
+          due = Number((dueRow && dueRow.due) || 0);
+        } catch (_) {}
+        const projIn = recIn + futIn;
+        const projOut = recOut + futOut + due;
+        const net = projIn - projOut;
+        const endBalance = saldoActual + net;
+        forecast = [{ days: 30, projectedIngresos: projIn, projectedEgresos: projOut, net, startingBalance: saldoActual, projectedBalanceEnd: endBalance }];
+        if (endBalance < 0) {
+          insights.push({ id: 'forecast-30-neg', severity: 'danger', title: 'Riesgo de saldo negativo en 30 días', body: `Proyección de saldo: S/ ${endBalance.toFixed(2)}.`, cta: { label: 'Ajustar recurrentes', href: '/movimientos-recurrentes' } });
+        }
+      } catch (_) { /* quick degradado */ }
+    } else if (doForecast && timeLeft() > 800) try {
       // Reducir horizontes si queda poco presupuesto de tiempo o si el usuario lo pidió explícito
       const tl = timeLeft();
       const autoHorizons = tl < 2000 ? [30] : (tl < 4000 ? [30,60] : [30,60,90]);
@@ -555,13 +631,13 @@ exports.list = async (req, res) => {
           await timedQuery('UPDATE usuarios_preferencias SET data = ? WHERE usuario_id = ?', [JSON.stringify(current), usuario_id], Math.min(800, timeLeft()));
         } catch (_) { /* si no se puede limpiar ahora, se hará luego */ }
       }
-      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: !fastMode && timeLeft() <= 0, detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: !!doForecast }, horizonsUsed } };
-      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);
+      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: quickMode ? (timeLeftQuick() <= 0) : (!fastMode && timeLeft() <= 0), detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: quickMode ? true : !!doForecast }, horizonsUsed } };
+      setCached(usuario_id, variant, ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);
       return res.json(result);
     } catch (_) {
       // Si falla filtrado, devolver lista original
-      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: !fastMode && timeLeft() <= 0, detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: !!doForecast }, horizonsUsed } };
-      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);
+      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: quickMode ? (timeLeftQuick() <= 0) : (!fastMode && timeLeft() <= 0), detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: quickMode ? true : !!doForecast }, horizonsUsed } };
+      setCached(usuario_id, variant, ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);
       return res.json(result);
     }
   } catch (err) {

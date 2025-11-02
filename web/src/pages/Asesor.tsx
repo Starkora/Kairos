@@ -236,9 +236,9 @@ export default function Asesor() {
                   setLoading(true); setError(null);
                   try {
                     const controller2 = new AbortController();
-                    const t2 = setTimeout(() => controller2.abort(), 25000); // límite menor para free-tier
+                    const t2 = setTimeout(() => controller2.abort(), 20000); // aún más rápido con modo quick
                     const [y,m] = selectedMonth.split('-');
-                    const url = `${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=0&year=${encodeURIComponent(y)}&month=${encodeURIComponent(String(parseInt(m,10)))}&details=budgets,forecast&horizons=30`;
+                    const url = `${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=0&quick=1&year=${encodeURIComponent(y)}&month=${encodeURIComponent(String(parseInt(m,10)))}`;
                     const res2 = await fetch(url, { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller2.signal });
                     clearTimeout(t2);
                     if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
