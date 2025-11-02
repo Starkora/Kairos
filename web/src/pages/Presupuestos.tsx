@@ -369,9 +369,16 @@ export default function Presupuestos() {
                   <tr key={it.categoria_id} style={{ background: idx%2? '#1f2937':'#111827' }}>
                     <td style={{ padding: '10px 14px' }}>{it.categoria || categorias.find(c => c.id===it.categoria_id)?.nombre || it.categoria_id}</td>
                     <td style={{ padding: '10px 14px', textAlign: 'right' }}>
-                      <input type="number" step="0.01" defaultValue={it.monto}
-                        onChange={e => { it.monto = Number(e.target.value || 0); }}
-                        style={{ width: 120 }} />
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={Number(it.monto ?? 0)}
+                        onChange={e => {
+                          const v = Number(e.target.value || 0);
+                          setItems(prev => prev.map(p => p.categoria_id === it.categoria_id ? { ...p, monto: v } : p));
+                        }}
+                        style={{ width: 120 }}
+                      />
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'right' }}>S/ {Number(it.gastado||0).toFixed(2)}</td>
                     <td style={{ padding: '10px 14px' }}>
