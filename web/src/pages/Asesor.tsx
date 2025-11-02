@@ -248,9 +248,9 @@ export default function Asesor() {
         <button onClick={fetchData} style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700, cursor: 'pointer' }} title="Refresca los datos desde el servidor">Actualizar</button>
       </div>
       {/* Explicación breve de la pantalla */}
-      <div style={{ marginBottom: 16, padding: 12, background: '#1f2937', borderRadius: 10, fontSize: 14 }}>
-        <div style={{ fontWeight: 700, marginBottom: 6 }}>📊 ¿Qué hace el Asesor Financiero?</div>
-        <div style={{ opacity: 0.9 }}>
+      <div style={{ marginBottom: 16, padding: 12, background: 'var(--color-card, #fff)', borderRadius: 10, fontSize: 14, border: '1px solid var(--color-input-border, #e5e7eb)' }}>
+        <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--color-text)' }}>📊 ¿Qué hace el Asesor Financiero?</div>
+        <div style={{ opacity: 0.9, color: 'var(--color-text)' }}>
           Te muestra <b>indicadores clave</b> (KPIs) del mes seleccionado: cuánto ingresaste, gastaste y ahorraste. 
           Abajo verás <b>recomendaciones inteligentes</b> (insights) si detectamos riesgos o áreas de mejora, y una <b>proyección de cashflow a 30 días</b> para que sepas cómo estará tu saldo.
         </div>
@@ -270,10 +270,10 @@ export default function Asesor() {
           {kpiCards}
           {/* Badge explicativo cuando es modo quick */}
           {meta?.quick && (
-            <div style={{ marginBottom: 12, padding: 10, background: '#065f46', borderRadius: 10, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ marginBottom: 12, padding: 10, background: 'rgba(16, 185, 129, 0.15)', borderRadius: 10, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, border: '1px solid rgba(16, 185, 129, 0.3)' }}>
               <span style={{ fontSize: 18 }}>⚡</span>
-              <div>
-                <b>Cálculo rápido activado.</b> El forecast de 30 días es una estimación aproximada basada en recurrentes y movimientos futuros. 
+              <div style={{ color: 'var(--color-text)' }}>
+                <b style={{ color: '#059669' }}>Cálculo rápido activado.</b> El forecast de 30 días es una estimación aproximada basada en recurrentes y movimientos futuros. 
                 Para un análisis más preciso (con excepciones de fechas y más horizontes), usa el botón <b>"Ampliar a 60/90 y comisiones"</b>.
               </div>
             </div>
@@ -342,7 +342,7 @@ export default function Asesor() {
                   }
                 finally { setLoading(false); }
               }}
-              style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: '#374151', color: 'var(--color-text)', fontWeight: 700, cursor: 'pointer' }}
+              style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: 'var(--color-card, #fff)', color: 'var(--color-text)', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
               title="Extiende el análisis a 60 y 90 días, incluye comisiones bancarias y cálculo preciso de recurrentes. Puede tardar más.">
                 Ampliar a 60/90 y comisiones (lento)
               </button>
@@ -357,9 +357,9 @@ export default function Asesor() {
               </div>
               {/* Alertas de datos faltantes */}
               {Array.isArray(meta?.forecastWarnings) && meta.forecastWarnings.length > 0 && (
-                <div style={{ marginBottom: 12, padding: 12, background: '#92400e', borderRadius: 10, borderLeft: '4px solid #f59e0b' }}>
-                  <div style={{ fontWeight: 700, marginBottom: 6 }}>⚠️ Advertencias del cálculo</div>
-                  <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13 }}>
+                <div style={{ marginBottom: 12, padding: 12, background: 'rgba(251, 146, 60, 0.15)', borderRadius: 10, borderLeft: '4px solid #f59e0b', border: '1px solid rgba(251, 146, 60, 0.3)' }}>
+                  <div style={{ fontWeight: 700, marginBottom: 6, color: '#ea580c' }}>⚠️ Advertencias del cálculo</div>
+                  <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--color-text)' }}>
                     {meta.forecastWarnings.map((w: string, i: number) => <li key={i}>{w}</li>)}
                   </ul>
                 </div>
