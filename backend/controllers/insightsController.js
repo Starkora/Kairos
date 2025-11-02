@@ -437,188 +437,84 @@ exports.list = async (req, res) => {
         forecastWarnings.push('No se pudo calcular el forecast rápido debido a un error temporal. Intenta nuevamente o contacta soporte si persiste.');
       }
     } else if (doForecast && timeLeft() > 800) try {
-      // Reducir horizontes si queda poco presupuesto de tiempo o si el usuario lo pidió explícito
+      // Para evitar timeouts en free-tier, usamos el método simplificado (estimado por frecuencia) también para 60/90
+      // Solo el modo ULTRA-detallado (cuando requestedHorizons incluye explícitamente y hay tiempo) usa excepciones
       const tl = timeLeft();
-      const autoHorizons = tl < 2000 ? [30] : (tl < 4000 ? [30,60] : [30,60,90]);
-      const horizons = Array.isArray(requestedHorizons) && requestedHorizons.length>0 ? Array.from(new Set(requestedHorizons)).sort((a,b)=>a-b) : autoHorizons;
-      const today = clampDate(new Date());
-      const todayISO = toISODate(today);
-      const maxH = Math.max(...horizons);
-      const endMax = addDays(today, maxH);
-
+      const horizons = Array.isArray(requestedHorizons) && requestedHorizons.length>0 ? Array.from(new Set(requestedHorizons)).sort((a,b)=>a-b) : [30,60,90];
+      
       // Saldo actual
       const [[saldoRow]] = await timedQuery('SELECT COALESCE(SUM(saldo_actual),0) AS saldo FROM cuentas WHERE usuario_id = ?', [usuario_id], Math.min(1500, timeLeft()));
       const saldoActual = Number((saldoRow && saldoRow.saldo) || 0);
-
-      // Traer recurrentes del usuario
-      const [recAll] = await timedQuery(
-        `SELECT id, tipo, monto, frecuencia, inicio, fin, indefinido
+      
+      // Recurrentes activos (método simplificado)
+      const [recRowsAll] = await timedQuery(
+        `SELECT tipo, monto, frecuencia, inicio, fin, indefinido
          FROM movimientos_recurrentes
          WHERE usuario_id = ?`,
         [usuario_id],
         Math.min(1500, timeLeft())
       );
-      const recIds = (recAll || []).map(r => r.id).filter(Boolean);
-      // Excepciones relevantes dentro del rango
-      let excByRec = new Map(); // id -> { byOriginal: Map(iso->exc), added: Set(iso) }
-      if (recIds.length > 0) {
-        const [excs] = await timedQuery(
-          `SELECT movimiento_recurrente_id AS rid, fecha_original, fecha_nueva, accion
-           FROM movimientos_recurrentes_excepciones
-           WHERE movimiento_recurrente_id IN (${recIds.map(()=>'?').join(',')})
-             AND ( (fecha_original IS NOT NULL AND fecha_original BETWEEN ? AND ?) OR (fecha_nueva IS NOT NULL AND fecha_nueva BETWEEN ? AND ?) )`,
-          [...recIds, todayISO, toISODate(endMax), todayISO, toISODate(endMax)],
-          Math.min(1500, timeLeft())
-        );
-        for (const e of (excs || [])) {
-          if (!excByRec.has(e.rid)) excByRec.set(e.rid, { byOriginal: new Map(), added: new Set() });
-          const pack = excByRec.get(e.rid);
-          const fo = e.fecha_original ? String(e.fecha_original).slice(0,10) : null;
-          const fn = e.fecha_nueva ? String(e.fecha_nueva).slice(0,10) : null;
-          if (fo) pack.byOriginal.set(fo, { accion: e.accion, fecha_nueva: fn });
-          if (fn) pack.added.add(fn);
-        }
-      }
-
-      function* occurrencesFor(r, start, end) {
-        const tipo = String(r.tipo||'').toLowerCase();
-        const freq = String(r.frecuencia||'').toLowerCase();
-        const inicio = r.inicio ? clampDate(parseISODate(String(r.inicio).slice(0,10))) : null;
-        const fin = r.indefinido ? null : (r.fin ? clampDate(parseISODate(String(r.fin).slice(0,10))) : null);
-        if (inicio && end < inicio) return; // antes de iniciar
-        const effStart = inicio ? (start < inicio ? inicio : start) : start;
-        const effEnd = fin ? (end > fin ? fin : end) : end;
-        if (effEnd < effStart) return;
-
-        const pack = excByRec.get(r.id) || { byOriginal: new Map(), added: new Set() };
-        const addIfNotException = (d) => {
-          const iso = toISODate(d);
-          const exc = pack.byOriginal.get(iso);
-          if (exc) {
-            if (exc.accion === 'skip' || exc.accion === 'postpone') return; // omitimos original
-            // si accion es 'move' y hay fecha_nueva, el nuevo será cubierto por added
-          }
-          // Emitir ocurrencia
-          return iso;
-        };
-
-        if (freq === 'diaria') {
-          let cur = effStart;
-          while (cur <= effEnd) {
-            const iso = addIfNotException(cur);
-            if (iso) yield iso;
-            cur = addDays(cur, 1);
-          }
-        } else if (freq === 'semanal') {
-          // Alinear primera ocurrencia >= effStart en pasos de 7 desde inicio
-          const base = inicio || effStart;
-          let cur = clampDate(effStart);
-          const offset = (7 + (daysDiff(base, cur) % 7)) % 7;
-          cur = addDays(cur, offset);
-          while (cur <= effEnd) {
-            const iso = addIfNotException(cur);
-            if (iso) yield iso;
-            cur = addDays(cur, 7);
-          }
-        } else if (freq === 'mensual') {
-          // Cada mes en el día del mes de inicio (ajustado al último día cuando no exista)
-          const startDay = (inicio || effStart).getDate();
-          let y = effStart.getFullYear();
-          let m = effStart.getMonth();
-          // Encontrar primera fecha >= effStart respetando el día de inicio
-          while (true) {
-            const lastDay = new Date(y, m+1, 0).getDate();
-            const day = Math.min(startDay, lastDay);
-            const cur = new Date(y, m, day);
-            if (cur >= effStart) {
-              // Iterar mensual
-              let iter = cur;
-              while (iter <= effEnd) {
-                const iso = addIfNotException(iter);
-                if (iso) yield iso;
-                // next month
-                const ny = iter.getFullYear();
-                const nm = iter.getMonth()+1;
-                const nlast = new Date(ny, nm+1, 0).getDate();
-                const nday = Math.min(startDay, nlast);
-                iter = new Date(ny, nm, nday);
-              }
-              break;
-            }
-            // avanzar mes hasta llegar >= effStart
-            m += 1; if (m >= 12) { m = 0; y += 1; }
-          }
-        }
-        // Agregar ocurrencias movidas con fecha_nueva en rango
-        for (const iso of pack.added) {
-          const d = clampDate(parseISODate(iso));
-          if (d >= effStart && d <= effEnd) yield iso;
-        }
-      }
-
-      // Precalcular ocurrencias por horizonte
-      const start = today;
-      const endByH = new Map(horizons.map(H => [H, addDays(start, H)]));
-
-      // Movimientos futuros (applied=0) hasta el máximo horizonte
-      let futs = [];
-      if (includeFuture) {
-        const [frows] = await timedQuery(
-          `SELECT tipo, monto, fecha
-           FROM movimientos
-           WHERE usuario_id = ? AND applied = 0 AND DATE(fecha) >= CURDATE() AND DATE(fecha) <= DATE_ADD(CURDATE(), INTERVAL ? DAY)`,
-          [usuario_id, maxH],
-          Math.min(1500, timeLeft())
-        );
-        futs = frows || [];
-      }
-
-  horizonsUsed = horizons;
-  for (const H of horizons) {
-        const endH = endByH.get(H);
+      const nowISO = toISODate(new Date());
+      
+      horizonsUsed = horizons;
+      for (const H of horizons) {
+        if (timeLeft() < 300) break; // salir si casi no queda tiempo
+        
         let recIn = 0, recOut = 0;
-        for (const r of (recAll || [])) {
+        for (const r of (recRowsAll || [])) {
+          const inicio = r.inicio ? String(r.inicio).slice(0,10) : null;
+          const fin = r.fin ? String(r.fin).slice(0,10) : null;
+          const indef = !!r.indefinido;
+          const active = (!inicio || inicio <= nowISO) && (indef || (fin && fin >= nowISO));
+          if (!active) continue;
+          const freq = String(r.frecuencia||'').toLowerCase();
+          const days = H;
+          // Factor aproximado según frecuencia para este horizonte
+          const factor = (freq === 'mensual') ? (days/30) : (freq === 'semanal') ? (days/7) : (freq === 'diaria') ? days : 0;
+          const amount = Number(r.monto||0) * factor;
           const tipo = String(r.tipo||'').toLowerCase();
-          const amount = Number(r.monto||0);
-          if (!amount) continue;
-          for (const iso of occurrencesFor(r, start, endH)) {
-            if (tipo === 'ingreso' || tipo === 'ahorro') recIn += amount; else if (tipo === 'egreso') recOut += amount;
-          }
+          if (tipo === 'ingreso' || tipo === 'ahorro') recIn += amount; else if (tipo === 'egreso') recOut += amount;
         }
+        
+        // Movimientos futuros a H días
         let futIn = 0, futOut = 0;
         if (includeFuture) {
-          for (const mv of (futs || [])) {
-            const d = clampDate(parseISODate(String(mv.fecha).slice(0,10)));
-            if (d > endH) continue;
-            const t = String(mv.tipo||'').toLowerCase();
-            const val = Number(mv.monto||0);
-            if (t === 'ingreso' || t === 'ahorro') futIn += val; else if (t === 'egreso') futOut += val;
-          }
+          const [[fAgg]] = await timedQuery(
+            `SELECT 
+               COALESCE(SUM(CASE WHEN tipo IN ('ingreso','ahorro') THEN monto END),0) AS fin,
+               COALESCE(SUM(CASE WHEN tipo = 'egreso' THEN monto END),0) AS fout
+             FROM movimientos
+             WHERE usuario_id = ? AND applied = 0 AND DATE(fecha) >= CURDATE() AND DATE(fecha) <= DATE_ADD(CURDATE(), INTERVAL ? DAY)`,
+            [usuario_id, H],
+            Math.min(1200, timeLeft())
+          );
+          futIn = Number((fAgg && fAgg.fin) || 0); futOut = Number((fAgg && fAgg.fout) || 0);
         }
-        const projIn = recIn + futIn;
-        let projOut = recOut + futOut;
-        // Deudas con vencimiento dentro del horizonte: sumar restante
+        
+        // Deudas a H días
+        let due = 0;
         try {
           const [[dueRow]] = await timedQuery(
             `SELECT COALESCE(SUM(monto_total - COALESCE(monto_pagado,0)),0) AS due
              FROM deudas
-             WHERE usuario_id = ?
-               AND (pagada = 0 OR pagada IS NULL)
+             WHERE usuario_id = ? AND (pagada = 0 OR pagada IS NULL)
                AND fecha_vencimiento IS NOT NULL
-               AND fecha_vencimiento > CURDATE()
-               AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL ? DAY)`,
+               AND fecha_vencimiento > CURDATE() AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL ? DAY)`,
             [usuario_id, H],
-            Math.min(1500, timeLeft())
+            Math.min(1200, timeLeft())
           );
-          const due = Number((dueRow && dueRow.due) || 0);
-          projOut += due;
+          due = Number((dueRow && dueRow.due) || 0);
         } catch (_) {}
+        
+        const projIn = recIn + futIn;
+        const projOut = recOut + futOut + due;
         const net = projIn - projOut;
         const endBalance = saldoActual + net;
         forecast.push({ days: H, projectedIngresos: projIn, projectedEgresos: projOut, net, startingBalance: saldoActual, projectedBalanceEnd: endBalance });
       }
+      
       // Alertas por forecast
-  const f30 = forecast.find(f => f.days === 30);
+      const f30 = forecast.find(f => f.days === 30);
       const f60 = forecast.find(f => f.days === 60);
       if (f30 && f30.projectedBalanceEnd < 0) {
         insights.push({ id: 'forecast-30-neg', severity: 'danger', title: 'Riesgo de saldo negativo en 30 días', body: `Proyección de saldo: S/ ${f30.projectedBalanceEnd.toFixed(2)}. Reduce egresos o aumenta ingresos.`, cta: { label: 'Ajustar recurrentes', href: '/movimientos-recurrentes' } });

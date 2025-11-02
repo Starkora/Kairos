@@ -325,7 +325,7 @@ export default function Asesor() {
                 setLoading(true); setError(null);
                 try {
                   const controller2 = new AbortController();
-                  const t2 = setTimeout(() => controller2.abort(), 45000);
+                  const t2 = setTimeout(() => controller2.abort(), 35000); // 35s para 60/90
                   const [y,m] = selectedMonth.split('-');
                   const url = `${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=0&year=${encodeURIComponent(y)}&month=${encodeURIComponent(String(parseInt(m,10)))}&details=budgets,recurrent,fees,forecast&horizons=30,60,90`;
                   const res2 = await fetch(url, { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller2.signal });
@@ -336,7 +336,7 @@ export default function Asesor() {
                   setInsights(Array.isArray(json2.insights) ? json2.insights : []);
                   setMeta(json2.meta || null);
                   } catch (e:any) { 
-                    setError(e?.message || 'No se pudo ampliar el análisis');
+                    setError(e?.name === 'AbortError' ? 'El cálculo de 60/90 días tardó demasiado. Mantén el forecast de 30 días o intenta más tarde.' : (e?.message || 'No se pudo ampliar el análisis'));
                     // Si el ampliado falla, mostrar el error pero mantener el quick
                   }
                 finally { setLoading(false); }
