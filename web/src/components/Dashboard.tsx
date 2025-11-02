@@ -1,6 +1,6 @@
 import React from 'react';
 import API_BASE from '../utils/apiBase';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { getToken } from '../utils/auth';
 import { FaWallet, FaArrowDown, FaArrowUp, FaUniversity, FaMoneyBillWave, FaPiggyBank, FaCalendarAlt } from 'react-icons/fa';
 import type { IconType } from 'react-icons';
@@ -252,6 +252,61 @@ export default function Dashboard() {
   const totalEgresosTop = topEgresos.reduce((acc, t) => acc + Number(t.monto), 0);
   topEgresos.forEach(t => t.porcentaje = totalEgresosTop ? Math.round((Number(t.monto) / totalEgresosTop) * 100) : 0);
 
+  // Datos para el gráfico de distribución por categorías (Pie Chart)
+  const COLORS = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'];
+  const pieData = Object.entries(egresosPorCategoria)
+    .map(([name, value]) => ({ name, value: Number(value) }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8); // Top 8 categorías
+
+  // Comparación mes actual vs mes anterior
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+  const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+  const currentYearForComparison = currentDate.getFullYear();
+  const previousYearForComparison = currentMonth === 0 ? currentYearForComparison - 1 : currentYearForComparison;
+
+  const getCurrentMonthData = () => {
+    const movs = movimientos.filter(m => {
+      if (!m.fecha) return false;
+      const d = new Date(m.fecha);
+      return d.getFullYear() === currentYearForComparison && d.getMonth() === currentMonth;
+    });
+    const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const ahorro = movs.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    return { ingreso, gasto, ahorro };
+  };
+
+  const getPreviousMonthData = () => {
+    const movs = movimientos.filter(m => {
+      if (!m.fecha) return false;
+      const d = new Date(m.fecha);
+      return d.getFullYear() === previousYearForComparison && d.getMonth() === previousMonth;
+    });
+    const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const ahorro = movs.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    return { ingreso, gasto, ahorro };
+  };
+
+  const currentMonthData = getCurrentMonthData();
+  const previousMonthData = getPreviousMonthData();
+
+  const calculateChange = (current: number, previous: number) => {
+    if (previous === 0) return { percentage: 0, isPositive: current >= 0, text: 'N/A' };
+    const change = ((current - previous) / previous) * 100;
+    return {
+      percentage: Math.abs(change),
+      isPositive: change >= 0,
+      text: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`
+    };
+  };
+
+  const ingresoChange = calculateChange(currentMonthData.ingreso, previousMonthData.ingreso);
+  const gastoChange = calculateChange(currentMonthData.gasto, previousMonthData.gasto);
+  const ahorroChange = calculateChange(currentMonthData.ahorro, previousMonthData.ahorro);
+
   // Datos para gráficos (totales por mes, siempre 12 meses)
   const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   // Normalizar fechas y asegurar que todos los meses estén presentes
@@ -324,41 +379,104 @@ export default function Dashboard() {
         {indicadores.map((item, idx) => {
           const Icon = item.IconComponent as IconType;
           return (
-            <div key={idx} style={{
-              flex: 1,
-              minWidth: 220,
-              maxWidth: 320,
-              background: 'var(--color-card)',
-              borderRadius: 16,
-              boxShadow: '0 2px 8px var(--card-shadow)',
-              display: 'flex',
-              alignItems: 'center',
-              padding: '18px 28px',
-              margin: '0 0 8px 0',
-              gap: 18,
-            }}>
-              <div style={{ fontSize: 44, color: item.color, background: 'var(--color-input-bg)', borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {React.createElement(Icon as any, { size: 28 })}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ color: item.color, fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{item.titulo}</div>
-                <div style={{ fontWeight: 700, fontSize: 22, color: item.isAmount ? 'var(--color-amount)' : 'var(--color-text)', marginTop: 6 }}>{item.valor}</div>
-                {item.subtitle ? (
-                  <div style={{ fontSize: 12, color: 'var(--color-table-header-text)', marginTop: 4 }}>{item.subtitle}</div>
-                ) : null}
-                {item.subtitle2 ? (
-                  <div style={{ fontSize: 12, color: 'var(--color-table-header-text)', marginTop: 2 }}>{item.subtitle2}</div>
-                ) : null}
-                {item.subtitle3 ? (
-                  <div style={{ fontSize: 12, color: item.subtitle3Color || 'var(--color-table-header-text)', marginTop: 2 }}>{item.subtitle3}</div>
-                ) : null}
+            <div key={idx} className="card" style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center', borderLeft: `4px solid ${item.color}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {React.createElement(Icon as any, { size: 28, color: item.color })}
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-secondary)' }}>{item.titulo}</div>
+                  <div style={{ fontSize: item.isAmount ? 20 : 26, fontWeight: 'bold', color: 'var(--color-text)', marginTop: 4 }}>{item.valor}</div>
+                  {item.subtitle && <div style={{ fontSize: 12, marginTop: 4, color: 'var(--color-text-secondary)' }}>{item.subtitle}</div>}
+                  {item.subtitle2 && <div style={{ fontSize: 11, marginTop: 2, color: 'var(--color-text-secondary)' }}>{item.subtitle2}</div>}
+                  {item.subtitle3 && <div style={{ fontSize: 11, marginTop: 2, color: item.subtitle3Color || 'var(--color-text-secondary)', fontWeight: 600 }}>{item.subtitle3}</div>}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Tarjetas de comparación mensual */}
+      <div style={{ marginBottom: 32 }}>
+        <h3 style={{ marginBottom: 16, color: 'var(--color-text)' }}>
+          Comparación: {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][currentMonth]} vs {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][previousMonth]}
+        </h3>
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+          {/* Tarjeta Ingresos */}
+          <div className="card" style={{ flex: 1, minWidth: 250, borderLeft: '4px solid #388e3c' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <h4 style={{ margin: 0, color: 'var(--color-text)' }}>Ingresos</h4>
+              <span style={{ fontSize: 24, color: ingresoChange.isPositive ? '#2e7d32' : '#e53935' }}>
+                {ingresoChange.isPositive ? '↑' : '↓'}
+              </span>
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 'bold', color: 'var(--color-text)', marginBottom: 8 }}>
+              S/ {currentMonthData.ingreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>
+              Mes anterior: S/ {previousMonthData.ingreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </div>
+            <div style={{ 
+              fontSize: 16, 
+              fontWeight: 700, 
+              marginTop: 8, 
+              color: ingresoChange.isPositive ? '#2e7d32' : '#e53935' 
+            }}>
+              {ingresoChange.text}
+            </div>
+          </div>
+
+          {/* Tarjeta Gastos */}
+          <div className="card" style={{ flex: 1, minWidth: 250, borderLeft: '4px solid #fbc02d' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <h4 style={{ margin: 0, color: 'var(--color-text)' }}>Gastos</h4>
+              <span style={{ fontSize: 24, color: gastoChange.isPositive ? '#e53935' : '#2e7d32' }}>
+                {gastoChange.isPositive ? '↑' : '↓'}
+              </span>
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 'bold', color: 'var(--color-text)', marginBottom: 8 }}>
+              S/ {currentMonthData.gasto.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>
+              Mes anterior: S/ {previousMonthData.gasto.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </div>
+            <div style={{ 
+              fontSize: 16, 
+              fontWeight: 700, 
+              marginTop: 8, 
+              color: gastoChange.isPositive ? '#e53935' : '#2e7d32'
+            }}>
+              {gastoChange.text}
+            </div>
+          </div>
+
+          {/* Tarjeta Ahorro */}
+          <div className="card" style={{ flex: 1, minWidth: 250, borderLeft: '4px solid #6c4fa1' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <h4 style={{ margin: 0, color: 'var(--color-text)' }}>Ahorro</h4>
+              <span style={{ fontSize: 24, color: ahorroChange.isPositive ? '#2e7d32' : '#e53935' }}>
+                {ahorroChange.isPositive ? '↑' : '↓'}
+              </span>
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 'bold', color: 'var(--color-text)', marginBottom: 8 }}>
+              S/ {currentMonthData.ahorro.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>
+              Mes anterior: S/ {previousMonthData.ahorro.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </div>
+            <div style={{ 
+              fontSize: 16, 
+              fontWeight: 700, 
+              marginTop: 8, 
+              color: ahorroChange.isPositive ? '#2e7d32' : '#e53935'
+            }}>
+              {ahorroChange.text}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Segmentador y gráfica horizontal ocupando todo el ancho */}
-  <div className="card" style={{ width: '100%', marginBottom: 24 }}>
+      <div className="card" style={{ width: '100%', marginBottom: 24 }}>
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 'bold' }}>Seleccionar Segmentos:</span>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -451,6 +569,54 @@ export default function Dashboard() {
                 <div style={{ fontSize: 18 }}>{item.categoria}</div>
                 <div style={{ fontSize: 22, fontWeight: 'bold', margin: '8px 0' }}>S/ {item.monto.toLocaleString()}</div>
                 <div style={{ fontSize: 16 }}>{item.porcentaje}%</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Gráfico de Distribución por Categorías */}
+      <div className="card" style={{ marginTop: 24 }}>
+        <h3 style={{ marginBottom: 16, color: 'var(--color-text)' }}>Distribución de Gastos por Categoría</h3>
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Gráfico de Pie */}
+          <div style={{ flex: 1, minWidth: 300, display: 'flex', justifyContent: 'center' }}>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={(entry: any) => `${entry.name}: ${(entry.percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => `S/ ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          {/* Leyenda */}
+          <div style={{ flex: 1, minWidth: 250, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {pieData.map((entry, index) => (
+              <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ 
+                  width: 20, 
+                  height: 20, 
+                  borderRadius: 4, 
+                  background: COLORS[index % COLORS.length],
+                  display: 'inline-block',
+                  flexShrink: 0
+                }}></span>
+                <span style={{ color: 'var(--color-text)', fontWeight: 500, flex: 1 }}>{entry.name}</span>
+                <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>
+                  S/ {Number(entry.value).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
               </div>
             ))}
           </div>
