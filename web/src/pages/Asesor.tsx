@@ -231,7 +231,7 @@ export default function Asesor() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
         <h2 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Asesor financiero</h2>
         <div style={{ flex: 1 }} />
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-card)', border: '1px solid var(--color-input-border)', padding: '6px 10px', borderRadius: 10 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-card)', border: '1px solid var(--color-input-border)', padding: '6px 10px', borderRadius: 10 }} title="Selecciona el mes para ver los KPIs (ingresos/egresos reales de ese mes)">
           <span style={{ fontSize: 12, opacity: 0.8 }}>Mes</span>
           <input
             type="month"
@@ -240,11 +240,19 @@ export default function Asesor() {
             style={{ background: 'transparent', color: 'var(--color-text)', border: 'none', outline: 'none' }}
           />
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-card)', border: '1px solid var(--color-input-border)', padding: '6px 10px', borderRadius: 10 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-card)', border: '1px solid var(--color-input-border)', padding: '6px 10px', borderRadius: 10, cursor: 'pointer' }} title="Incluye movimientos pendientes (applied=0) y recurrentes en la proyección de cashflow a 30 días">
           <input type="checkbox" checked={includeFuture} onChange={e => setIncludeFuture(e.target.checked)} />
           Incluir movimientos futuros
         </label>
-        <button onClick={fetchData} style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Actualizar</button>
+        <button onClick={fetchData} style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700, cursor: 'pointer' }} title="Refresca los datos desde el servidor">Actualizar</button>
+      </div>
+      {/* Explicación breve de la pantalla */}
+      <div style={{ marginBottom: 16, padding: 12, background: '#1f2937', borderRadius: 10, fontSize: 14 }}>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>📊 ¿Qué hace el Asesor Financiero?</div>
+        <div style={{ opacity: 0.9 }}>
+          Te muestra <b>indicadores clave</b> (KPIs) del mes seleccionado: cuánto ingresaste, gastaste y ahorraste. 
+          Abajo verás <b>recomendaciones inteligentes</b> (insights) si detectamos riesgos o áreas de mejora, y una <b>proyección de cashflow a 30 días</b> para que sepas cómo estará tu saldo.
+        </div>
       </div>
       {meta?.month && (
         <div style={{ marginBottom: 12, opacity: 0.8 }}>Mes: <b>{meta.month}</b></div>
@@ -259,11 +267,21 @@ export default function Asesor() {
       ) : (
         <>
           {kpiCards}
+          {/* Badge explicativo cuando es modo quick */}
+          {meta?.quick && (
+            <div style={{ marginBottom: 12, padding: 10, background: '#065f46', borderRadius: 10, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18 }}>⚡</span>
+              <div>
+                <b>Cálculo rápido activado.</b> El forecast de 30 días es una estimación aproximada basada en recurrentes y movimientos futuros. 
+                Para un análisis más preciso (con excepciones de fechas y más horizontes), usa el botón <b>"Ampliar a 60/90 y comisiones"</b>.
+              </div>
+            </div>
+          )}
           {/* Forecast 30/60/90 días */}
           {meta?.fast && (
             <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontWeight: 800 }}>Forecast detallado</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ fontWeight: 800 }}>Proyección de cashflow</div>
                 <button onClick={async () => {
                   // Pedimos una versión ligera del detallado: budgets + forecast a 30 días
                   setLoading(true); setError(null);
@@ -289,11 +307,15 @@ export default function Asesor() {
                   }
                   finally { setLoading(false); }
                 }} disabled={loading}
-                style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: loading ? '#374151' : 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
+                style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: loading ? '#374151' : 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
+                title="Calcula una proyección rápida de 30 días con presupuestos y movimientos futuros. Tarda pocos segundos.">
                   {loading ? 'Calculando…' : 'Calcular ahora'}
                 </button>
               </div>
-              <div style={{ opacity: 0.8 }}>Para reducir carga en servidores gratuitos, el forecast detallado se calcula bajo demanda.</div>
+              <div style={{ opacity: 0.8 }}>
+                💡 <b>¿Qué es esto?</b> Para reducir carga en servidores gratuitos, el forecast detallado se calcula bajo demanda. 
+                Pulsa <b>"Calcular ahora"</b> para ver cómo evolucionará tu saldo en los próximos 30 días considerando tus gastos recurrentes, movimientos futuros y deudas.
+              </div>
             </div>
           )}
           {/* Acción opcional para ampliar más detalle cuando el servidor esté libre */}
@@ -316,7 +338,8 @@ export default function Asesor() {
                 } catch (e:any) { setError(e?.message || 'No se pudo ampliar el análisis'); }
                 finally { setLoading(false); }
               }}
-              style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: '#374151', color: 'var(--color-text)', fontWeight: 700 }}>
+              style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: '#374151', color: 'var(--color-text)', fontWeight: 700, cursor: 'pointer' }}
+              title="Extiende el análisis a 60 y 90 días, incluye comisiones bancarias y cálculo preciso de recurrentes. Puede tardar más.">
                 Ampliar a 60/90 y comisiones (lento)
               </button>
             </div>
@@ -324,6 +347,10 @@ export default function Asesor() {
           {Array.isArray(meta?.forecast) && meta.forecast.length > 0 && (
             <div className="card" style={{ padding: 16, marginBottom: 12 }}>
               <div style={{ fontWeight: 800, marginBottom: 8 }}>Proyección de cashflow</div>
+              <div style={{ opacity: 0.8, marginBottom: 12, fontSize: 14 }}>
+                📈 <b>¿Cómo leer esta tabla?</b> Muestra cuánto dinero ingresará y saldrá en los próximos 30/60/90 días 
+                (según recurrentes, movimientos futuros y deudas a vencer). El <b>"Saldo proyectado"</b> es lo que tendrías al final del horizonte.
+              </div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
                 <button onClick={() => {
                   try {
@@ -424,10 +451,24 @@ export default function Asesor() {
               </div>
             </div>
           )}
+          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>💡 Recomendaciones inteligentes</div>
+          <div style={{ opacity: 0.8, marginBottom: 12, fontSize: 14 }}>
+            Estas recomendaciones aparecen <b>automáticamente</b> cuando detectamos situaciones que requieren tu atención:
+            <ul style={{ marginTop: 6, paddingLeft: 20 }}>
+              <li><b>Ritmo de gasto alto:</b> Si tu proyección de egresos supera tus ingresos.</li>
+              <li><b>Presupuestos excedidos/en alerta:</b> Si alguna categoría gasta más del umbral configurado.</li>
+              <li><b>Tasa de ahorro baja/negativa:</b> Si ahorras menos del 5% o gastas más de lo que ingresas.</li>
+              <li><b>Egresos recurrentes altos:</b> Si compromisos fijos (suscripciones, préstamos) superan el 70% de tus ingresos.</li>
+              <li><b>Metas sin avance:</b> Si tienes metas creadas hace más de 60 días sin aportes.</li>
+              <li><b>Comisiones bancarias elevadas:</b> Si pagas más del 2-5% de tus ingresos en comisiones.</li>
+              <li><b>Saldo negativo proyectado:</b> Si el forecast indica que tu saldo caerá por debajo de cero.</li>
+            </ul>
+            Puedes <b>ocultar</b> una recomendación por 7, 30 o 90 días si ya la atendiste o no aplica ahora.
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
             {insights.length === 0 && (
               <div className="card" style={{ padding: 16 }}>
-                <div style={{ fontWeight: 700 }}>Sin recomendaciones por ahora</div>
+                <div style={{ fontWeight: 700 }}>✅ Sin recomendaciones por ahora</div>
                 <div style={{ opacity: 0.8 }}>Todo se ve bien. ¡Sigue así!</div>
               </div>
             )}
@@ -435,7 +476,9 @@ export default function Asesor() {
               <div key={item.id} className="card" style={{ padding: 16, borderLeft: `4px solid ${colorFor(item.severity)}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontWeight: 800, fontSize: 16 }}>{item.title}</div>
-                  <span style={{ fontSize: 12, color: colorFor(item.severity), fontWeight: 800 }}>{item.severity.toUpperCase()}</span>
+                  <span style={{ fontSize: 12, color: colorFor(item.severity), fontWeight: 800 }}>
+                    {item.severity === 'danger' ? '🔴 URGENTE' : item.severity === 'warning' ? '⚠️ ALERTA' : 'ℹ️ INFO'}
+                  </span>
                 </div>
                 <pre style={{ whiteSpace: 'pre-wrap', margin: '8px 0 12px 0', fontFamily: 'inherit' }}>{item.body}</pre>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -454,8 +497,8 @@ export default function Asesor() {
                         } catch {}
                         setInsights(prev => prev.filter(x => x.id !== item.id));
                       }}
-                      title={`Ocultar durante ${days} días`}
-                      style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>
+                      title={`Ocultar esta recomendación durante ${days} días (si ya la atendiste o no aplica)`}
+                      style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700, cursor: 'pointer' }}>
                       Ocultar {days}d
                     </button>
                   ))}
