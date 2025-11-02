@@ -43,7 +43,9 @@ function normalizeOrigin(o) {
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:3002', 
+  'http://localhost:3002',
+  // Producción (Vercel)
+  'https://kairos-seven-rust.vercel.app',
   normalizeOrigin(process.env.WEB_ORIGIN),
   normalizeOrigin(process.env.NGROK_ORIGIN),
   normalizeOrigin(process.env.DEVTUNNELS_ORIGIN)
