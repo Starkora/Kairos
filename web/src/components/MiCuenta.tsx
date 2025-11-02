@@ -469,30 +469,37 @@ export default function MiCuenta() {
         )}
       </section>
       {mostrarPopup && (
-        <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 0 10px rgba(0,0,0,0.3)' }}>
-          <h2 style={{ color: '#6C4AB6' }}>Verificación</h2>
-          <p>Ingresa el código enviado a tu correo:</p>
-          <input
-            type="text"
-            value={codigoVerificacion}
-            onChange={(e) => setCodigoVerificacion(e.target.value)}
-            style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginTop: '5px', width: '100%' }}
-          />
-          <button
-            type="button"
-            onClick={handleVerificationSubmit}
-            style={{ padding: '10px 20px', backgroundColor: '#6C4AB6', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}
-          >
-            Verificar
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMostrarPopup(false); setCodigoVerificacion(''); }}
-            style={{ padding: '10px 20px', backgroundColor: '#bbb', color: '#333', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px', marginLeft: '10px' }}
-          >
-            Cerrar
-          </button>
-        </div>
+        <>
+          <div className="micuenta-overlay" onClick={() => { setMostrarPopup(false); setCodigoVerificacion(''); }} />
+          <div className="micuenta-modal" role="dialog" aria-modal="true" aria-labelledby="micuenta-verify-title">
+            <h2 id="micuenta-verify-title" style={{ color: 'var(--color-text)', marginTop: 0 }}>Verificación</h2>
+            <p style={{ marginTop: 0, color: 'var(--color-text)' }}>Ingresa el código enviado a tu correo:</p>
+            <input
+              type="text"
+              value={codigoVerificacion}
+              onChange={(e) => setCodigoVerificacion(e.target.value)}
+              style={{ width: '100%' }}
+            />
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-start' }}>
+              <button
+                type="button"
+                onClick={handleVerificationSubmit}
+                className="btn btn-primary"
+                style={{ padding: '8px 14px', fontWeight: 700 }}
+              >
+                Verificar
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMostrarPopup(false); setCodigoVerificacion(''); }}
+                className="btn"
+                style={{ padding: '8px 14px', fontWeight: 700 }}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </>
       )}
       {/* Tooltips nativos via title en iconos de editar */}
     </div>
