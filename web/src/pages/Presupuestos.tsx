@@ -30,7 +30,7 @@ export default function Presupuestos() {
       if (typeof warn === 'number') setThresholdWarn(warn);
       if (typeof danger === 'number') setThresholdDanger(danger);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line
   }, []);
   // Persistir en localStorage y backend cuando cambian
   useEffect(() => {

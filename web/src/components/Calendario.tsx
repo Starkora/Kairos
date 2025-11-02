@@ -70,7 +70,7 @@ export default function Calendario() {
         }
       } catch {}
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line
   }, []);
 
   React.useEffect(() => {
