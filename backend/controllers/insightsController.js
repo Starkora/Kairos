@@ -128,7 +128,7 @@ exports.list = async (req, res) => {
       `SELECT COALESCE(SUM(monto),0) AS total FROM movimientos
        WHERE usuario_id = ? AND applied = 1 AND tipo IN ('ingreso','ahorro') AND DATE(fecha) BETWEEN ? AND ?`,
       [usuario_id, first, last],
-      fastMode ? 6000 : Math.min(6000, timeLeft())
+      Math.min(3000, timeLeft())
     );
       incRow = row || incRow;
     } catch (_) { /* fallback 0 */ }
@@ -138,7 +138,7 @@ exports.list = async (req, res) => {
       `SELECT COALESCE(SUM(monto),0) AS total FROM movimientos
        WHERE usuario_id = ? AND applied = 1 AND tipo = 'egreso' AND DATE(fecha) BETWEEN ? AND ?`,
       [usuario_id, first, last],
-      fastMode ? 6000 : Math.min(6000, timeLeft())
+      Math.min(3000, timeLeft())
     );
       expRow = row || expRow;
     } catch (_) { /* fallback 0 */ }
@@ -191,23 +191,30 @@ exports.list = async (req, res) => {
       }
     }
 
-    // Presupuestos del mes
-    const [budgets] = await db.query(
-      'SELECT p.categoria_id, p.monto, c.nombre AS categoria FROM presupuestos p LEFT JOIN categorias c ON c.id = p.categoria_id WHERE p.usuario_id = ? AND p.anio = ? AND p.mes = ?',
-      [usuario_id, year, month]
-    );
+    // Presupuestos del mes (con timeout corto)
+    let budgets = [];
+    try {
+      const [rowsB] = await timedQuery(
+        'SELECT p.categoria_id, p.monto, c.nombre AS categoria FROM presupuestos p LEFT JOIN categorias c ON c.id = p.categoria_id WHERE p.usuario_id = ? AND p.anio = ? AND p.mes = ?',[usuario_id, year, month], Math.min(2500, timeLeft())
+      );
+      budgets = rowsB || [];
+    } catch (_) { budgets = []; }
     let inDanger = [], inWarn = [];
     // Para la regla "no-budgets" necesitaremos saber si hay presupuestos > 0
     const budgetsCount = (budgets || []).filter(b => Number(b.monto || 0) > 0).length;
     // Cálculo detallado de gasto por categoría solo en modo no-rápido
     if (doBudgets && timeLeft() > 300) {
-      const [spentRows] = await db.query(
+      let spentRows = [];
+      try {
+        const [srows] = await timedQuery(
         `SELECT categoria_id, SUM(monto) AS gastado
          FROM movimientos
          WHERE usuario_id = ? AND tipo = 'egreso' AND applied = 1 AND DATE(fecha) BETWEEN ? AND ?
          GROUP BY categoria_id`,
-        [usuario_id, first, last]
-      );
+        [usuario_id, first, last], Math.min(2500, timeLeft())
+        );
+        spentRows = srows || [];
+      } catch(_) { spentRows = []; }
       const spentMap = new Map((spentRows || []).map(r => [Number(r.categoria_id)||0, Number(r.gastado)||0]));
       const enriched = (budgets || []).map(b => ({
         categoria_id: Number(b.categoria_id),
@@ -215,6 +222,12 @@ exports.list = async (req, res) => {
         monto: Number(b.monto || 0),
         gastado: spentMap.get(Number(b.categoria_id)||0) || 0
       })).filter(b => b.monto > 0);
+    // Si estamos en detallado y ya casi no queda tiempo, devolver KPIs mínimos
+    if (!fastMode && timeLeft() < 600) {
+      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast: [], includeFuture, fast: fastMode, degraded: true, detailsUsed: { budgets: false, recurrent: false, fees: false, forecast: false }, horizonsUsed: [] } };
+      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey, result, CACHE_TTL_MS);
+      return res.json(result);
+    }
       const atRisk = enriched
         .map(b => ({ ...b, pct: b.monto > 0 ? (b.gastado / b.monto) * 100 : 0 }))
         .sort((a,b) => b.pct - a.pct);

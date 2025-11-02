@@ -84,6 +84,13 @@ export default function Asesor() {
   const fetchDetailed = async () => {
     setLoading(true); setError(null);
     try {
+      // Warmup corto para despertar DB en free-tier
+      try {
+        const warm = new AbortController();
+        const wt = setTimeout(() => warm.abort(), 5000);
+        await fetch(`${API_BASE}/api/health/db`, { signal: warm.signal }).catch(() => {});
+        clearTimeout(wt);
+      } catch {}
       const controller2 = new AbortController();
       const t2 = setTimeout(() => controller2.abort(), 45000);
       const [y,m] = selectedMonth.split('-');
@@ -98,7 +105,15 @@ export default function Asesor() {
       if (json2?.meta?.month && typeof json2.meta.month === 'string' && json2.meta.month.length === 7) {
         setSelectedMonth(prev => (prev === json2.meta.month ? prev : json2.meta.month));
       }
-    } catch (e:any) { setError(e?.message || 'No se pudo calcular el forecast'); }
+    } catch (e:any) {
+      // Fallback automático a vista rápida si la detallada falla o expira
+      if (e?.name === 'AbortError') {
+        setError('Tiempo de espera agotado en el cálculo detallado. Mostrando vista rápida…');
+      } else {
+        setError(e?.message || 'No se pudo calcular el forecast. Mostrando vista rápida…');
+      }
+      try { await fetchData(); } catch {}
+    }
     finally { setLoading(false); }
   };
 
@@ -231,7 +246,14 @@ export default function Asesor() {
                     setKpis(json2.kpis || null);
                     setInsights(Array.isArray(json2.insights) ? json2.insights : []);
                     setMeta(json2.meta || null);
-                  } catch (e:any) { setError(e?.message || 'No se pudo calcular el forecast'); }
+                  } catch (e:any) {
+                    if (e?.name === 'AbortError') {
+                      setError('Cálculo rápido abortado por tiempo. Te muestro la vista rápida.');
+                    } else {
+                      setError(e?.message || 'No se pudo calcular el forecast. Te muestro la vista rápida.');
+                    }
+                    try { await fetchData(); } catch {}
+                  }
                   finally { setLoading(false); }
                 }} disabled={loading}
                 style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: loading ? '#374151' : 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
