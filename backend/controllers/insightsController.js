@@ -1,5 +1,37 @@
 const db = require('../db');
 
+// Cache en memoria por usuario y parámetro includeFuture para acelerar respuestas repetidas
+// TTL corto para mantener datos frescos y no bloquear UX (p. ej., 30s)
+const CACHE_TTL_MS = Number(process.env.INSIGHTS_CACHE_TTL_MS || 30_000);
+const insightsCache = new Map(); // key -> { expires: number, payload }
+
+function cacheKey(userId, includeFuture) {
+  // Cambia con el mes actual para evitar inconsistencias al cruzar de mes
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  return `u:${userId}|f:${includeFuture?'1':'0'}|m:${ym}`;
+}
+
+function getCached(userId, includeFuture) {
+  const key = cacheKey(userId, includeFuture);
+  const rec = insightsCache.get(key);
+  if (!rec) return null;
+  if (Date.now() > rec.expires) { insightsCache.delete(key); return null; }
+  return rec.payload;
+}
+
+function setCached(userId, includeFuture, payload) {
+  const key = cacheKey(userId, includeFuture);
+  insightsCache.set(key, { expires: Date.now() + CACHE_TTL_MS, payload });
+}
+
+function invalidateUser(userId) {
+  const prefix = `u:${userId}|`;
+  for (const k of Array.from(insightsCache.keys())) {
+    if (k.startsWith(prefix)) insightsCache.delete(k);
+  }
+}
+
 function monthBounds(year, month) {
   const y = Number(year);
   const m = Number(month);
@@ -32,6 +64,12 @@ exports.list = async (req, res) => {
     const { year, month, day } = todayInfo();
     const { first, last, daysInMonth } = monthBounds(year, month);
     const includeFuture = String((req.query && req.query.includeFuture) ?? '1') !== '0';
+
+    // Cache rápido para aliviar carga cuando la pantalla hace refresh o varios widgets llaman lo mismo
+    const cached = getCached(usuario_id, includeFuture);
+    if (cached) {
+      return res.json(cached);
+    }
 
     // Preferencias del usuario (umbrales presupuesto)
     let thresholdWarn = 80;
@@ -450,10 +488,14 @@ exports.list = async (req, res) => {
         current.insightsDismissed = dismissed;
         await db.query('UPDATE usuarios_preferencias SET data = ? WHERE usuario_id = ?', [JSON.stringify(current), usuario_id]);
       }
-      return res.json({ kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture } });
+      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture } };
+      setCached(usuario_id, includeFuture, result);
+      return res.json(result);
     } catch (_) {
       // Si falla filtrado, devolver lista original
-      return res.json({ kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture } });
+      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture } };
+      setCached(usuario_id, includeFuture, result);
+      return res.json(result);
     }
   } catch (err) {
     console.error('[insights.list] error:', err);
@@ -479,6 +521,8 @@ exports.dismiss = async (req, res) => {
     } else {
       await db.query('INSERT INTO usuarios_preferencias (usuario_id, data) VALUES (?, ?)', [usuario_id, JSON.stringify(current)]);
     }
+    // Invalidar cache de insights para este usuario (cambió el estado de dismiss)
+    try { invalidateUser(usuario_id); } catch (_) {}
     return res.json({ success: true, id, until });
   } catch (err) {
     console.error('[insights.dismiss] error:', err);

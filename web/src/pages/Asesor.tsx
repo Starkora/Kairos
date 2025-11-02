@@ -36,7 +36,10 @@ export default function Asesor() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}`, { headers: { 'Authorization': 'Bearer ' + getToken() } });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(`${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}`, { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller.signal });
+      clearTimeout(timer);
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(`HTTP ${res.status}: ${txt.slice(0,160)}`);
@@ -46,7 +49,11 @@ export default function Asesor() {
       setInsights(Array.isArray(json.insights) ? json.insights : []);
       setMeta(json.meta || null);
     } catch (e: any) {
-      setError(e?.message || 'No se pudieron cargar insights');
+      if (e?.name === 'AbortError') {
+        setError('Tiempo de espera agotado. El servidor está tardando en responder. Pulsa "Actualizar" para reintentar.');
+      } else {
+        setError(e?.message || 'No se pudieron cargar insights');
+      }
     } finally {
       setLoading(false);
     }
@@ -123,7 +130,10 @@ export default function Asesor() {
         <div style={{ marginBottom: 12, opacity: 0.8 }}>Mes: <b>{meta.month}</b></div>
       )}
       {loading ? (
-        <div>Cargando…</div>
+        <div>
+          Cargando…<br />
+          <small style={{ opacity: 0.7 }}>Si tarda más de 15s, pulsa "Actualizar" para reintentar.</small>
+        </div>
       ) : error ? (
         <div style={{ color: '#ef4444' }}>Error: {error}</div>
       ) : (
