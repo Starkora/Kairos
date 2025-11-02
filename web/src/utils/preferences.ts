@@ -14,6 +14,9 @@ export type Preferences = {
     lastFilters?: CalendarFilters;
     lastSearch?: string;
   };
+  advisor?: {
+    includeFutureForecast?: boolean;
+  };
 };
 
 export async function loadPreferences(): Promise<Preferences> {

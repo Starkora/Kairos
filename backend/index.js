@@ -209,6 +209,7 @@ const metasRouter = require('./routes/metas');
 const notificacionesController = require('./controllers/notificacionesController');
 const presupuestosRouter = require('./routes/presupuestos');
 const preferenciasRouter = require('./routes/preferencias');
+const insightsRouter = require('./routes/insights');
 // Limpieza de usuarios_pendientes expirados (usa evento MySQL si existe; si no, fallback en Node)
 let cleanupInterval = null;
 const cleanupExpiredPendings = async () => {
@@ -372,6 +373,7 @@ app.use('/api/deudas', deudasRouter);
 app.use('/api/metas', metasRouter);
 app.use('/api/presupuestos', presupuestosRouter);
 app.use('/api/preferencias', preferenciasRouter);
+app.use('/api/insights', insightsRouter);
 const movimientosRecurrentesRouter = require('./routes/movimientosRecurrentes');
 app.use('/api/movimientos-recurrentes', movimientosRecurrentesRouter);
 app.use('/api/admin', adminRoutes);

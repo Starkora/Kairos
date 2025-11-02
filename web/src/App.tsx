@@ -21,6 +21,7 @@ import AdminUsuariosPendientes from './components/AdminUsuariosPendientes';
 import API_BASE from './utils/apiBase';
 import MovimientosRecurrentes from './pages/MovimientosRecurrentes';
 import Presupuestos from './pages/Presupuestos';
+import Asesor from 'pages/Asesor';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import './App.css';
 import { MdFormatListBulleted } from 'react-icons/md';
@@ -193,6 +194,7 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                     <Route path="/registro" element={<Registro />} />
                     <Route path="/cuentas" element={<Cuentas />} />
                     <Route path="/calendario" element={<Calendario />} />
+                    <Route path="/asesor" element={<Asesor />} />
                     <Route path="/notificaciones" element={<Notificaciones />} />
                     <Route path="/presupuestos" element={<Presupuestos />} />
                     <Route path="/movimientos-recurrentes" element={<MovimientosRecurrentes />} />

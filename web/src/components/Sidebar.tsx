@@ -65,6 +65,7 @@ export default function Sidebar({ className = 'sidebar', onNavigate }) {
           <NavLink to="/registro">Registro de movimientos</NavLink>
           <NavLink to="/cuentas">Cuentas</NavLink>
           <NavLink to="/calendario">Calendario</NavLink>
+          <NavLink to="/asesor">Asesor financiero</NavLink>
           <NavLink to="/deudas-metas">Deudas y Metas</NavLink>
           <NavLink to="/categorias">Categorías</NavLink>
           <NavLink to="/notificaciones">Notificaciones</NavLink>
