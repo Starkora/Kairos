@@ -82,8 +82,12 @@ exports.list = async (req, res) => {
     const timeLeft = () => Math.max(0, DETAIL_TIME_BUDGET_MS - (Date.now() - startedAt));
 
     const timedQuery = async (sql, params, ms) => {
-      const timeout = Number(ms || 0) > 0 ? Number(ms) : undefined;
-      if (!timeout) return db.query(sql, params);
+      const t = Number(ms);
+      // Si no queda presupuesto de tiempo, abortar inmediatamente para no colgar la request
+      if (!Number.isFinite(t) || t <= 0) {
+        return Promise.reject(new Error('budget_exhausted'));
+      }
+      const timeout = t;
       return Promise.race([
         db.query(sql, params),
         new Promise((_, rej) => setTimeout(() => rej(new Error('q_timeout')), timeout))
