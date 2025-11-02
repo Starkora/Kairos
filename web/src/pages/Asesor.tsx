@@ -31,13 +31,24 @@ export default function Asesor() {
   const [meta, setMeta] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [includeFuture, setIncludeFuture] = useState<boolean>(true);
+  const [firstLoad, setFirstLoad] = useState(true);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
+      // Warmup opcional: ping rápido a /api/health/db para despertar el backend
+      try {
+        const warm = new AbortController();
+        const t = setTimeout(() => warm.abort(), 7000);
+        await fetch(`${API_BASE}/api/health/db`, { signal: warm.signal }).catch(() => {});
+        clearTimeout(t);
+      } catch { /* no-op */ }
+
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 15000);
+      // En la primera carga damos más margen por cold start del proveedor
+      const timeoutMs = firstLoad ? 45000 : 15000;
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
       const res = await fetch(`${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}`, { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller.signal });
       clearTimeout(timer);
       if (!res.ok) {
@@ -48,6 +59,7 @@ export default function Asesor() {
       setKpis(json.kpis || null);
       setInsights(Array.isArray(json.insights) ? json.insights : []);
       setMeta(json.meta || null);
+      if (firstLoad) setFirstLoad(false);
     } catch (e: any) {
       if (e?.name === 'AbortError') {
         setError('Tiempo de espera agotado. El servidor está tardando en responder. Pulsa "Actualizar" para reintentar.');
