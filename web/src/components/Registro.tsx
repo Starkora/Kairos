@@ -10,6 +10,8 @@ export default function Registro() {
   const [categorias, setCategorias] = React.useState([]);
   const [uploadLoading, setUploadLoading] = React.useState(false);
   const fileInputRef = React.useRef(null);
+  const [transaccionesRecientes, setTransaccionesRecientes] = React.useState([]);
+  const [plantillas, setPlantillas] = React.useState([]);
 
   const [form, setForm] = React.useState({
     tipo: 'ingreso',
@@ -59,6 +61,57 @@ export default function Registro() {
       .catch(() => setCuentas([]));
   }, []);
 
+  // Cargar transacciones recientes (últimas 5)
+  React.useEffect(() => {
+    fetch(`${API_BASE}/api/transacciones?plataforma=web`, {
+      headers: {
+        'Authorization': 'Bearer ' + getToken()
+      }
+    })
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        if (Array.isArray(data)) {
+          const sorted = data.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+          setTransaccionesRecientes(sorted.slice(0, 5));
+          // Generar plantillas basadas en los movimientos más frecuentes
+          generarPlantillas(data);
+        }
+      })
+      .catch(() => setTransaccionesRecientes([]));
+  }, []);
+
+  // Generar plantillas rápidas basadas en historial
+  const generarPlantillas = (movimientos: any[]) => {
+    const frecuencia: Record<string, any> = {};
+    movimientos.forEach(mov => {
+      if (mov.tipo === 'transferencia') return;
+      const key = `${mov.categoria_id}-${mov.descripcion}`;
+      if (!frecuencia[key]) {
+        frecuencia[key] = { 
+          count: 0, 
+          categoria_id: mov.categoria_id, 
+          descripcion: mov.descripcion,
+          icon: mov.icon || '💸',
+          color: mov.color || '#c62828',
+          tipo: mov.tipo,
+          montos: []
+        };
+      }
+      frecuencia[key].count++;
+      frecuencia[key].montos.push(parseFloat(mov.monto));
+    });
+    
+    const topPlantillas = Object.values(frecuencia)
+      .sort((a: any, b: any) => b.count - a.count)
+      .slice(0, 4)
+      .map((item: any) => ({
+        ...item,
+        montoPromedio: (item.montos.reduce((a: number, b: number) => a + b, 0) / item.montos.length).toFixed(2)
+      }));
+    
+    setPlantillas(topPlantillas);
+  };
+
   // Cargar categorías desde la API según el tipo
   React.useEffect(() => {
     if (form.tipo === 'transferencia') { setCategorias([]); return; }
@@ -78,10 +131,132 @@ export default function Registro() {
     if (name === 'monto') {
       // Aceptar coma o punto y guardar con punto para evitar NaN
       const normalized = String(value).replace(',', '.');
+      
+      // Evaluar si es una expresión matemática simple
+      if (/^[\d\s+\-*/().]+$/.test(normalized)) {
+        try {
+          // Intentar evaluar la expresión
+          const resultado = Function('"use strict"; return (' + normalized + ')')();
+          if (!isNaN(resultado) && isFinite(resultado) && resultado >= 0) {
+            // Si es válido, guardar el resultado
+            setForm((prev) => ({ ...prev, [name]: resultado.toString() }));
+            return;
+          }
+        } catch (e) {
+          // Si falla la evaluación, guardar el valor como está
+        }
+      }
+      
       setForm((prev) => ({ ...prev, [name]: normalized }));
       return;
     }
+    
+    // Sugerencia inteligente de categoría basada en descripción
+    if (name === 'descripcion' && value && form.tipo !== 'transferencia') {
+      sugerirCategoria(value);
+    }
+    
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Sugerir categoría basada en palabras clave y historial
+  const sugerirCategoria = (descripcion: string) => {
+    if (!descripcion || descripcion.length < 3) return;
+    
+    const texto = descripcion.toLowerCase();
+    
+    // Buscar en historial patrones similares
+    const movimientosSimilares = transaccionesRecientes.filter(tr => 
+      tr.descripcion && 
+      tr.descripcion.toLowerCase().includes(texto.substring(0, 5)) &&
+      tr.categoria_id
+    );
+    
+    if (movimientosSimilares.length > 0) {
+      // Usar la categoría más frecuente de movimientos similares
+      const frecuencia: Record<string, number> = {};
+      movimientosSimilares.forEach(mov => {
+        frecuencia[mov.categoria_id] = (frecuencia[mov.categoria_id] || 0) + 1;
+      });
+      
+      const categoriaFrecuente = Object.entries(frecuencia)
+        .sort(([,a], [,b]) => (b as number) - (a as number))[0]?.[0];
+      
+      if (categoriaFrecuente && !form.categoria) {
+        setForm(prev => ({ ...prev, categoria: categoriaFrecuente }));
+      }
+    }
+  };
+
+  // Calcular saldo proyectado
+  const calcularSaldoProyectado = React.useMemo(() => {
+    const cuentaSeleccionada = cuentas.find(c => c.id === parseInt(form.cuenta));
+    if (!cuentaSeleccionada || !form.monto || isNaN(Number(form.monto))) {
+      return null;
+    }
+    
+    const saldoActual = parseFloat(cuentaSeleccionada.saldo || 0);
+    const monto = parseFloat(form.monto);
+    let nuevoSaldo = saldoActual;
+
+    if (form.tipo === 'ingreso') {
+      nuevoSaldo = saldoActual + monto;
+    } else if (form.tipo === 'egreso' || form.tipo === 'ahorro') {
+      nuevoSaldo = saldoActual - monto;
+    } else if (form.tipo === 'transferencia') {
+      nuevoSaldo = saldoActual - monto;
+    }
+
+    return {
+      saldoActual,
+      nuevoSaldo,
+      diferencia: nuevoSaldo - saldoActual,
+      quedaNegativo: nuevoSaldo < 0
+    };
+  }, [cuentas, form.cuenta, form.monto, form.tipo]);
+
+  const aplicarPlantilla = (plantilla) => {
+    setForm(prev => ({
+      ...prev,
+      tipo: plantilla.tipo,
+      categoria: plantilla.categoria_id,
+      descripcion: plantilla.descripcion,
+      icon: plantilla.icon,
+      color: plantilla.color,
+      monto: plantilla.montoPromedio
+    }));
+    // Scroll suave al formulario
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const duplicarUltimaTransaccion = () => {
+    if (transaccionesRecientes.length === 0) return;
+    
+    const ultima = transaccionesRecientes[0];
+    setForm(prev => ({
+      ...prev,
+      tipo: ultima.tipo,
+      categoria: ultima.categoria_id || '',
+      descripcion: ultima.descripcion || '',
+      icon: ultima.icon || '💸',
+      color: ultima.color || '#c62828',
+      monto: parseFloat(ultima.monto).toFixed(2),
+      cuenta: ultima.cuenta_id || prev.cuenta,
+      fecha: getToday() // Usar fecha de hoy
+    }));
+    
+    // Scroll al formulario
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Transacción duplicada',
+      text: 'Se han copiado los datos de la última transacción',
+      showConfirmButton: false,
+      timer: 1500,
+      toast: true,
+      position: 'top-end'
+    });
   };
 
   const handleDownloadTemplate = async () => {
@@ -252,6 +427,17 @@ export default function Registro() {
             .then(res => res.ok ? res.json() : [])
             .then(data => setCuentas(Array.isArray(data) ? data : []))
             .catch(() => setCuentas([]));
+          // Refrescar transacciones recientes
+          (await import('../utils/apiFetch')).default(`${API_BASE}/api/transacciones?plataforma=web`)
+            .then(res => res.ok ? res.json() : [])
+            .then(data => {
+              if (Array.isArray(data)) {
+                const sorted = data.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+                setTransaccionesRecientes(sorted.slice(0, 5));
+                generarPlantillas(data);
+              }
+            })
+            .catch(() => {});
           // Emitir evento para que otros componentes (ej. Cuentas, Calendario) puedan refrescarse
           try {
             window.dispatchEvent(new Event('cuentas:refresh'));
@@ -270,8 +456,94 @@ export default function Registro() {
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: '32px auto', background: 'var(--color-card)', borderRadius: 12, boxShadow: '0 2px 8px var(--card-shadow)', padding: 32 }}>
-      <h1 style={{ marginBottom: 16 }}>Registro de Movimientos</h1>
+    <div style={{ maxWidth: 900, margin: '32px auto', padding: '0 16px' }}>
+      {/* Plantillas Rápidas */}
+      {plantillas.length > 0 && (
+        <div style={{ 
+          background: 'var(--color-card)', 
+          borderRadius: 12, 
+          boxShadow: '0 2px 8px var(--card-shadow)', 
+          padding: 24, 
+          marginBottom: 24 
+        }}>
+          <h3 style={{ marginBottom: 16, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 24 }}>⚡</span>
+            Plantillas Rápidas
+          </h3>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
+            gap: 12 
+          }}>
+            {plantillas.map((plantilla, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => aplicarPlantilla(plantilla)}
+                style={{
+                  background: `linear-gradient(135deg, ${plantilla.color}15, ${plantilla.color}30)`,
+                  border: `2px solid ${plantilla.color}50`,
+                  borderRadius: 10,
+                  padding: 16,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  textAlign: 'left'
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div style={{ fontSize: 28, marginBottom: 8 }}>{plantilla.icon}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>
+                  {plantilla.descripcion}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                  ~S/ {plantilla.montoPromedio}
+                </div>
+                <div style={{ 
+                  fontSize: 10, 
+                  color: 'var(--color-text-secondary)', 
+                  marginTop: 6,
+                  opacity: 0.7 
+                }}>
+                  {plantilla.count} {plantilla.count === 1 ? 'vez' : 'veces'}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Formulario Principal */}
+      <div style={{ background: 'var(--color-card)', borderRadius: 12, boxShadow: '0 2px 8px var(--card-shadow)', padding: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h1 style={{ margin: 0 }}>Registro de Movimientos</h1>
+          {transaccionesRecientes.length > 0 && (
+            <button
+              type="button"
+              onClick={duplicarUltimaTransaccion}
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                padding: '8px 16px',
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'all 0.2s',
+                boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              <span style={{ fontSize: 16 }}>🔄</span>
+              Duplicar última
+            </button>
+          )}
+        </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <button type="button" onClick={handleDownloadTemplate} style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 600 }}>
           Descargar plantilla
@@ -324,19 +596,21 @@ export default function Registro() {
         )}
         <div>
           <label>Monto:&nbsp;</label>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ marginRight: 4, fontWeight: 600 }}>S/</span>
-            <input
-              type="number"
-              name="monto"
-              value={form.monto}
-              onChange={handleChange}
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              pattern="[0-9]+([\.,][0-9]+)?"
-              style={{ padding: 6, borderRadius: 6, width: '100%' }}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+              <span style={{ marginRight: 4, fontWeight: 600 }}>S/</span>
+              <input
+                type="text"
+                name="monto"
+                value={form.monto}
+                onChange={handleChange}
+                placeholder="Ej: 50+20+30"
+                style={{ padding: 6, borderRadius: 6, width: '100%' }}
+              />
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', alignSelf: 'flex-start', paddingLeft: 26 }}>
+              💡 Puedes escribir operaciones: 50+20, 100-15, 25*4
+            </div>
           </div>
         </div>
         {form.tipo !== 'transferencia' && (
@@ -348,6 +622,58 @@ export default function Registro() {
                 <option key={cat.id} value={cat.id}>{cat.nombre}</option>
               ))}
             </select>
+          </div>
+        )}
+        {/* Vista Previa del Saldo */}
+        {calcularSaldoProyectado && (
+          <div style={{
+            background: calcularSaldoProyectado.quedaNegativo ? '#ffebee' : '#e8f5e9',
+            border: `2px solid ${calcularSaldoProyectado.quedaNegativo ? '#ef5350' : '#66bb6a'}`,
+            borderRadius: 10,
+            padding: 16,
+            marginTop: 8
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 20 }}>{calcularSaldoProyectado.quedaNegativo ? '⚠️' : '💰'}</span>
+              <span style={{ fontWeight: 600, fontSize: 14, color: calcularSaldoProyectado.quedaNegativo ? '#c62828' : '#2e7d32' }}>
+                Vista Previa del Saldo
+              </span>
+            </div>
+            <div style={{ fontSize: 13, color: '#424242', lineHeight: 1.6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span>Saldo actual:</span>
+                <span style={{ fontWeight: 600 }}>S/ {calcularSaldoProyectado.saldoActual.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span>Movimiento:</span>
+                <span style={{ fontWeight: 600, color: calcularSaldoProyectado.diferencia < 0 ? '#d32f2f' : '#388e3c' }}>
+                  {calcularSaldoProyectado.diferencia > 0 ? '+' : ''}S/ {calcularSaldoProyectado.diferencia.toFixed(2)}
+                </span>
+              </div>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                paddingTop: 8, 
+                borderTop: '1px solid #00000020',
+                fontWeight: 700,
+                fontSize: 15
+              }}>
+                <span>Nuevo saldo:</span>
+                <span style={{ color: calcularSaldoProyectado.quedaNegativo ? '#c62828' : '#2e7d32' }}>
+                  S/ {calcularSaldoProyectado.nuevoSaldo.toFixed(2)}
+                </span>
+              </div>
+            </div>
+            {calcularSaldoProyectado.quedaNegativo && (
+              <div style={{ 
+                marginTop: 12, 
+                fontSize: 12, 
+                color: '#c62828',
+                fontWeight: 600 
+              }}>
+                ⚠️ Advertencia: Tu saldo quedará en negativo
+              </div>
+            )}
           </div>
         )}
         {form.tipo !== 'transferencia' ? (
@@ -410,6 +736,89 @@ export default function Registro() {
           {form.tipo === 'transferencia' ? 'Guardar Transferencia' : 'Guardar Movimiento'}
         </button>
       </form>
+      </div>
+
+      {/* Transacciones Recientes */}
+      {transaccionesRecientes.length > 0 && (
+        <div style={{ 
+          background: 'var(--color-card)', 
+          borderRadius: 12, 
+          boxShadow: '0 2px 8px var(--card-shadow)', 
+          padding: 24, 
+          marginTop: 24 
+        }}>
+          <h3 style={{ marginBottom: 16, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 24 }}>📝</span>
+            Transacciones Recientes
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {transaccionesRecientes.map((tr) => {
+              const esEgreso = tr.tipo === 'egreso' || tr.tipo === 'ahorro';
+              const esTransferencia = tr.tipo === 'transferencia';
+              return (
+                <div
+                  key={tr.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: 16,
+                    background: 'var(--color-bg)',
+                    borderRadius: 10,
+                    border: '1px solid var(--color-border)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 10,
+                        background: tr.color ? `${tr.color}20` : '#6c4fa120',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 22,
+                        border: `2px solid ${tr.color || '#6c4fa1'}40`
+                      }}
+                    >
+                      {tr.icon || '💸'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ 
+                        fontWeight: 600, 
+                        fontSize: 14, 
+                        color: 'var(--color-text)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {tr.descripcion || 'Sin descripción'}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                        {new Date(tr.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {esTransferencia && ' • Transferencia'}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: esEgreso ? '#d32f2f' : esTransferencia ? '#1976d2' : '#388e3c',
+                      whiteSpace: 'nowrap',
+                      marginLeft: 12
+                    }}
+                  >
+                    {esEgreso ? '-' : esTransferencia ? '' : '+'}S/ {parseFloat(tr.monto).toFixed(2)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
