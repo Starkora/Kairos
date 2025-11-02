@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import apiFetch from '../utils/apiFetch';
+import API_BASE from '../utils/apiBase';
+import { getToken } from '../utils/auth';
 import Swal from 'sweetalert2';
 
 type Presupuesto = { id?: number; categoria_id: number; categoria?: string; anio: number; mes: number; monto: number; gastado?: number };
@@ -16,11 +18,22 @@ export default function Presupuestos() {
     setLoading(true);
     try {
       const [resBudgets, resCats] = await Promise.all([
-        apiFetch(`/api/presupuestos?anio=${a}&mes=${m}`),
-        apiFetch(`/api/categorias/egreso?plataforma=web`),
+        fetch(`${API_BASE}/api/presupuestos?anio=${a}&mes=${m}`, { headers: { 'Authorization': 'Bearer ' + getToken() } }),
+        fetch(`${API_BASE}/api/categorias/egreso?plataforma=web`, { headers: { 'Authorization': 'Bearer ' + getToken() } }),
       ]);
-      const dataBudgets = resBudgets.ok ? await resBudgets.json() : [];
-      const dataCats = resCats.ok ? await resCats.json() : [];
+      const parseJson = async (res: Response) => {
+        if (!res.ok) return [];
+        const ct = res.headers.get('content-type') || '';
+        if (!/application\/json/i.test(ct)) {
+          // Evitar crash si el backend devuelve HTML
+          const text = await res.text();
+          console.error('[Presupuestos] Respuesta no JSON:', res.url || '(sin url)', 'status:', res.status, 'content-type:', ct, 'preview:', text.slice(0, 160));
+          return [];
+        }
+        try { return await res.json(); } catch { return []; }
+      };
+      const dataBudgets = await parseJson(resBudgets);
+      const dataCats = await parseJson(resCats);
       setCategorias(Array.isArray(dataCats) ? dataCats : []);
       // Unir: todas las categorías con presupuesto (o 0)
       const mapByCat = new Map<number, Presupuesto>();
@@ -47,9 +60,9 @@ export default function Presupuestos() {
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
 
   const guardar = async (catId: number, monto: number) => {
-    await apiFetch('/api/presupuestos', {
+    await fetch(`${API_BASE}/api/presupuestos`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
       body: JSON.stringify({ categoria_id: catId, anio, mes, monto })
     });
     await cargar();
@@ -69,9 +82,9 @@ export default function Presupuestos() {
     if (!res.isConfirmed) return;
     // Ejecutar en paralelo controlado
     const payloads = items.map(it => ({ categoria_id: it.categoria_id, anio, mes, monto: Number(it.monto || 0) }));
-    await Promise.all(payloads.map(p => apiFetch('/api/presupuestos', {
+    await Promise.all(payloads.map(p => fetch(`${API_BASE}/api/presupuestos`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
       body: JSON.stringify(p)
     })));
     await cargar();
