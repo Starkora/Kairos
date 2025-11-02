@@ -283,28 +283,28 @@ export default function Presupuestos() {
           {meses.map((n,i) => <option key={i+1} value={i+1}>{n}</option>)}
         </select>
         {/* Controles de umbrales */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-card)', border: '1px solid var(--color-input-border)', padding: '6px 10px', borderRadius: 10 }}>
-          <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>Umbrales:</span>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-card)', border: '1px solid var(--color-input-border)', padding: '6px 10px', borderRadius: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>Umbrales:</span>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>
             Alerta
             <input type="number" min={10} max={300} value={thresholdWarn}
               onChange={e => setThresholdWarn(() => {
                 const v = Math.max(10, Math.min(300, Number(e.target.value || 0)));
                 return v;
               })}
-              style={{ width: 72 }} />%
+              style={{ width: 60 }} />%
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text)' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>
             Tope
             <input type="number" min={10} max={300} value={thresholdDanger}
               onChange={e => setThresholdDanger(() => {
                 const v = Math.max(10, Math.min(300, Number(e.target.value || 0)));
                 return v;
               })}
-              style={{ width: 72 }} />%
+              style={{ width: 60 }} />%
           </label>
           {/* Presets rápidos */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             {[
               { w: 70, d: 90 },
               { w: 80, d: 100 },
@@ -313,13 +313,13 @@ export default function Presupuestos() {
               <button key={`${preset.w}-${preset.d}`}
                 onClick={() => { setThresholdWarn(preset.w); setThresholdDanger(preset.d); }}
                 title={`Alerta ${preset.w}% / Tope ${preset.d}%`}
-                style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>
+                style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap' }}>
                 {preset.w}/{preset.d}
               </button>
             ))}
             <button onClick={() => { setThresholdWarn(80); setThresholdDanger(100); }}
               title="Restablecer a 80/100"
-              style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>
+              style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap' }}>
               Restablecer
             </button>
           </div>
