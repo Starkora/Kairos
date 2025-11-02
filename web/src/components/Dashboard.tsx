@@ -2,11 +2,14 @@ import React from 'react';
 import API_BASE from '../utils/apiBase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { getToken } from '../utils/auth';
-import { FaWallet, FaArrowDown, FaArrowUp, FaUniversity, FaMoneyBillWave, FaPiggyBank, FaCalendarAlt } from 'react-icons/fa';
+import { FaWallet, FaArrowDown, FaArrowUp, FaUniversity, FaMoneyBillWave, FaPiggyBank, FaCalendarAlt, FaPlus, FaChartLine, FaBullseye, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
 import type { IconType } from 'react-icons';
+import { useNavigate } from 'react-router-dom';
 
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  
   // Parser robusto para montos: acepta "1.234,56", "1,234.56", "1234,56", "1234.56", números y null/undefined
   const parseMonto = (v) => {
     if (typeof v === 'number') return v;
@@ -38,6 +41,9 @@ export default function Dashboard() {
   const [loading, setLoading] = React.useState(true);
   const [cuentas, setCuentas] = React.useState([]);
   const [cuentaSeleccionada, setCuentaSeleccionada] = React.useState<number | 'all'>('all');
+  const [presupuestos, setPresupuestos] = React.useState([]);
+  const [metas, setMetas] = React.useState([]);
+  const [deudas, setDeudas] = React.useState([]);
   // Filtro de año
   const currentYear = new Date().getFullYear();
   const [year, setYear] = React.useState(currentYear);
@@ -73,6 +79,36 @@ export default function Dashboard() {
         setCuentaSeleccionada('all');
       })
       .catch(() => setCuentas([]));
+  }, []);
+
+  // Cargar presupuestos
+  React.useEffect(() => {
+    fetch(`${API_BASE}/api/categorias-cuenta?plataforma=web`, {
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    })
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setPresupuestos(Array.isArray(data) ? data : []))
+      .catch(() => setPresupuestos([]));
+  }, []);
+
+  // Cargar metas
+  React.useEffect(() => {
+    fetch(`${API_BASE}/api/metas?plataforma=web`, {
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    })
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setMetas(Array.isArray(data) ? data : []))
+      .catch(() => setMetas([]));
+  }, []);
+
+  // Cargar deudas
+  React.useEffect(() => {
+    fetch(`${API_BASE}/api/deudas?plataforma=web`, {
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    })
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setDeudas(Array.isArray(data) ? data : []))
+      .catch(() => setDeudas([]));
   }, []);
 
   // Filtrar movimientos: mostrar solo los del año seleccionado y ya aplicados o cuya fecha es <= hoy
@@ -307,6 +343,153 @@ export default function Dashboard() {
   const gastoChange = calculateChange(currentMonthData.gasto, previousMonthData.gasto);
   const ahorroChange = calculateChange(currentMonthData.ahorro, previousMonthData.ahorro);
 
+  // Balance proyectado fin de mes
+  const getBalanceProyectado = () => {
+    const endOfMonth = new Date(currentYearForComparison, currentMonth + 1, 0);
+    const pendientes = movimientos.filter(m => {
+      if (!m.fecha) return false;
+      const d = new Date(m.fecha);
+      if (d > endOfMonth) return false;
+      if (typeof m.applied !== 'undefined' && m.applied !== null) {
+        return Number(m.applied) === 0;
+      }
+      return d > new Date();
+    });
+    const ingresosPendientes = pendientes.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const egresosPendientes = pendientes.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    return saldoActual + ingresosPendientes - egresosPendientes;
+  };
+
+  const balanceProyectado = getBalanceProyectado();
+
+  // Alertas inteligentes
+  const getAlertas = () => {
+    const alertas: Array<{ tipo: 'warning' | 'success' | 'info' | 'danger', mensaje: string, icono: any }> = [];
+    
+    // Presupuestos cercanos al límite
+    presupuestos.forEach(p => {
+      if (p.limite && p.limite > 0) {
+        const gastado = filteredMovs
+          .filter(m => m.tipo === 'egreso' && m.categoria === p.categoria)
+          .reduce((acc, m) => acc + parseMonto(m.monto), 0);
+        const porcentaje = (gastado / p.limite) * 100;
+        if (porcentaje >= 85 && porcentaje < 100) {
+          alertas.push({
+            tipo: 'warning',
+            mensaje: `Presupuesto "${p.categoria}" al ${porcentaje.toFixed(0)}%`,
+            icono: FaExclamationTriangle
+          });
+        } else if (porcentaje >= 100) {
+          alertas.push({
+            tipo: 'danger',
+            mensaje: `Presupuesto "${p.categoria}" excedido (${porcentaje.toFixed(0)}%)`,
+            icono: FaExclamationTriangle
+          });
+        }
+      }
+    });
+
+    // Metas cercanas a cumplirse
+    metas.forEach(m => {
+      if (m.monto_objetivo && m.monto_objetivo > 0) {
+        const actual = parseMonto(m.monto_actual || 0);
+        const porcentaje = (actual / m.monto_objetivo) * 100;
+        if (porcentaje >= 70 && porcentaje < 100) {
+          alertas.push({
+            tipo: 'success',
+            mensaje: `Meta "${m.nombre}" al ${porcentaje.toFixed(0)}% - ¡Ya casi!`,
+            icono: FaBullseye
+          });
+        } else if (porcentaje >= 100) {
+          alertas.push({
+            tipo: 'success',
+            mensaje: `¡Meta "${m.nombre}" cumplida!`,
+            icono: FaCheckCircle
+          });
+        }
+      }
+    });
+
+    // Deudas próximas a vencer
+    deudas.forEach(d => {
+      if (d.fecha_vencimiento) {
+        const vencimiento = new Date(d.fecha_vencimiento);
+        const hoy = new Date();
+        const diffDays = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays <= 7) {
+          alertas.push({
+            tipo: 'danger',
+            mensaje: `Deuda "${d.descripcion || 'Sin nombre'}" vence en ${diffDays} día${diffDays !== 1 ? 's' : ''}`,
+            icono: FaExclamationTriangle
+          });
+        }
+      }
+    });
+
+    // Movimientos pendientes
+    const pendientesCount = movimientos.filter(m => {
+      if (typeof m.applied !== 'undefined' && m.applied !== null) {
+        return Number(m.applied) === 0;
+      }
+      if (!m.fecha) return false;
+      const d = new Date(m.fecha);
+      return d <= new Date() && d > today;
+    }).length;
+
+    if (pendientesCount > 0) {
+      alertas.push({
+        tipo: 'info',
+        mensaje: `${pendientesCount} movimiento${pendientesCount !== 1 ? 's' : ''} pendiente${pendientesCount !== 1 ? 's' : ''} por aplicar`,
+        icono: FaCalendarAlt
+      });
+    }
+
+    return alertas.slice(0, 5); // Máximo 5 alertas
+  };
+
+  const alertas = getAlertas();
+
+  // Resumen semanal
+  const getResumenSemanal = () => {
+    const hoy = new Date();
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+    inicioSemana.setHours(0, 0, 0, 0);
+    
+    const finSemana = new Date(inicioSemana);
+    finSemana.setDate(inicioSemana.getDate() + 6);
+    finSemana.setHours(23, 59, 59, 999);
+
+    const movsEstaSemana = movimientos.filter(m => {
+      if (!m.fecha) return false;
+      const d = new Date(m.fecha);
+      return d >= inicioSemana && d <= finSemana;
+    });
+
+    const inicioSemanaAnterior = new Date(inicioSemana);
+    inicioSemanaAnterior.setDate(inicioSemana.getDate() - 7);
+    const finSemanaAnterior = new Date(inicioSemana);
+    finSemanaAnterior.setDate(inicioSemana.getDate() - 1);
+
+    const movsSemanaAnterior = movimientos.filter(m => {
+      if (!m.fecha) return false;
+      const d = new Date(m.fecha);
+      return d >= inicioSemanaAnterior && d <= finSemanaAnterior;
+    });
+
+    const gastosEstaSemana = movsEstaSemana.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const gastosSemanaAnterior = movsSemanaAnterior.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const promedioDiario = gastosEstaSemana / 7;
+
+    const cambioSemanal = gastosSemanaAnterior > 0 
+      ? ((gastosEstaSemana - gastosSemanaAnterior) / gastosSemanaAnterior) * 100 
+      : 0;
+
+    return { gastosEstaSemana, cambioSemanal, promedioDiario };
+  };
+
+  const resumenSemanal = getResumenSemanal();
+
   // Datos para gráficos (totales por mes, siempre 12 meses)
   const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   // Normalizar fechas y asegurar que todos los meses estén presentes
@@ -374,6 +557,229 @@ export default function Dashboard() {
           </select>
         </div>
       </div>
+
+      {/* Quick Actions y Widgets superiores */}
+      <div style={{ display: 'flex', gap: 24, marginBottom: 24, flexWrap: 'wrap' }}>
+        {/* Quick Actions */}
+        <div className="card" style={{ flex: 1, minWidth: 300 }}>
+          <h3 style={{ marginBottom: 16, color: 'var(--color-text)' }}>Acciones Rápidas</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+            <button
+              onClick={() => navigate('/transacciones')}
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 12,
+                padding: '16px 12px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                fontWeight: 600,
+                fontSize: 14,
+                transition: 'transform 0.2s, box-shadow 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              {React.createElement(FaPlus as any, { size: 24 })}
+              <span>Nueva Transacción</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/asesor-financiero')}
+              style={{
+                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 12,
+                padding: '16px 12px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                fontWeight: 600,
+                fontSize: 14,
+                transition: 'transform 0.2s, box-shadow 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 87, 108, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              {React.createElement(FaChartLine as any, { size: 24 })}
+              <span>Asesor Financiero</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/presupuestos')}
+              style={{
+                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 12,
+                padding: '16px 12px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                fontWeight: 600,
+                fontSize: 14,
+                transition: 'transform 0.2s, box-shadow 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(79, 172, 254, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              {React.createElement(FaMoneyBillWave as any, { size: 24 })}
+              <span>Presupuestos</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/metas')}
+              style={{
+                background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 12,
+                padding: '16px 12px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                fontWeight: 600,
+                fontSize: 14,
+                transition: 'transform 0.2s, box-shadow 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(250, 112, 154, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              {React.createElement(FaBullseye as any, { size: 24 })}
+              <span>Mis Metas</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Balance Proyectado y Resumen Semanal */}
+        <div style={{ flex: 1, minWidth: 300, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Balance Proyectado */}
+          <div className="card" style={{ flex: 1 }}>
+            <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-text)', fontSize: 15 }}>Balance Proyectado Fin de Mes</h4>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {React.createElement(FaWallet as any, { size: 32, color: balanceProyectado >= 0 ? '#2e7d32' : '#e53935' })}
+              <div>
+                <div style={{ fontSize: 28, fontWeight: 'bold', color: balanceProyectado >= 0 ? '#2e7d32' : '#e53935' }}>
+                  S/ {balanceProyectado.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                  Saldo actual + movimientos pendientes
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Resumen Semanal */}
+          <div className="card" style={{ flex: 1 }}>
+            <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-text)', fontSize: 15 }}>Resumen Semanal</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>Gastos esta semana:</span>
+                <span style={{ color: 'var(--color-text)', fontWeight: 600, fontSize: 16 }}>
+                  S/ {resumenSemanal.gastosEstaSemana.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>vs semana anterior:</span>
+                <span style={{ 
+                  color: resumenSemanal.cambioSemanal <= 0 ? '#2e7d32' : '#e53935', 
+                  fontWeight: 600,
+                  fontSize: 14
+                }}>
+                  {resumenSemanal.cambioSemanal >= 0 ? '+' : ''}{resumenSemanal.cambioSemanal.toFixed(1)}%
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>Promedio diario:</span>
+                <span style={{ color: 'var(--color-text)', fontWeight: 600, fontSize: 14 }}>
+                  S/ {resumenSemanal.promedioDiario.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Alertas Inteligentes */}
+      {alertas.length > 0 && (
+        <div className="card" style={{ marginBottom: 24, background: 'var(--color-card)' }}>
+          <h3 style={{ marginBottom: 16, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {React.createElement(FaExclamationTriangle as any, { size: 20 })}
+            Alertas y Notificaciones
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {alertas.map((alerta, idx) => {
+              const bgColors = {
+                warning: 'rgba(255, 152, 0, 0.1)',
+                danger: 'rgba(244, 67, 54, 0.1)',
+                success: 'rgba(76, 175, 80, 0.1)',
+                info: 'rgba(33, 150, 243, 0.1)'
+              };
+              const borderColors = {
+                warning: '#ff9800',
+                danger: '#f44336',
+                success: '#4caf50',
+                info: '#2196f3'
+              };
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    background: bgColors[alerta.tipo],
+                    border: `2px solid ${borderColors[alerta.tipo]}`,
+                    borderRadius: 8,
+                    padding: '12px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12
+                  }}
+                >
+                  {React.createElement(alerta.icono as any, { size: 20, color: borderColors[alerta.tipo] })}
+                  <span style={{ color: 'var(--color-text)', fontWeight: 500, flex: 1 }}>
+                    {alerta.mensaje}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Fila de indicadores/resumen */}
       <div style={{ display: 'flex', gap: 24, margin: '24px 0 32px 0', justifyContent: 'space-between', flexWrap: 'wrap' }}>
         {indicadores.map((item, idx) => {
@@ -641,7 +1047,43 @@ export default function Dashboard() {
 
       {/* Movimientos programados / pendientes separados por tipo */}
       <div className="card" style={{ marginTop: 24 }}>
-        <h3>Movimientos programados</h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+          <h3 style={{ margin: 0 }}>Movimientos Programados</h3>
+          {(() => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const pendientesTotal = movimientos.filter(m => {
+              try {
+                if (!incluirTransferencias && /\[TRANSFER#/i.test(String(m.descripcion || ''))) return false;
+                if (cuentaSeleccionada !== 'all') {
+                  const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
+                  if (!isNaN(cid) && cid !== Number(cuentaSeleccionada)) return false;
+                }
+                if (typeof m.applied !== 'undefined' && m.applied !== null) {
+                  return Number(m.applied) === 0;
+                }
+                if (!m.fecha) return false;
+                const movDate = new Date(m.fecha);
+                movDate.setHours(0, 0, 0, 0);
+                return movDate.getTime() > today.getTime();
+              } catch (e) {
+                return false;
+              }
+            });
+            return (
+              <span style={{
+                background: '#667eea',
+                color: '#fff',
+                padding: '6px 16px',
+                borderRadius: 20,
+                fontSize: 14,
+                fontWeight: 600
+              }}>
+                {pendientesTotal.length} pendiente{pendientesTotal.length !== 1 ? 's' : ''}
+              </span>
+            );
+          })()}
+        </div>
         {(() => {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
@@ -681,48 +1123,133 @@ export default function Dashboard() {
             total: pendientes.filter(m => m.tipo === tipo).reduce((acc, m) => acc + Number(m.monto || 0), 0)
           }));
 
+          const handleMarcarAplicado = async (movimiento: any) => {
+            try {
+              const response = await fetch(`${API_BASE}/api/transacciones/${movimiento.id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify({
+                  ...movimiento,
+                  applied: 1
+                })
+              });
+              
+              if (response.ok) {
+                // Actualizar el estado local
+                setMovimientos(prev => prev.map(m => 
+                  m.id === movimiento.id ? { ...m, applied: 1 } : m
+                ));
+              }
+            } catch (error) {
+              console.error('Error al marcar como aplicado:', error);
+            }
+          };
+
           return (
             <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {pendientesPorTipo.map(({ tipo, lista, total }) => (
-                <div key={tipo} style={{ minWidth: 260, flex: 1 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 8, textTransform: 'capitalize' }}>
-                    {tipo === 'ingreso' ? 'Ingresos' : tipo === 'egreso' ? 'Egresos' : 'Ahorro'} pendientes
-                  </div>
-                  <div style={{ fontSize: 15, marginBottom: 4 }}>Cantidad: <b>{lista.length}</b></div>
-                  <div style={{ fontSize: 15, marginBottom: 8 }}>Monto total: <b>S/ {total.toLocaleString()}</b></div>
-                  <div style={{ marginBottom: 8, color: '#666' }}>Todos los movimientos programados</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 320, overflowY: 'auto', paddingRight: 2 }}>
-                    {lista.length === 0 ? (
-                      <div style={{ color: '#bbb', fontSize: 15, textAlign: 'center', padding: 12 }}>No hay movimientos programados</div>
-                    ) : (
-                      [...lista].sort((a, b) => {
-                        const fa = a.fecha ? new Date(a.fecha).getTime() : 0;
-                        const fb = b.fecha ? new Date(b.fecha).getTime() : 0;
-                        return fa - fb;
-                      }).map((p, idx) => (
-                        <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
-                          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            <div style={{ color: '#60a5fa', display: 'flex', alignItems: 'center' }}>
-                              {React.createElement(FaCalendarAlt as any, { size: 20 })}
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 600, color: 'var(--color-text)' }}>{p.categoria || 'Sin categoría'}</div>
-                              <div style={{ fontSize: 12, color: 'var(--color-text-secondary, #999)' }}>{p.cuenta || p.cuenta_nombre || ''}</div>
-                              {p.descripcion && (
-                                <div style={{ fontSize: 12, color: 'var(--color-text-secondary, #999)', marginTop: 2, fontStyle: 'italic' }}>{p.descripcion}</div>
-                              )}
-                            </div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>S/ {Number(p.monto || 0).toLocaleString()}</div>
-                            <div style={{ fontSize: 12, color: 'var(--color-text-secondary, #999)' }}>{p.fecha ? new Date(p.fecha).toLocaleDateString() : ''}</div>
-                          </div>
+              {pendientesPorTipo.map(({ tipo, lista, total }) => {
+                const colorConfig = {
+                  ingreso: { bg: 'rgba(56, 142, 60, 0.1)', border: '#388e3c', text: 'Ingresos' },
+                  egreso: { bg: 'rgba(251, 192, 45, 0.1)', border: '#fbc02d', text: 'Egresos' },
+                  ahorro: { bg: 'rgba(108, 79, 161, 0.1)', border: '#6c4fa1', text: 'Ahorro' }
+                };
+                const config = colorConfig[tipo];
+                
+                return (
+                  <div key={tipo} style={{ minWidth: 260, flex: 1 }}>
+                    <div style={{ 
+                      fontWeight: 'bold', 
+                      fontSize: 18, 
+                      marginBottom: 12, 
+                      padding: '8px 12px',
+                      background: config.bg,
+                      border: `2px solid ${config.border}`,
+                      borderRadius: 8,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span>{config.text}</span>
+                      <span style={{
+                        background: config.border,
+                        color: '#fff',
+                        padding: '4px 10px',
+                        borderRadius: 12,
+                        fontSize: 13,
+                        fontWeight: 600
+                      }}>
+                        {lista.length}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 15, marginBottom: 12, padding: '0 4px' }}>
+                      Monto total: <b style={{ color: config.border }}>S/ {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</b>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 400, overflowY: 'auto', paddingRight: 2 }}>
+                      {lista.length === 0 ? (
+                        <div style={{ color: 'var(--color-text-secondary)', fontSize: 15, textAlign: 'center', padding: 12 }}>
+                          No hay movimientos programados
                         </div>
-                      ))
-                    )}
+                      ) : (
+                        [...lista].sort((a, b) => {
+                          const fa = a.fecha ? new Date(a.fecha).getTime() : 0;
+                          const fb = b.fecha ? new Date(b.fecha).getTime() : 0;
+                          return fa - fb;
+                        }).map((p, idx) => (
+                          <div key={p.id || idx} style={{ 
+                            background: 'var(--color-card-alt)', 
+                            padding: 12, 
+                            borderRadius: 8, 
+                            boxShadow: '0 2px 4px var(--card-shadow)',
+                            border: `1px solid ${config.border}33`
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                              <div style={{ display: 'flex', gap: 12, alignItems: 'center', flex: 1 }}>
+                                <div style={{ color: '#60a5fa', display: 'flex', alignItems: 'center' }}>
+                                  {React.createElement(FaCalendarAlt as any, { size: 20 })}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontWeight: 600, color: 'var(--color-text)' }}>{p.categoria || 'Sin categoría'}</div>
+                                  <div style={{ fontSize: 12, color: 'var(--color-text-secondary, #999)' }}>{p.cuenta || p.cuenta_nombre || ''}</div>
+                                  {p.descripcion && (
+                                    <div style={{ fontSize: 12, color: 'var(--color-text-secondary, #999)', marginTop: 2, fontStyle: 'italic' }}>{p.descripcion}</div>
+                                  )}
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: 16 }}>S/ {Number(p.monto || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                                <div style={{ fontSize: 12, color: 'var(--color-text-secondary, #999)' }}>{p.fecha ? new Date(p.fecha).toLocaleDateString() : ''}</div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleMarcarAplicado(p)}
+                              style={{
+                                width: '100%',
+                                background: config.border,
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: 6,
+                                padding: '8px 12px',
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'opacity 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                            >
+                              {React.createElement(FaCheckCircle as any, { size: 14, style: { marginRight: 6 } })}
+                              Marcar como aplicado
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           );
         })()}
