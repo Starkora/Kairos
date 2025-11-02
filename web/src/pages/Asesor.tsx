@@ -35,7 +35,8 @@ export default function Asesor() {
   // Selector de mes (YYYY-MM). Por defecto, mes actual.
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const [selectedMonth, setSelectedMonth] = useState<string>(defaultMonth);
+    const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [expandedHorizons, setExpandedHorizons] = useState<Set<number>>(new Set());
 
   const fetchData = async () => {
     setLoading(true);
@@ -449,23 +450,101 @@ export default function Asesor() {
                     </tr>
                   </thead>
                   <tbody>
-                    {meta.forecast.map((f: any, idx: number) => (
-                      <tr key={f.days} style={{ background: idx%2 ? '#1f2937' : '#111827' }}>
-                        <td style={{ padding: '8px 10px' }}>{f.days} días</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', cursor: 'help' }} title={`Ingresos proyectados incluyen:\n• Movimientos recurrentes de ingreso/ahorro estimados a ${f.days} días\n• Movimientos futuros pendientes (applied=0) con fecha en este horizonte\n\nCálculo aproximado basado en frecuencias configuradas.`}>
-                          S/ {Number(f.projectedIngresos||0).toFixed(2)}
-                        </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', cursor: 'help' }} title={`Egresos proyectados incluyen:\n• Movimientos recurrentes de egreso estimados a ${f.days} días\n• Movimientos futuros pendientes (applied=0) con fecha en este horizonte\n• Deudas con vencimiento en los próximos ${f.days} días\n\nCálculo aproximado basado en frecuencias configuradas.`}>
-                          S/ {Number(f.projectedEgresos||0).toFixed(2)}
-                        </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', color: Number(f.net||0) < 0 ? '#ef4444' : '#22c55e', cursor: 'help' }} title={`Neto = Ingresos proyectados - Egresos proyectados\n\nEste es el flujo neto esperado en ${f.days} días.`}>
-                          S/ {Number(f.net||0).toFixed(2)}
-                        </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800, color: Number(f.projectedBalanceEnd||0) < 0 ? '#ef4444' : 'var(--color-text)', cursor: 'help' }} title={`Saldo proyectado = Saldo actual (${Number(f.startingBalance||0).toFixed(2)}) + Flujo neto (${Number(f.net||0).toFixed(2)})\n\nEste es el saldo que tendrías al final de ${f.days} días si todo ocurre según lo proyectado.`}>
-                          S/ {Number(f.projectedBalanceEnd||0).toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
+                    {meta.forecast.map((f: any, idx: number) => {
+                      const isExpanded = expandedHorizons.has(f.days);
+                      return (
+                        <React.Fragment key={f.days}>
+                          <tr style={{ background: idx%2 ? '#1f2937' : '#111827' }}>
+                            <td style={{ padding: '8px 10px' }}>
+                              <button 
+                                onClick={() => {
+                                  const newSet = new Set(expandedHorizons);
+                                  if (isExpanded) newSet.delete(f.days);
+                                  else newSet.add(f.days);
+                                  setExpandedHorizons(newSet);
+                                }}
+                                style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', padding: 0, marginRight: 8 }}
+                              >
+                                {isExpanded ? '▼' : '▶'}
+                              </button>
+                              {f.days} días
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', cursor: 'help' }} title={`Ingresos proyectados incluyen:\n• Movimientos recurrentes de ingreso/ahorro estimados a ${f.days} días\n• Movimientos futuros pendientes (applied=0) con fecha en este horizonte\n\nCálculo aproximado basado en frecuencias configuradas.`}>
+                              S/ {Number(f.projectedIngresos||0).toFixed(2)}
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', cursor: 'help' }} title={`Egresos proyectados incluyen:\n• Movimientos recurrentes de egreso estimados a ${f.days} días\n• Movimientos futuros pendientes (applied=0) con fecha en este horizonte\n• Deudas con vencimiento en los próximos ${f.days} días\n\nCálculo aproximado basado en frecuencias configuradas.`}>
+                              S/ {Number(f.projectedEgresos||0).toFixed(2)}
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', color: Number(f.net||0) < 0 ? '#ef4444' : '#22c55e', cursor: 'help' }} title={`Neto = Ingresos proyectados - Egresos proyectados\n\nEste es el flujo neto esperado en ${f.days} días.`}>
+                              S/ {Number(f.net||0).toFixed(2)}
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800, color: Number(f.projectedBalanceEnd||0) < 0 ? '#ef4444' : 'var(--color-text)', cursor: 'help' }} title={`Saldo proyectado = Saldo actual (${Number(f.startingBalance||0).toFixed(2)}) + Flujo neto (${Number(f.net||0).toFixed(2)})\n\nEste es el saldo que tendrías al final de ${f.days} días si todo ocurre según lo proyectado.`}>
+                              S/ {Number(f.projectedBalanceEnd||0).toFixed(2)}
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr style={{ background: idx%2 ? '#1f2937' : '#111827' }}>
+                              <td colSpan={5} style={{ padding: '12px 20px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                  {/* Ingresos Detail */}
+                                  <div>
+                                    <div style={{ fontWeight: 700, marginBottom: 8, color: '#22c55e' }}>
+                                      💰 Ingresos Detallados (S/ {Number(f.projectedIngresos||0).toFixed(2)})
+                                    </div>
+                                    {Array.isArray(f.ingresosDetail) && f.ingresosDetail.length > 0 ? (
+                                      <div style={{ fontSize: 13, opacity: 0.9 }}>
+                                        {f.ingresosDetail.map((item: any, i: number) => (
+                                          <div key={i} style={{ marginBottom: 6, padding: '6px 8px', background: 'rgba(34,197,94,0.1)', borderRadius: 6 }}>
+                                            <div style={{ fontWeight: 600 }}>{item.descripcion}</div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.8 }}>
+                                              <span>
+                                                {item.tipo === 'recurrente' ? `📅 ${item.frecuencia}` : '📌 Futuro'} 
+                                                {' • '}{item.fecha}
+                                              </span>
+                                              <span style={{ fontWeight: 700 }}>S/ {Number(item.monto||0).toFixed(2)}</span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div style={{ fontSize: 13, opacity: 0.6, fontStyle: 'italic' }}>
+                                        No hay ingresos proyectados en este horizonte.
+                                      </div>
+                                    )}
+                                  </div>
+                                  {/* Egresos Detail */}
+                                  <div>
+                                    <div style={{ fontWeight: 700, marginBottom: 8, color: '#ef4444' }}>
+                                      💸 Egresos Detallados (S/ {Number(f.projectedEgresos||0).toFixed(2)})
+                                    </div>
+                                    {Array.isArray(f.egresosDetail) && f.egresosDetail.length > 0 ? (
+                                      <div style={{ fontSize: 13, opacity: 0.9 }}>
+                                        {f.egresosDetail.map((item: any, i: number) => (
+                                          <div key={i} style={{ marginBottom: 6, padding: '6px 8px', background: 'rgba(239,68,68,0.1)', borderRadius: 6 }}>
+                                            <div style={{ fontWeight: 600 }}>{item.descripcion}</div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.8 }}>
+                                              <span>
+                                                {item.tipo === 'recurrente' ? `📅 ${item.frecuencia}` : item.tipo === 'deuda' ? '⚠️ Deuda' : '📌 Futuro'} 
+                                                {' • '}{item.fecha}
+                                              </span>
+                                              <span style={{ fontWeight: 700 }}>S/ {Number(item.monto||0).toFixed(2)}</span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div style={{ fontSize: 13, opacity: 0.6, fontStyle: 'italic' }}>
+                                        No hay egresos proyectados en este horizonte.
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

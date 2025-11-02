@@ -365,7 +365,7 @@ exports.list = async (req, res) => {
         }
         // Recurrentes: estimación mensual por frecuencia
         const [recRowsQ] = await timedQuery(
-          `SELECT tipo, monto, frecuencia, inicio, fin, indefinido
+          `SELECT id, descripcion, tipo, monto, frecuencia, inicio, fin, indefinido
            FROM movimientos_recurrentes
            WHERE usuario_id = ?`,
           [usuario_id],
@@ -374,6 +374,7 @@ exports.list = async (req, res) => {
         let recIn = 0, recOut = 0;
         const nowISO = toISODate(new Date());
         let activeRecCount = 0;
+        const ingresosDetail = [], egresosDetail = [];
         for (const r of (recRowsQ || [])) {
           // activo hoy o sin fin
           const inicio = r.inicio ? String(r.inicio).slice(0,10) : null;
@@ -386,7 +387,20 @@ exports.list = async (req, res) => {
           const factor = (freq === 'mensual') ? 1 : (freq === 'semanal') ? 4.33 : (freq === 'diaria') ? 30 : 0;
           const amount = Number(r.monto||0) * factor;
           const tipo = String(r.tipo||'').toLowerCase();
-          if (tipo === 'ingreso' || tipo === 'ahorro') recIn += amount; else if (tipo === 'egreso') recOut += amount;
+          const detail = { 
+            descripcion: r.descripcion || 'Sin descripción', 
+            monto: amount, 
+            tipo: 'recurrente', 
+            frecuencia: r.frecuencia, 
+            fecha: inicio || 'Sin fecha'
+          };
+          if (tipo === 'ingreso' || tipo === 'ahorro') { 
+            recIn += amount; 
+            ingresosDetail.push(detail); 
+          } else if (tipo === 'egreso') { 
+            recOut += amount; 
+            egresosDetail.push(detail); 
+          }
         }
         if (activeRecCount === 0) {
           forecastWarnings.push('No tienes movimientos recurrentes activos. La proyección solo incluirá movimientos futuros pendientes y deudas. Ve a "Movimientos recurrentes" para agregar ingresos/gastos que se repiten.');
@@ -394,16 +408,30 @@ exports.list = async (req, res) => {
         // Movimientos futuros agregados (applied=0) a 30 días
         let futIn = 0, futOut = 0;
         if (includeFuture) {
-          const [[fAgg]] = await timedQuery(
-            `SELECT 
-               COALESCE(SUM(CASE WHEN tipo IN ('ingreso','ahorro') THEN monto END),0) AS fin,
-               COALESCE(SUM(CASE WHEN tipo = 'egreso' THEN monto END),0) AS fout
+          const [futRows] = await timedQuery(
+            `SELECT descripcion, monto, tipo, fecha
              FROM movimientos
              WHERE usuario_id = ? AND applied = 0 AND DATE(fecha) >= CURDATE() AND DATE(fecha) <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)`,
             [usuario_id],
             Math.min(800, timeLeftQuick())
           );
-          futIn = Number((fAgg && fAgg.fin) || 0); futOut = Number((fAgg && fAgg.fout) || 0);
+          for (const f of (futRows || [])) {
+            const monto = Number(f.monto || 0);
+            const tipo = String(f.tipo || '').toLowerCase();
+            const detail = { 
+              descripcion: f.descripcion || 'Sin descripción', 
+              monto, 
+              tipo: 'futuro', 
+              fecha: f.fecha ? String(f.fecha).slice(0,10) : 'Sin fecha'
+            };
+            if (tipo === 'ingreso' || tipo === 'ahorro') { 
+              futIn += monto; 
+              ingresosDetail.push(detail); 
+            } else if (tipo === 'egreso') { 
+              futOut += monto; 
+              egresosDetail.push(detail); 
+            }
+          }
           if (futIn === 0 && futOut === 0) {
             forecastWarnings.push('No tienes movimientos futuros pendientes (applied=0) en los próximos 30 días. Si esperas ingresos o gastos que aún no han ocurrido, regístralos en "Registro de movimientos" con fecha futura.');
           }
@@ -413,8 +441,8 @@ exports.list = async (req, res) => {
         // Deudas a 30 días
         let due = 0;
         try {
-          const [[dueRow]] = await timedQuery(
-            `SELECT COALESCE(SUM(monto_total - COALESCE(monto_pagado,0)),0) AS due
+          const [dueRows] = await timedQuery(
+            `SELECT descripcion, monto_total, COALESCE(monto_pagado,0) AS pagado, fecha_vencimiento
              FROM deudas
              WHERE usuario_id = ? AND (pagada = 0 OR pagada IS NULL)
                AND fecha_vencimiento IS NOT NULL
@@ -422,13 +450,33 @@ exports.list = async (req, res) => {
             [usuario_id],
             Math.min(800, timeLeftQuick())
           );
-          due = Number((dueRow && dueRow.due) || 0);
+          for (const d of (dueRows || [])) {
+            const pendiente = Number(d.monto_total || 0) - Number(d.pagado || 0);
+            if (pendiente > 0) {
+              due += pendiente;
+              egresosDetail.push({ 
+                descripcion: d.descripcion || 'Deuda sin descripción', 
+                monto: pendiente, 
+                tipo: 'deuda', 
+                fecha: d.fecha_vencimiento ? String(d.fecha_vencimiento).slice(0,10) : 'Sin fecha'
+              });
+            }
+          }
         } catch (_) {}
         const projIn = recIn + futIn;
         const projOut = recOut + futOut + due;
         const net = projIn - projOut;
         const endBalance = saldoActual + net;
-        forecast = [{ days: 30, projectedIngresos: projIn, projectedEgresos: projOut, net, startingBalance: saldoActual, projectedBalanceEnd: endBalance }];
+        forecast = [{ 
+          days: 30, 
+          projectedIngresos: projIn, 
+          projectedEgresos: projOut, 
+          net, 
+          startingBalance: saldoActual, 
+          projectedBalanceEnd: endBalance,
+          ingresosDetail,
+          egresosDetail
+        }];
         if (endBalance < 0) {
           insights.push({ id: 'forecast-30-neg', severity: 'danger', title: 'Riesgo de saldo negativo en 30 días', body: `Proyección de saldo: S/ ${endBalance.toFixed(2)}.`, cta: { label: 'Ajustar recurrentes', href: '/movimientos-recurrentes' } });
         }
@@ -448,7 +496,7 @@ exports.list = async (req, res) => {
       
       // Recurrentes activos (método simplificado)
       const [recRowsAll] = await timedQuery(
-        `SELECT tipo, monto, frecuencia, inicio, fin, indefinido
+        `SELECT id, descripcion, tipo, monto, frecuencia, inicio, fin, indefinido
          FROM movimientos_recurrentes
          WHERE usuario_id = ?`,
         [usuario_id],
@@ -461,6 +509,7 @@ exports.list = async (req, res) => {
         if (timeLeft() < 300) break; // salir si casi no queda tiempo
         
         let recIn = 0, recOut = 0;
+        const ingresosDetail = [], egresosDetail = [];
         for (const r of (recRowsAll || [])) {
           const inicio = r.inicio ? String(r.inicio).slice(0,10) : null;
           const fin = r.fin ? String(r.fin).slice(0,10) : null;
@@ -473,29 +522,56 @@ exports.list = async (req, res) => {
           const factor = (freq === 'mensual') ? (days/30) : (freq === 'semanal') ? (days/7) : (freq === 'diaria') ? days : 0;
           const amount = Number(r.monto||0) * factor;
           const tipo = String(r.tipo||'').toLowerCase();
-          if (tipo === 'ingreso' || tipo === 'ahorro') recIn += amount; else if (tipo === 'egreso') recOut += amount;
+          const detail = { 
+            descripcion: r.descripcion || 'Sin descripción', 
+            monto: amount, 
+            tipo: 'recurrente', 
+            frecuencia: r.frecuencia, 
+            fecha: inicio || 'Sin fecha'
+          };
+          if (tipo === 'ingreso' || tipo === 'ahorro') { 
+            recIn += amount; 
+            ingresosDetail.push(detail); 
+          } else if (tipo === 'egreso') { 
+            recOut += amount; 
+            egresosDetail.push(detail); 
+          }
         }
         
         // Movimientos futuros a H días
         let futIn = 0, futOut = 0;
         if (includeFuture) {
-          const [[fAgg]] = await timedQuery(
-            `SELECT 
-               COALESCE(SUM(CASE WHEN tipo IN ('ingreso','ahorro') THEN monto END),0) AS fin,
-               COALESCE(SUM(CASE WHEN tipo = 'egreso' THEN monto END),0) AS fout
+          const [futRows] = await timedQuery(
+            `SELECT descripcion, monto, tipo, fecha
              FROM movimientos
              WHERE usuario_id = ? AND applied = 0 AND DATE(fecha) >= CURDATE() AND DATE(fecha) <= DATE_ADD(CURDATE(), INTERVAL ? DAY)`,
             [usuario_id, H],
             Math.min(1200, timeLeft())
           );
-          futIn = Number((fAgg && fAgg.fin) || 0); futOut = Number((fAgg && fAgg.fout) || 0);
+          for (const f of (futRows || [])) {
+            const monto = Number(f.monto || 0);
+            const tipo = String(f.tipo || '').toLowerCase();
+            const detail = { 
+              descripcion: f.descripcion || 'Sin descripción', 
+              monto, 
+              tipo: 'futuro', 
+              fecha: f.fecha ? String(f.fecha).slice(0,10) : 'Sin fecha'
+            };
+            if (tipo === 'ingreso' || tipo === 'ahorro') { 
+              futIn += monto; 
+              ingresosDetail.push(detail); 
+            } else if (tipo === 'egreso') { 
+              futOut += monto; 
+              egresosDetail.push(detail); 
+            }
+          }
         }
         
         // Deudas a H días
         let due = 0;
         try {
-          const [[dueRow]] = await timedQuery(
-            `SELECT COALESCE(SUM(monto_total - COALESCE(monto_pagado,0)),0) AS due
+          const [dueRows] = await timedQuery(
+            `SELECT descripcion, monto_total, COALESCE(monto_pagado,0) AS pagado, fecha_vencimiento
              FROM deudas
              WHERE usuario_id = ? AND (pagada = 0 OR pagada IS NULL)
                AND fecha_vencimiento IS NOT NULL
@@ -503,14 +579,34 @@ exports.list = async (req, res) => {
             [usuario_id, H],
             Math.min(1200, timeLeft())
           );
-          due = Number((dueRow && dueRow.due) || 0);
+          for (const d of (dueRows || [])) {
+            const pendiente = Number(d.monto_total || 0) - Number(d.pagado || 0);
+            if (pendiente > 0) {
+              due += pendiente;
+              egresosDetail.push({ 
+                descripcion: d.descripcion || 'Deuda sin descripción', 
+                monto: pendiente, 
+                tipo: 'deuda', 
+                fecha: d.fecha_vencimiento ? String(d.fecha_vencimiento).slice(0,10) : 'Sin fecha'
+              });
+            }
+          }
         } catch (_) {}
         
         const projIn = recIn + futIn;
         const projOut = recOut + futOut + due;
         const net = projIn - projOut;
         const endBalance = saldoActual + net;
-        forecast.push({ days: H, projectedIngresos: projIn, projectedEgresos: projOut, net, startingBalance: saldoActual, projectedBalanceEnd: endBalance });
+        forecast.push({ 
+          days: H, 
+          projectedIngresos: projIn, 
+          projectedEgresos: projOut, 
+          net, 
+          startingBalance: saldoActual, 
+          projectedBalanceEnd: endBalance,
+          ingresosDetail,
+          egresosDetail
+        });
       }
       
       // Alertas por forecast
