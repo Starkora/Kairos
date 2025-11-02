@@ -14,8 +14,12 @@ if (useUrl) {
       password: decodeURIComponent(u.password || ''),
       database: (u.pathname || '').replace(/^\//, '') || undefined,
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: Number(process.env.DB_POOL_SIZE || 10),
       queueLimit: 0,
+      connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT_MS || 10000),
+      acquireTimeout: Number(process.env.DB_ACQUIRE_TIMEOUT_MS || 10000),
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 0,
     };
   } catch (e) {
     // Si la URL no parsea, como fallback usar string directa (mysql2 soporta string)
@@ -35,8 +39,12 @@ if (useUrl) {
     password,
     database: process.env.DB_NAME || 'kairos',
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit: Number(process.env.DB_POOL_SIZE || 10),
     queueLimit: 0,
+    connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT_MS || 10000),
+    acquireTimeout: Number(process.env.DB_ACQUIRE_TIMEOUT_MS || 10000),
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
   };
 }
 

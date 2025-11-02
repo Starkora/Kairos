@@ -210,6 +210,17 @@ app.use(session({
   }
 }));
 
+// Timeout por solicitud para evitar 'pendiente' indefinido cuando algún backend externo tarda demasiado
+const REQ_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 45000);
+app.use((req, res, next) => {
+  res.setTimeout(REQ_TIMEOUT_MS, () => {
+    try {
+      if (!res.headersSent) res.status(504).json({ error: 'timeout', message: 'Tiempo de espera agotado' });
+    } catch {}
+  });
+  next();
+});
+
 // Rutas
 const transaccionesRouter = require('./routes/transacciones');
 const categoriasRouter = require('./routes/categorias');
@@ -371,10 +382,16 @@ app.get('/api/admin/health', async (req, res) => {
 // Healthcheck de base de datos: SELECT 1
 app.get('/api/health/db', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT 1 AS ok');
+    // Forzar timeout de 8s en el ping de DB para no colgar healthchecks
+    const result = await Promise.race([
+      db.query('SELECT 1 AS ok'),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('db_timeout')), 8000)),
+    ]);
+    const [rows] = Array.isArray(result) ? result : [[{ ok: 1 }]];
     return res.json({ ok: true, result: rows && rows[0] ? rows[0].ok : null, time: Date.now() });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: String(err && err.message || err) });
+    return res.status(String(err?.message||'').includes('timeout') ? 504 : 500)
+      .json({ ok: false, error: String(err && err.message || err) });
   }
 });
 
