@@ -194,23 +194,23 @@ export default function Asesor() {
     const fmt = (n: number) => `S/ ${Number(n || 0).toFixed(2)}`;
     return (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
-        <div className="card" style={{ padding: 16 }}>
+        <div className="card" style={{ padding: 16, cursor: 'help' }} title="Total de ingresos registrados (applied=1) en el mes seleccionado. Incluye ingresos y movimientos de ahorro ya aplicados.">
           <div style={{ fontSize: 12, opacity: 0.8 }}>Ingresos del mes</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>{fmt(kpis.ingresosMes)}</div>
         </div>
-        <div className="card" style={{ padding: 16 }}>
+        <div className="card" style={{ padding: 16, cursor: 'help' }} title="Total de egresos registrados (applied=1) en el mes seleccionado. Solo incluye gastos ya realizados y aplicados.">
           <div style={{ fontSize: 12, opacity: 0.8 }}>Egresos del mes</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>{fmt(kpis.egresosMes)}</div>
         </div>
-        <div className="card" style={{ padding: 16 }}>
+        <div className="card" style={{ padding: 16, cursor: 'help' }} title={`Ahorro neto = Ingresos (${fmt(kpis.ingresosMes)}) - Egresos (${fmt(kpis.egresosMes)})\n\nEs lo que te queda disponible del mes.`}>
           <div style={{ fontSize: 12, opacity: 0.8 }}>Ahorro neto</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>{fmt(kpis.ahorroNeto)}</div>
         </div>
-        <div className="card" style={{ padding: 16 }}>
+        <div className="card" style={{ padding: 16, cursor: 'help' }} title={kpis.ahorroRate !== null ? `Tasa de ahorro = (Ahorro neto / Ingresos) × 100\n\nIndica qué porcentaje de tus ingresos estás ahorrando. Una tasa saludable es 10-20%.` : 'No se puede calcular (ingresos = 0)'}>
           <div style={{ fontSize: 12, opacity: 0.8 }}>Tasa de ahorro</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>{kpis.ahorroRate==null? '—' : (kpis.ahorroRate*100).toFixed(1) + '%'}</div>
         </div>
-        <div className="card" style={{ padding: 16 }}>
+        <div className="card" style={{ padding: 16, cursor: 'help' }} title={`Run rate (ritmo de gasto):\n• Promedio diario = Egresos del mes / Días transcurridos\n• Proyección = Promedio diario × Total de días del mes\n\nSirve para anticipar cuánto gastarás al final del mes si sigues al mismo ritmo.`}>
           <div style={{ fontSize: 12, opacity: 0.8 }}>Run rate egresos</div>
           <div style={{ fontSize: 16 }}>Promedio diario: <b>{fmt(kpis.runRate.dailyAvgEgreso)}</b></div>
           <div style={{ fontSize: 16 }}>Proyección: <b>{fmt(kpis.runRate.projectedEgresos)}</b></div>
@@ -452,10 +452,18 @@ export default function Asesor() {
                     {meta.forecast.map((f: any, idx: number) => (
                       <tr key={f.days} style={{ background: idx%2 ? '#1f2937' : '#111827' }}>
                         <td style={{ padding: '8px 10px' }}>{f.days} días</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>S/ {Number(f.projectedIngresos||0).toFixed(2)}</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>S/ {Number(f.projectedEgresos||0).toFixed(2)}</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', color: Number(f.net||0) < 0 ? '#ef4444' : '#22c55e' }}>S/ {Number(f.net||0).toFixed(2)}</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800, color: Number(f.projectedBalanceEnd||0) < 0 ? '#ef4444' : 'var(--color-text)' }}>S/ {Number(f.projectedBalanceEnd||0).toFixed(2)}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', cursor: 'help' }} title={`Ingresos proyectados incluyen:\n• Movimientos recurrentes de ingreso/ahorro estimados a ${f.days} días\n• Movimientos futuros pendientes (applied=0) con fecha en este horizonte\n\nCálculo aproximado basado en frecuencias configuradas.`}>
+                          S/ {Number(f.projectedIngresos||0).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', cursor: 'help' }} title={`Egresos proyectados incluyen:\n• Movimientos recurrentes de egreso estimados a ${f.days} días\n• Movimientos futuros pendientes (applied=0) con fecha en este horizonte\n• Deudas con vencimiento en los próximos ${f.days} días\n\nCálculo aproximado basado en frecuencias configuradas.`}>
+                          S/ {Number(f.projectedEgresos||0).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', color: Number(f.net||0) < 0 ? '#ef4444' : '#22c55e', cursor: 'help' }} title={`Neto = Ingresos proyectados - Egresos proyectados\n\nEste es el flujo neto esperado en ${f.days} días.`}>
+                          S/ {Number(f.net||0).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800, color: Number(f.projectedBalanceEnd||0) < 0 ? '#ef4444' : 'var(--color-text)', cursor: 'help' }} title={`Saldo proyectado = Saldo actual (${Number(f.startingBalance||0).toFixed(2)}) + Flujo neto (${Number(f.net||0).toFixed(2)})\n\nEste es el saldo que tendrías al final de ${f.days} días si todo ocurre según lo proyectado.`}>
+                          S/ {Number(f.projectedBalanceEnd||0).toFixed(2)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
