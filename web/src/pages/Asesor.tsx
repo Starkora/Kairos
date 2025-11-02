@@ -335,7 +335,10 @@ export default function Asesor() {
                   setKpis(json2.kpis || null);
                   setInsights(Array.isArray(json2.insights) ? json2.insights : []);
                   setMeta(json2.meta || null);
-                } catch (e:any) { setError(e?.message || 'No se pudo ampliar el análisis'); }
+                  } catch (e:any) { 
+                    setError(e?.message || 'No se pudo ampliar el análisis');
+                    // Si el ampliado falla, mostrar el error pero mantener el quick
+                  }
                 finally { setLoading(false); }
               }}
               style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: '#374151', color: 'var(--color-text)', fontWeight: 700, cursor: 'pointer' }}
@@ -351,6 +354,15 @@ export default function Asesor() {
                 📈 <b>¿Cómo leer esta tabla?</b> Muestra cuánto dinero ingresará y saldrá en los próximos 30/60/90 días 
                 (según recurrentes, movimientos futuros y deudas a vencer). El <b>"Saldo proyectado"</b> es lo que tendrías al final del horizonte.
               </div>
+              {/* Alertas de datos faltantes */}
+              {Array.isArray(meta?.forecastWarnings) && meta.forecastWarnings.length > 0 && (
+                <div style={{ marginBottom: 12, padding: 12, background: '#92400e', borderRadius: 10, borderLeft: '4px solid #f59e0b' }}>
+                  <div style={{ fontWeight: 700, marginBottom: 6 }}>⚠️ Advertencias del cálculo</div>
+                  <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13 }}>
+                    {meta.forecastWarnings.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                  </ul>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
                 <button onClick={() => {
                   try {

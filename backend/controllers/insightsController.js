@@ -348,6 +348,7 @@ exports.list = async (req, res) => {
     // Forecast de cashflow 30/60/90 días (exacto por ocurrencias + movimientos futuros)
     let forecast = [];
     let horizonsUsed = [];
+    let forecastWarnings = []; // almacenar avisos cuando falten datos
     if (quickMode) {
       try {
         // Quick forecast 30 días: aproximado, sin excepciones de recurrentes (ultra-rápido)
@@ -356,6 +357,12 @@ exports.list = async (req, res) => {
         const H = 30; horizonsUsed = [30];
         const [[saldoRow]] = await timedQuery('SELECT COALESCE(SUM(saldo_actual),0) AS saldo FROM cuentas WHERE usuario_id = ?', [usuario_id], Math.min(800, timeLeftQuick()));
         const saldoActual = Number((saldoRow && saldoRow.saldo) || 0);
+        
+        // Validar si hay cuentas configuradas
+        const [[cuentasCount]] = await timedQuery('SELECT COUNT(*) AS cnt FROM cuentas WHERE usuario_id = ?', [usuario_id], Math.min(500, timeLeftQuick()));
+        if (Number(cuentasCount?.cnt || 0) === 0) {
+          forecastWarnings.push('No tienes cuentas configuradas. El saldo inicial es 0. Ve a "Cuentas" para agregar tu información bancaria.');
+        }
         // Recurrentes: estimación mensual por frecuencia
         const [recRowsQ] = await timedQuery(
           `SELECT tipo, monto, frecuencia, inicio, fin, indefinido
@@ -366,6 +373,7 @@ exports.list = async (req, res) => {
         );
         let recIn = 0, recOut = 0;
         const nowISO = toISODate(new Date());
+        let activeRecCount = 0;
         for (const r of (recRowsQ || [])) {
           // activo hoy o sin fin
           const inicio = r.inicio ? String(r.inicio).slice(0,10) : null;
@@ -373,11 +381,15 @@ exports.list = async (req, res) => {
           const indef = !!r.indefinido;
           const active = (!inicio || inicio <= nowISO) && (indef || (fin && fin >= nowISO));
           if (!active) continue;
+          activeRecCount++;
           const freq = String(r.frecuencia||'').toLowerCase();
           const factor = (freq === 'mensual') ? 1 : (freq === 'semanal') ? 4.33 : (freq === 'diaria') ? 30 : 0;
           const amount = Number(r.monto||0) * factor;
           const tipo = String(r.tipo||'').toLowerCase();
           if (tipo === 'ingreso' || tipo === 'ahorro') recIn += amount; else if (tipo === 'egreso') recOut += amount;
+        }
+        if (activeRecCount === 0) {
+          forecastWarnings.push('No tienes movimientos recurrentes activos. La proyección solo incluirá movimientos futuros pendientes y deudas. Ve a "Movimientos recurrentes" para agregar ingresos/gastos que se repiten.');
         }
         // Movimientos futuros agregados (applied=0) a 30 días
         let futIn = 0, futOut = 0;
@@ -392,6 +404,11 @@ exports.list = async (req, res) => {
             Math.min(800, timeLeftQuick())
           );
           futIn = Number((fAgg && fAgg.fin) || 0); futOut = Number((fAgg && fAgg.fout) || 0);
+          if (futIn === 0 && futOut === 0) {
+            forecastWarnings.push('No tienes movimientos futuros pendientes (applied=0) en los próximos 30 días. Si esperas ingresos o gastos que aún no han ocurrido, regístralos en "Registro de movimientos" con fecha futura.');
+          }
+        } else {
+          forecastWarnings.push('La opción "Incluir movimientos futuros" está desactivada. La proyección no incluye movimientos pendientes ni recurrentes. Actívala para un cálculo más completo.');
         }
         // Deudas a 30 días
         let due = 0;
@@ -415,7 +432,10 @@ exports.list = async (req, res) => {
         if (endBalance < 0) {
           insights.push({ id: 'forecast-30-neg', severity: 'danger', title: 'Riesgo de saldo negativo en 30 días', body: `Proyección de saldo: S/ ${endBalance.toFixed(2)}.`, cta: { label: 'Ajustar recurrentes', href: '/movimientos-recurrentes' } });
         }
-      } catch (_) { /* quick degradado */ }
+      } catch (err) { 
+        console.error('[insights quick forecast] error:', err);
+        forecastWarnings.push('No se pudo calcular el forecast rápido debido a un error temporal. Intenta nuevamente o contacta soporte si persiste.');
+      }
     } else if (doForecast && timeLeft() > 800) try {
       // Reducir horizontes si queda poco presupuesto de tiempo o si el usuario lo pidió explícito
       const tl = timeLeft();
@@ -605,7 +625,10 @@ exports.list = async (req, res) => {
       } else if (f60 && f60.projectedBalanceEnd < 0) {
         insights.push({ id: 'forecast-60-neg', severity: 'warning', title: 'Posible saldo negativo en 60 días', body: `Proyección de saldo: S/ ${f60.projectedBalanceEnd.toFixed(2)}. Considera optimizar gastos.`, cta: { label: 'Ver Presupuestos', href: '/presupuestos' } });
       }
-  } catch (_) { /* opcional */ }
+  } catch (err) { 
+    console.error('[insights full forecast] error:', err);
+    forecastWarnings.push('El forecast detallado falló. Esto puede deberse a datos inconsistentes en recurrentes o excepciones. Prueba con el cálculo rápido o revisa tus movimientos recurrentes.');
+  }
 
     // Filtrar por insights ocultados (dismiss) en preferencias
     try {
@@ -631,12 +654,12 @@ exports.list = async (req, res) => {
           await timedQuery('UPDATE usuarios_preferencias SET data = ? WHERE usuario_id = ?', [JSON.stringify(current), usuario_id], Math.min(800, timeLeft()));
         } catch (_) { /* si no se puede limpiar ahora, se hará luego */ }
       }
-      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, quick: !!quickMode, degraded: quickMode ? (timeLeftQuick() <= 0) : (!fastMode && timeLeft() <= 0), detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: quickMode ? true : !!doForecast }, horizonsUsed } };
+      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, forecastWarnings, includeFuture, fast: fastMode, quick: !!quickMode, degraded: quickMode ? (timeLeftQuick() <= 0) : (!fastMode && timeLeft() <= 0), detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: quickMode ? true : !!doForecast }, horizonsUsed } };
       setCached(usuario_id, variant, ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);
       return res.json(result);
     } catch (_) {
       // Si falla filtrado, devolver lista original
-      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, quick: !!quickMode, degraded: quickMode ? (timeLeftQuick() <= 0) : (!fastMode && timeLeft() <= 0), detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: quickMode ? true : !!doForecast }, horizonsUsed } };
+      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, forecastWarnings, includeFuture, fast: fastMode, quick: !!quickMode, degraded: quickMode ? (timeLeftQuick() <= 0) : (!fastMode && timeLeft() <= 0), detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: quickMode ? true : !!doForecast }, horizonsUsed } };
       setCached(usuario_id, variant, ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);
       return res.json(result);
     }
