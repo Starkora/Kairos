@@ -595,7 +595,7 @@ export default function Dashboard() {
             </button>
 
             <button
-              onClick={() => navigate('./pages/asesor')}
+              onClick={() => navigate('/asesor')}
               style={{
                 background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
                 color: '#fff',
@@ -655,7 +655,7 @@ export default function Dashboard() {
             </button>
 
             <button
-              onClick={() => navigate('/DeudasMetas')}
+              onClick={() => navigate('/deudas-metas')}
               style={{
                 background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
                 color: '#fff',
