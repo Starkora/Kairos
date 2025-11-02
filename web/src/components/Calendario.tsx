@@ -52,13 +52,21 @@ export default function Calendario() {
         if (Array.isArray(list)) setSavedPresets(list.filter(x => x && x.name && x.filters));
       }
     } catch {}
-    // Cargar presets desde backend si existen
+    // Cargar presets y últimos filtros/búsqueda desde backend si existen
     (async () => {
       try {
         const prefs = await loadPreferences();
         const serverPresets = prefs?.calendar?.filterPresets;
+        const lastFilters = prefs?.calendar?.lastFilters;
+        const lastSearch = prefs?.calendar?.lastSearch;
         if (Array.isArray(serverPresets) && serverPresets.length > 0) {
           setSavedPresets(serverPresets.filter((x: any) => x && x.name && x.filters));
+        }
+        if (lastFilters && typeof lastFilters === 'object') {
+          setFilters({ ...defaultFilters, ...lastFilters });
+        }
+        if (typeof lastSearch === 'string') {
+          setSearch(lastSearch);
         }
       } catch {}
     })();
@@ -69,11 +77,15 @@ export default function Calendario() {
     try {
       localStorage.setItem('kairos-calendar-filters', JSON.stringify(filters));
     } catch {}
+    // Persistir últimos filtros en backend
+    savePreferences({ calendar: { lastFilters: filters } }).catch(() => {});
   }, [filters]);
   React.useEffect(() => {
     try {
       localStorage.setItem('kairos-calendar-search', search);
     } catch {}
+    // Persistir última búsqueda en backend
+    savePreferences({ calendar: { lastSearch: search } }).catch(() => {});
   }, [search]);
 
   const persistPresets = (list) => {
