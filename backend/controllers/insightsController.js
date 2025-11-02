@@ -113,7 +113,7 @@ exports.list = async (req, res) => {
     let thresholdWarn = 80;
     let thresholdDanger = 100;
     try {
-      const [prefRows] = await db.query('SELECT data FROM usuarios_preferencias WHERE usuario_id = ?', [usuario_id]);
+      const [prefRows] = await timedQuery('SELECT data FROM usuarios_preferencias WHERE usuario_id = ?', [usuario_id], Math.min(1500, timeLeft()));
       const pdata = (Array.isArray(prefRows) && prefRows[0] && prefRows[0].data) || {};
       if (pdata && pdata.budgets) {
         if (typeof pdata.budgets.thresholdWarn === 'number') thresholdWarn = pdata.budgets.thresholdWarn;
@@ -285,14 +285,15 @@ exports.list = async (req, res) => {
 
     // Regla 4: Metas inactivas (sin ahorro tras 60 días)
     try {
-      const [[rowCount]] = await db.query(
+      const [[rowCount]] = await timedQuery(
         `SELECT COUNT(*) AS cnt
          FROM metas
          WHERE usuario_id = ? AND (cumplida = 0 OR cumplida IS NULL)
            AND COALESCE(monto_ahorrado,0) = 0
            AND fecha_inicio IS NOT NULL
            AND fecha_inicio <= DATE_SUB(CURDATE(), INTERVAL 60 DAY)`,
-        [usuario_id]
+        [usuario_id],
+        Math.min(1500, timeLeft())
       );
       const cnt = Number((rowCount && rowCount.cnt) || 0);
       if (cnt > 0) {
@@ -528,7 +529,7 @@ exports.list = async (req, res) => {
 
     // Filtrar por insights ocultados (dismiss) en preferencias
     try {
-      const [prefRows2] = await db.query('SELECT data FROM usuarios_preferencias WHERE usuario_id = ?', [usuario_id]);
+      const [prefRows2] = await timedQuery('SELECT data FROM usuarios_preferencias WHERE usuario_id = ?', [usuario_id], Math.min(1200, timeLeft()));
       const pdata2 = (Array.isArray(prefRows2) && prefRows2[0] && prefRows2[0].data) || {};
       const dismissed = (pdata2 && pdata2.insightsDismissed) || {};
       const now = Date.now();
@@ -542,11 +543,13 @@ exports.list = async (req, res) => {
         const until = dismissed[k];
         if (typeof until === 'number' && until <= now) { delete dismissed[k]; changed = true; }
       }
-      if (changed) {
-        const [rows] = await db.query('SELECT data FROM usuarios_preferencias WHERE usuario_id = ?', [usuario_id]);
+      if (changed && timeLeft() > 300) {
+        const [rows] = await timedQuery('SELECT data FROM usuarios_preferencias WHERE usuario_id = ?', [usuario_id], Math.min(800, timeLeft()));
         const current = (Array.isArray(rows) && rows[0] && rows[0].data) ? rows[0].data : {};
         current.insightsDismissed = dismissed;
-        await db.query('UPDATE usuarios_preferencias SET data = ? WHERE usuario_id = ?', [JSON.stringify(current), usuario_id]);
+        try {
+          await timedQuery('UPDATE usuarios_preferencias SET data = ? WHERE usuario_id = ?', [JSON.stringify(current), usuario_id], Math.min(800, timeLeft()));
+        } catch (_) { /* si no se puede limpiar ahora, se hará luego */ }
       }
       const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: !fastMode && timeLeft() <= 0, detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: !!doForecast }, horizonsUsed } };
       setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);

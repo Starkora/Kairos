@@ -50,8 +50,8 @@ export default function Asesor() {
       } catch { /* no-op */ }
 
       const controller = new AbortController();
-      // En la primera carga damos más margen por cold start del proveedor
-      const timeoutMs = firstLoad ? 45000 : 15000;
+  // En la primera carga damos más margen por cold start del proveedor; en cargas sucesivas ampliamos a 25s para free-tier
+  const timeoutMs = firstLoad ? 45000 : 25000;
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       const [y,m] = selectedMonth.split('-');
       const res = await fetch(`${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=1&year=${encodeURIComponent(y)}&month=${encodeURIComponent(String(parseInt(m,10)))}`,
