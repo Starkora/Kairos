@@ -44,9 +44,11 @@ export default function Dashboard() {
   const [presupuestos, setPresupuestos] = React.useState([]);
   const [metas, setMetas] = React.useState([]);
   const [deudas, setDeudas] = React.useState([]);
-  // Filtro de año
+  // Filtro de año y mes
   const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth();
   const [year, setYear] = React.useState(currentYear);
+  const [month, setMonth] = React.useState<number | 'all'>('all');
   // Permitir selección múltiple de segmentos
   const [segmentos, setSegmentos] = React.useState({ Ahorro: true, Gasto: true, Ingreso: true });
 
@@ -120,6 +122,8 @@ export default function Dashboard() {
       if (!m.fecha) return false;
       const movDate = new Date(m.fecha);
       if (movDate.getFullYear() !== year) return false;
+      // Filtrar por mes si no es 'all'
+      if (month !== 'all' && movDate.getMonth() !== month) return false;
       // Filtro por cuenta (si no es 'all')
       if (cuentaSeleccionada !== 'all') {
         const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
@@ -297,16 +301,20 @@ export default function Dashboard() {
 
   // Comparación mes actual vs mes anterior
   const currentDate = new Date();
-  const currentMonth = currentDate.getMonth();
-  const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-  const currentYearForComparison = currentDate.getFullYear();
-  const previousYearForComparison = currentMonth === 0 ? currentYearForComparison - 1 : currentYearForComparison;
+  const currentMonthNow = currentDate.getMonth();
+  const currentYearNow = currentDate.getFullYear();
+  
+  // Si hay filtro de mes, usar ese mes, si no, usar el mes actual
+  const comparisonMonth = month !== 'all' ? month : currentMonthNow;
+  const comparisonYear = year;
+  const previousComparisonMonth = comparisonMonth === 0 ? 11 : comparisonMonth - 1;
+  const previousComparisonYear = comparisonMonth === 0 ? comparisonYear - 1 : comparisonYear;
 
   const getCurrentMonthData = () => {
     const movs = movimientos.filter(m => {
       if (!m.fecha) return false;
       const d = new Date(m.fecha);
-      return d.getFullYear() === currentYearForComparison && d.getMonth() === currentMonth;
+      return d.getFullYear() === comparisonYear && d.getMonth() === comparisonMonth;
     });
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
@@ -318,7 +326,7 @@ export default function Dashboard() {
     const movs = movimientos.filter(m => {
       if (!m.fecha) return false;
       const d = new Date(m.fecha);
-      return d.getFullYear() === previousYearForComparison && d.getMonth() === previousMonth;
+      return d.getFullYear() === previousComparisonYear && d.getMonth() === previousComparisonMonth;
     });
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
@@ -345,7 +353,7 @@ export default function Dashboard() {
 
   // Balance proyectado fin de mes
   const getBalanceProyectado = () => {
-    const endOfMonth = new Date(currentYearForComparison, currentMonth + 1, 0);
+    const endOfMonth = new Date(comparisonYear, comparisonMonth + 1, 0);
     const pendientes = movimientos.filter(m => {
       if (!m.fecha) return false;
       const d = new Date(m.fecha);
@@ -536,6 +544,29 @@ export default function Dashboard() {
             {yearsAvailable.map(y => (
               <option key={y} value={y}>{y}</option>
             ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="dashboard-month" style={{ fontWeight: 600, marginRight: 6 }}>Mes:</label>
+          <select 
+            id="dashboard-month" 
+            value={month === 'all' ? 'all' : month} 
+            onChange={e => setMonth(e.target.value === 'all' ? 'all' : Number(e.target.value))} 
+            style={{ padding: 4, borderRadius: 6, fontWeight: 600 }}
+          >
+            <option value="all">Todos</option>
+            <option value="0">Enero</option>
+            <option value="1">Febrero</option>
+            <option value="2">Marzo</option>
+            <option value="3">Abril</option>
+            <option value="4">Mayo</option>
+            <option value="5">Junio</option>
+            <option value="6">Julio</option>
+            <option value="7">Agosto</option>
+            <option value="8">Septiembre</option>
+            <option value="9">Octubre</option>
+            <option value="10">Noviembre</option>
+            <option value="11">Diciembre</option>
           </select>
         </div>
         <div>
@@ -804,7 +835,7 @@ export default function Dashboard() {
       {/* Tarjetas de comparación mensual */}
       <div style={{ marginBottom: 32 }}>
         <h3 style={{ marginBottom: 16, color: 'var(--color-text)' }}>
-          Comparación: {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][currentMonth]} vs {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][previousMonth]}
+          Comparación: {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][comparisonMonth]} vs {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][previousComparisonMonth]}
         </h3>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
           {/* Tarjeta Ingresos */}
