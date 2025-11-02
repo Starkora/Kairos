@@ -4,6 +4,7 @@ import 'react-calendar/dist/Calendar.css';
 import { getToken } from '../utils/auth';
 import API_BASE from '../utils/apiBase';
 import Swal from 'sweetalert2';
+import { loadPreferences, savePreferences } from '../utils/preferences';
 
 type Value = Date | [Date, Date];
 
@@ -23,8 +24,64 @@ export default function Calendario() {
   const [movimientosRecurrentes, setMovimientosRecurrentes] = React.useState([]);
   const [exportMode, setExportMode] = React.useState(false);
   // Filtros y búsqueda
-  const [filters, setFilters] = React.useState({ ingreso: true, egreso: true, ahorro: true, transferencia: true });
+  const defaultFilters = React.useMemo(() => ({ ingreso: true, egreso: true, ahorro: true, transferencia: true }), []);
+  const [filters, setFilters] = React.useState<{ ingreso: boolean; egreso: boolean; ahorro: boolean; transferencia: boolean }>(defaultFilters);
   const [search, setSearch] = React.useState('');
+  const [savedPresets, setSavedPresets] = React.useState<Array<{ name: string; filters: { ingreso: boolean; egreso: boolean; ahorro: boolean; transferencia: boolean } }>>([]);
+  const [selectedPreset, setSelectedPreset] = React.useState<string>('');
+
+  // Persistencia de filtros y búsqueda (local) y presets (también backend)
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem('kairos-calendar-filters');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          setFilters({ ...defaultFilters, ...parsed });
+        }
+      }
+    } catch {}
+    try {
+      const s = localStorage.getItem('kairos-calendar-search');
+      if (s !== null) setSearch(s);
+    } catch {}
+    try {
+      const p = localStorage.getItem('kairos-calendar-filter-presets');
+      if (p) {
+        const list = JSON.parse(p);
+        if (Array.isArray(list)) setSavedPresets(list.filter(x => x && x.name && x.filters));
+      }
+    } catch {}
+    // Cargar presets desde backend si existen
+    (async () => {
+      try {
+        const prefs = await loadPreferences();
+        const serverPresets = prefs?.calendar?.filterPresets;
+        if (Array.isArray(serverPresets) && serverPresets.length > 0) {
+          setSavedPresets(serverPresets.filter((x: any) => x && x.name && x.filters));
+        }
+      } catch {}
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('kairos-calendar-filters', JSON.stringify(filters));
+    } catch {}
+  }, [filters]);
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('kairos-calendar-search', search);
+    } catch {}
+  }, [search]);
+
+  const persistPresets = (list) => {
+    setSavedPresets(list);
+    try { localStorage.setItem('kairos-calendar-filter-presets', JSON.stringify(list)); } catch {}
+    // Persistir también en backend (no bloquear)
+    savePreferences({ calendar: { filterPresets: list } }).catch(() => {});
+  };
 
   // Función para cargar movimientos y asignar iconos/colores
   const refreshMovimientos = React.useCallback(async () => {
@@ -338,6 +395,23 @@ export default function Calendario() {
     }
     // Caso especial: transferencia agrupada
     if ((mov?.tipo || '').toLowerCase() === 'transferencia' && mov?._transfer) {
+      // Preparar snapshot para deshacer (recrear transferencia)
+      let undoPayload: any = null;
+      try {
+        const code = mov._transfer.code;
+        const matchBoth = todosMovimientos.filter((m: any) => String(m.descripcion || '').includes(`[TRANSFER#${code}]`));
+        const eg = matchBoth.find((x: any) => (String(x.tipo || '').toLowerCase()) === 'egreso');
+        const ing = matchBoth.find((x: any) => (String(x.tipo || '').toLowerCase()) === 'ingreso');
+        if (eg && ing) {
+          undoPayload = {
+            origen_id: eg.cuenta_id,
+            destino_id: ing.cuenta_id,
+            monto: Number(eg.monto || 0),
+            fecha: String(eg.fecha || '').slice(0, 10),
+            descripcion: ''
+          };
+        }
+      } catch {}
       const { origenId, destinoId } = mov._transfer;
       const confirmed = await Swal.fire({
         title: '¿Eliminar transferencia?',
@@ -358,7 +432,20 @@ export default function Calendario() {
         const anyRejected = results.some(r => r.status === 'rejected');
         const anyNotOk = results.some(r => r.status === 'fulfilled' && r.value && r.value.ok === false);
         if (!anyRejected && !anyNotOk) {
-          Swal.fire({ icon: 'success', title: 'Transferencia eliminada', timer: 1000, showConfirmButton: false });
+          // Ofrecer deshacer
+          const undo = await Swal.fire({ icon: 'success', title: 'Transferencia eliminada', text: 'Puedes deshacer esta acción.', showCancelButton: true, confirmButtonText: 'Deshacer', cancelButtonText: 'Cerrar', timer: 5000, timerProgressBar: true });
+          if (undo.isConfirmed && undoPayload) {
+            try {
+              const apiFetch2 = (await import('../utils/apiFetch')).default;
+              const resUndo = await apiFetch2(`${API_BASE}/api/transacciones/transferir`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(undoPayload) });
+              if (resUndo.ok) {
+                Swal.fire({ icon: 'success', title: 'Transferencia restaurada', timer: 1200, showConfirmButton: false });
+              } else {
+                const data = await resUndo.json().catch(() => ({}));
+                Swal.fire({ icon: 'error', title: 'No se pudo deshacer', text: data.error || 'Intenta manualmente recrear la transferencia.' });
+              }
+            } catch {}
+          }
           await refreshMovimientos();
         } else {
           Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar completamente la transferencia.' });
@@ -393,10 +480,34 @@ export default function Calendario() {
     });
     if (!confirmed.isConfirmed) return;
     try {
+      // Preparar snapshot para deshacer (recrear movimiento)
+      const undoPayload: any = {
+        cuenta_id: mov.cuenta_id,
+        tipo: mov.tipo,
+        monto: mov.monto,
+        descripcion: mov.descripcion,
+        fecha: String(mov.fecha || '').slice(0, 10),
+        categoria_id: mov.categoria_id || null,
+        icon: mov.icon || null,
+        color: mov.color || null
+      };
       const apiFetch = (await import('../utils/apiFetch')).default;
       const res = await apiFetch(`${API_BASE}/api/transacciones/${mov.id}`, { method: 'DELETE' });
       if (res.ok) {
-        Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1000, showConfirmButton: false });
+        // Ofrecer deshacer
+        const undo = await Swal.fire({ icon: 'success', title: 'Movimiento eliminado', text: 'Puedes deshacer esta acción.', showCancelButton: true, confirmButtonText: 'Deshacer', cancelButtonText: 'Cerrar', timer: 5000, timerProgressBar: true });
+        if (undo.isConfirmed) {
+          try {
+            const apiFetch2 = (await import('../utils/apiFetch')).default;
+            const resUndo = await apiFetch2(`${API_BASE}/api/transacciones`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(undoPayload) });
+            if (resUndo.ok) {
+              Swal.fire({ icon: 'success', title: 'Movimiento restaurado', timer: 1200, showConfirmButton: false });
+            } else {
+              const data = await resUndo.json().catch(() => ({}));
+              Swal.fire({ icon: 'error', title: 'No se pudo deshacer', text: data.error || 'Intenta recrearlo manualmente.' });
+            }
+          } catch {}
+        }
         await refreshMovimientos();
       } else {
         const data = await res.json().catch(() => ({}));
@@ -464,10 +575,104 @@ export default function Calendario() {
     }
   };
 
+  // Exportación local (CSV y XLSX) usando el rango seleccionado y respetando filtros/búsqueda actuales
+  const getRangoSeleccionado = (): { start: string; end: string } | null => {
+    if (Array.isArray(value) && value.length === 2 && value[0] && value[1]) {
+      const start = value[0].toISOString().slice(0, 10);
+      const end = value[1].toISOString().slice(0, 10);
+      return { start, end };
+    } else if (value instanceof Date) {
+      const d = value.toISOString().slice(0, 10);
+      return { start: d, end: d };
+    }
+    return null;
+  };
+
+  const filtrarPorRangoYControles = (start: string, end: string) => {
+    const s = new Date(start + 'T00:00:00');
+    const e = new Date(end + 'T23:59:59');
+    const q = (search || '').trim().toLowerCase();
+    return todosMovimientos.filter((m: any) => {
+      const fstr = (m.fecha || '').slice(0, 10);
+      if (!fstr) return false;
+      const f = new Date(fstr + 'T12:00:00');
+      if (f < s || f > e) return false;
+      const tipo = String(m.tipo || '').toLowerCase();
+      if (!filters[tipo as keyof typeof filters]) return false;
+      if (!q) return true;
+      const txt = `${m.descripcion || ''} ${m.cuenta || ''}`.toLowerCase();
+      return txt.includes(q);
+    });
+  };
+
+  const exportLocalCSV = () => {
+    const rango = getRangoSeleccionado();
+    if (!rango) {
+      Swal.fire({ icon: 'info', title: 'Selecciona una fecha o rango', text: 'Haz clic en un día o arrastra para seleccionar un rango.' });
+      return;
+    }
+    const rows = filtrarPorRangoYControles(rango.start, rango.end).map((m: any) => ({
+      Fecha: (m.fecha || '').slice(0, 10),
+      Tipo: m.tipo || '',
+      Cuenta: m.cuenta || '',
+      Categoria: m.categoria || m.categoria_nombre || '',
+      Monto: Number(m.monto || 0).toFixed(2),
+      Descripcion: m.descripcion || '',
+      Icono: m.icon || '',
+      Color: m.color || ''
+    }));
+    const header = ['Fecha','Tipo','Cuenta','Categoria','Monto','Descripcion','Icono','Color'];
+    const esc = (v: any) => {
+      const s = String(v ?? '');
+      if (/[",\n;]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    };
+    const csv = [header.join(','), ...rows.map(r => header.map(h => esc((r as any)[h])).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `movimientos_${rango.start}_a_${rango.end}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportLocalXLSX = async () => {
+    const rango = getRangoSeleccionado();
+    if (!rango) {
+      Swal.fire({ icon: 'info', title: 'Selecciona una fecha o rango', text: 'Haz clic en un día o arrastra para seleccionar un rango.' });
+      return;
+    }
+    const rows = filtrarPorRangoYControles(rango.start, rango.end).map((m: any) => ({
+      Fecha: (m.fecha || '').slice(0, 10),
+      Tipo: m.tipo || '',
+      Cuenta: m.cuenta || '',
+      Categoria: m.categoria || m.categoria_nombre || '',
+      Monto: Number(m.monto || 0),
+      Descripcion: m.descripcion || '',
+      Icono: m.icon || '',
+      Color: m.color || ''
+    }));
+    try {
+      // import dinámico para no cargar el bundle si no se usa
+      const XLSX: any = await import(/* webpackChunkName: "xlsx" */'xlsx');
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Movimientos');
+      XLSX.writeFile(wb, `movimientos_${rango.start}_a_${rango.end}.xlsx`);
+    } catch (e) {
+      // Fallback a CSV si falla
+      exportLocalCSV();
+      Swal.fire({ icon: 'info', title: 'XLSX no disponible', text: 'Se exportó en CSV como alternativa.' });
+    }
+  };
+
   return (
     <div className="card calendar-card" style={{ color: 'var(--color-text)' }}>
       <h1 className="calendar-title ">Calendario de Movimientos</h1>
-      <div className="calendar-actions" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+      <div className="calendar-actions" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <button
           type="button"
           onClick={handleExport}
@@ -482,6 +687,18 @@ export default function Calendario() {
         >
           {exportMode ? 'Exportar (usar selección actual)' : 'Exportar movimientos (fechas seleccionadas)'}
         </button>
+        {exportMode && (
+          <>
+            <button type="button" onClick={exportLocalCSV}
+              style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 700 }}>
+              CSV local
+            </button>
+            <button type="button" onClick={exportLocalXLSX}
+              style={{ background: '#22d3ee', color: '#083344', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 800 }}>
+              XLSX local
+            </button>
+          </>
+        )}
         {exportMode && (
           <button
             type="button"
@@ -547,14 +764,101 @@ export default function Calendario() {
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar..."
-              style={{ marginLeft: 'auto', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', minWidth: 180 }}
-            />
+            {/* Presets de filtros */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 6 }}>
+              <span style={{ color: 'var(--color-muted)', fontSize: 12, fontWeight: 700 }}>Presets:</span>
+              <button onClick={() => setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: true })}
+                title="Mostrar todos"
+                style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Todos</button>
+              <button onClick={() => setFilters({ ingreso: false, egreso: true, ahorro: false, transferencia: false })}
+                title="Solo egresos"
+                style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Solo egresos</button>
+              <button onClick={() => setFilters({ ingreso: true, egreso: false, ahorro: true, transferencia: false })}
+                title="Ingresos y ahorros"
+                style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Ingresos/Ahorros</button>
+              <button onClick={() => setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: false })}
+                title="Ocultar transferencias"
+                style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Sin transferencias</button>
+              <button onClick={() => setFilters({ ingreso: false, egreso: false, ahorro: false, transferencia: true })}
+                title="Solo transferencias"
+                style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Solo transferencias</button>
+            </div>
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: 'var(--color-muted)', fontWeight: 700 }}>
+                {movimientosFiltrados.length} resultado{movimientosFiltrados.length === 1 ? '' : 's'}
+              </span>
+              {/* Presets personalizados */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <select value={selectedPreset} onChange={e => setSelectedPreset(e.target.value)}
+                  style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', maxWidth: 180 }}>
+                  <option value="">Presets guardados...</option>
+                  {savedPresets.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+                </select>
+                <button
+                  onClick={() => {
+                    const p = savedPresets.find(x => x.name === selectedPreset);
+                    if (p) setFilters(p.filters);
+                  }}
+                  disabled={!selectedPreset}
+                  style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}
+                >
+                  Aplicar
+                </button>
+                <button
+                  onClick={async () => {
+                    const result = await Swal.fire({ title: 'Guardar preset', input: 'text', inputLabel: 'Nombre del preset', inputPlaceholder: 'Ej: Solo egresos', showCancelButton: true });
+                    if (!result.isConfirmed) return;
+                    const name = (result.value || '').trim();
+                    if (!name) return;
+                    const existingIdx = savedPresets.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+                    if (existingIdx >= 0) {
+                      // Sobrescribir
+                      const next = [...savedPresets];
+                      next[existingIdx] = { name, filters };
+                      persistPresets(next);
+                      setSelectedPreset(name);
+                      Swal.fire({ icon: 'success', title: 'Preset actualizado', timer: 1000, showConfirmButton: false });
+                    } else {
+                      const next = [...savedPresets, { name, filters }];
+                      persistPresets(next);
+                      setSelectedPreset(name);
+                      Swal.fire({ icon: 'success', title: 'Preset guardado', timer: 1000, showConfirmButton: false });
+                    }
+                  }}
+                  style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}
+                >
+                  Guardar preset
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!selectedPreset) return;
+                    const c = await Swal.fire({ title: 'Eliminar preset', text: `¿Eliminar "${selectedPreset}"?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Eliminar' });
+                    if (!c.isConfirmed) return;
+                    const next = savedPresets.filter(p => p.name !== selectedPreset);
+                    persistPresets(next);
+                    setSelectedPreset('');
+                  }}
+                  disabled={!selectedPreset}
+                  style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: '#fee2e2', color: '#991b1b', fontWeight: 700 }}
+                >
+                  Eliminar
+                </button>
+              </div>
+              <button
+                onClick={() => { setFilters(defaultFilters); setSearch(''); }}
+                style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}
+              >
+                Limpiar
+              </button>
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar..."
+                style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', minWidth: 180 }}
+              />
+            </div>
           </div>
-          {hayTransferenciasAgrupadas && (
+          {(hayTransferenciasAgrupadas && filters.transferencia) && (
             <div style={{
               display: 'flex',
               alignItems: 'center',

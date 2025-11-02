@@ -240,6 +240,7 @@ export default function Categorias() {
   };
 
   const handleDelete = (id) => {
+    const cat = categorias.find(c => c.id === id);
     Swal.fire({
       title: '¿Eliminar categoría?',
       text: 'Esta acción no se puede deshacer.',
@@ -260,9 +261,27 @@ export default function Categorias() {
             if (!res.ok) throw new Error('No autorizado');
             return res.json();
           })
-          .then(() => {
-            Swal.fire({ icon: 'success', title: 'Categoría eliminada', showConfirmButton: false, timer: 1200 });
+          .then(async () => {
             setCategorias(prev => prev.filter(c => c.id !== id));
+            const undo = await Swal.fire({ icon: 'success', title: 'Categoría eliminada', text: 'Puedes deshacer esta acción.', showCancelButton: true, confirmButtonText: 'Deshacer', cancelButtonText: 'Cerrar', timer: 5000, timerProgressBar: true });
+            if (undo.isConfirmed && cat) {
+              // recrear
+              const resRe = await fetch(`${API_BASE}/api/categorias`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+                body: JSON.stringify({ nombre: cat.nombre, tipo: cat.tipo, plataforma: 'web' })
+              });
+              if (resRe.ok) {
+                Swal.fire({ icon: 'success', title: 'Categoría restaurada', timer: 1200, showConfirmButton: false });
+                // refrescar
+                fetch(`${API_BASE}/api/categorias?plataforma=web`, { headers: { 'Authorization': 'Bearer ' + getToken() } })
+                  .then(r => r.ok ? r.json() : [])
+                  .then(data => setCategorias(Array.isArray(data) ? data : []))
+                  .catch(() => {});
+              } else {
+                Swal.fire({ icon: 'error', title: 'No se pudo deshacer' });
+              }
+            }
           })
           .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message }));
       }
@@ -306,6 +325,7 @@ export default function Categorias() {
   };
 
   const handleDeleteCuenta = (id) => {
+    const cat = categoriasCuenta.find(c => c.id === id);
     Swal.fire({
       title: '¿Eliminar categoría de cuenta?',
       text: 'Esta acción no se puede deshacer.',
@@ -326,9 +346,25 @@ export default function Categorias() {
             if (!res.ok) throw new Error('No autorizado');
             return res.json();
           })
-          .then(() => {
-            Swal.fire({ icon: 'success', title: 'Categoría de cuenta eliminada', showConfirmButton: false, timer: 1200 });
+          .then(async () => {
             setCategoriasCuenta(prev => prev.filter(c => c.id !== id));
+            const undo = await Swal.fire({ icon: 'success', title: 'Categoría de cuenta eliminada', text: 'Puedes deshacer esta acción.', showCancelButton: true, confirmButtonText: 'Deshacer', cancelButtonText: 'Cerrar', timer: 5000, timerProgressBar: true });
+            if (undo.isConfirmed && cat) {
+              const resRe = await fetch(`${API_BASE}/api/categorias-cuenta`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+                body: JSON.stringify({ nombre: cat.nombre })
+              });
+              if (resRe.ok) {
+                Swal.fire({ icon: 'success', title: 'Categoría de cuenta restaurada', timer: 1200, showConfirmButton: false });
+                fetch(`${API_BASE}/api/categorias-cuenta`, { headers: { 'Authorization': 'Bearer ' + getToken() } })
+                  .then(r => r.ok ? r.json() : [])
+                  .then(data => setCategoriasCuenta(Array.isArray(data) ? data : []))
+                  .catch(() => {});
+              } else {
+                Swal.fire({ icon: 'error', title: 'No se pudo deshacer' });
+              }
+            }
           })
           .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message }));
       }
