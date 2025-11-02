@@ -63,10 +63,11 @@ exports.list = async (req, res) => {
     const usuario_id = req.user.id;
     const { year, month, day } = todayInfo();
     const { first, last, daysInMonth } = monthBounds(year, month);
-    const includeFuture = String((req.query && req.query.includeFuture) ?? '1') !== '0';
+  const includeFuture = String((req.query && req.query.includeFuture) ?? '1') !== '0';
+  const fastMode = String((req.query && req.query.fast) || '0') === '1';
 
     // Cache rápido para aliviar carga cuando la pantalla hace refresh o varios widgets llaman lo mismo
-    const cached = getCached(usuario_id, includeFuture);
+    const cached = getCached(usuario_id, includeFuture + (fastMode?':fast':'') );
     if (cached) {
       return res.json(cached);
     }
@@ -119,7 +120,7 @@ exports.list = async (req, res) => {
       }
     };
 
-    const insights = [];
+  const insights = [];
 
     // Regla 1: Run-rate en riesgo (proyección > ingresos)
     if (ingresos > 0) {
@@ -143,51 +144,38 @@ exports.list = async (req, res) => {
       }
     }
 
-    // Presupuestos del mes y gasto por categoría
+    // Presupuestos del mes
     const [budgets] = await db.query(
-      'SELECT p.*, c.nombre AS categoria FROM presupuestos p LEFT JOIN categorias c ON c.id = p.categoria_id WHERE p.usuario_id = ? AND p.anio = ? AND p.mes = ?',
+      'SELECT p.categoria_id, p.monto, c.nombre AS categoria FROM presupuestos p LEFT JOIN categorias c ON c.id = p.categoria_id WHERE p.usuario_id = ? AND p.anio = ? AND p.mes = ?',
       [usuario_id, year, month]
     );
-    const [spentRows] = await db.query(
-      `SELECT categoria_id, SUM(monto) AS gastado
-       FROM movimientos
-       WHERE usuario_id = ? AND tipo = 'egreso' AND applied = 1 AND DATE(fecha) BETWEEN ? AND ?
-       GROUP BY categoria_id`,
-      [usuario_id, first, last]
-    );
-    const spentMap = new Map((spentRows || []).map(r => [Number(r.categoria_id)||0, Number(r.gastado)||0]));
-    const enriched = (budgets || []).map(b => ({
-      categoria_id: Number(b.categoria_id),
-      categoria: b.categoria || String(b.categoria_id),
-      monto: Number(b.monto || 0),
-      gastado: spentMap.get(Number(b.categoria_id)||0) || 0
-    })).filter(b => b.monto > 0);
-
-    // Top categorías en riesgo
-    const atRisk = enriched
-      .map(b => ({ ...b, pct: b.monto > 0 ? (b.gastado / b.monto) * 100 : 0 }))
-      .sort((a,b) => b.pct - a.pct);
-
-    const inDanger = atRisk.filter(b => b.pct >= thresholdDanger).slice(0, 3);
-    const inWarn = atRisk.filter(b => b.pct >= thresholdWarn && b.pct < thresholdDanger).slice(0, 3);
-
-    if (inDanger.length > 0) {
-      insights.push({
-        id: 'budgets-danger',
-        severity: 'danger',
-        title: 'Presupuestos excedidos',
-        body: inDanger.map(b => `• ${b.categoria}: ${b.pct.toFixed(0)}% (S/ ${b.gastado.toFixed(2)} de S/ ${b.monto.toFixed(2)})`).join('\n'),
-        cta: { label: 'Abrir Presupuestos', href: '/presupuestos' }
-      });
-    }
-    if (inWarn.length > 0) {
-      insights.push({
-        id: 'budgets-warn',
-        severity: 'warning',
-        title: 'Presupuestos en alerta',
-        body: inWarn.map(b => `• ${b.categoria}: ${b.pct.toFixed(0)}% (S/ ${b.gastado.toFixed(2)} de S/ ${b.monto.toFixed(2)})`).join('\n'),
-        cta: { label: 'Optimizar gastos', href: '/presupuestos' }
-      });
+    let inDanger = [], inWarn = [];
+    if (!fastMode) {
+      const [spentRows] = await db.query(
+        `SELECT categoria_id, SUM(monto) AS gastado
+         FROM movimientos
+         WHERE usuario_id = ? AND tipo = 'egreso' AND applied = 1 AND DATE(fecha) BETWEEN ? AND ?
+         GROUP BY categoria_id`,
+        [usuario_id, first, last]
+      );
+      const spentMap = new Map((spentRows || []).map(r => [Number(r.categoria_id)||0, Number(r.gastado)||0]));
+      const enriched = (budgets || []).map(b => ({
+        categoria_id: Number(b.categoria_id),
+        categoria: b.categoria || String(b.categoria_id),
+        monto: Number(b.monto || 0),
+        gastado: spentMap.get(Number(b.categoria_id)||0) || 0
+      })).filter(b => b.monto > 0);
+      const atRisk = enriched
+        .map(b => ({ ...b, pct: b.monto > 0 ? (b.gastado / b.monto) * 100 : 0 }))
+        .sort((a,b) => b.pct - a.pct);
+      inDanger = atRisk.filter(b => b.pct >= thresholdDanger).slice(0, 3);
+      inWarn = atRisk.filter(b => b.pct >= thresholdWarn && b.pct < thresholdDanger).slice(0, 3);
+      if (inDanger.length > 0) {
+        insights.push({ id: 'budgets-danger', severity: 'danger', title: 'Presupuestos excedidos', body: inDanger.map(b => `• ${b.categoria}: ${b.pct.toFixed(0)}% (S/ ${b.gastado.toFixed(2)} de S/ ${b.monto.toFixed(2)})`).join('\n'), cta: { label: 'Abrir Presupuestos', href: '/presupuestos' } });
+      }
+      if (inWarn.length > 0) {
+        insights.push({ id: 'budgets-warn', severity: 'warning', title: 'Presupuestos en alerta', body: inWarn.map(b => `• ${b.categoria}: ${b.pct.toFixed(0)}% (S/ ${b.gastado.toFixed(2)} de S/ ${b.monto.toFixed(2)})`).join('\n'), cta: { label: 'Optimizar gastos', href: '/presupuestos' } });
+      }
     }
 
     // Regla 2: Tasa de ahorro negativa o muy baja
@@ -200,7 +188,7 @@ exports.list = async (req, res) => {
     }
 
     // Regla 3: Presión por egresos recurrentes
-    try {
+    if (!fastMode) try {
       const [recRows] = await db.query(
         `SELECT tipo, monto, frecuencia, inicio, fin, indefinido
          FROM movimientos_recurrentes
@@ -230,7 +218,7 @@ exports.list = async (req, res) => {
           insights.push({ id: 'recurrent-pressure-warn', severity: 'warning', title: 'Atención a egresos recurrentes', body: `Comprometen ≈${(rr*100).toFixed(0)}% de tus ingresos. Evalúa optimizarlos.`, cta: { label: 'Ver recurrentes', href: '/movimientos-recurrentes' } });
         }
       }
-    } catch (_) { /* opcional */ }
+  } catch (_) { /* opcional */ }
 
     // Regla 4: Metas inactivas (sin ahorro tras 60 días)
     try {
@@ -250,7 +238,7 @@ exports.list = async (req, res) => {
     } catch (_) { /* opcional */ }
 
       // Regla 6: Comisiones/cargos bancarios elevados
-      try {
+      if (!fastMode) try {
         const [[feesRow]] = await db.query(
           `SELECT COALESCE(SUM(monto),0) AS total
            FROM movimientos
@@ -274,7 +262,7 @@ exports.list = async (req, res) => {
             insights.push({ id: 'bank-fees-warn', severity: 'warning', title: 'Alerta por comisiones bancarias', body: `Comisiones del mes: S/ ${fees.toFixed(2)} (≈${(fr*100).toFixed(1)}% de tus ingresos).`, cta: { label: 'Ver categorías', href: '/categorias' } });
           }
         }
-      } catch (_) { /* opcional */ }
+  } catch (_) { /* opcional */ }
 
     // Regla 5: Sin presupuestos configurados
     if (!enriched || enriched.length === 0) {
@@ -283,7 +271,7 @@ exports.list = async (req, res) => {
 
     // Forecast de cashflow 30/60/90 días (exacto por ocurrencias + movimientos futuros)
     let forecast = [];
-    try {
+    if (!fastMode) try {
       const horizons = [30, 60, 90];
       const today = clampDate(new Date());
       const todayISO = toISODate(today);
@@ -464,7 +452,7 @@ exports.list = async (req, res) => {
       } else if (f60 && f60.projectedBalanceEnd < 0) {
         insights.push({ id: 'forecast-60-neg', severity: 'warning', title: 'Posible saldo negativo en 60 días', body: `Proyección de saldo: S/ ${f60.projectedBalanceEnd.toFixed(2)}. Considera optimizar gastos.`, cta: { label: 'Ver Presupuestos', href: '/presupuestos' } });
       }
-    } catch (_) { /* opcional */ }
+  } catch (_) { /* opcional */ }
 
     // Filtrar por insights ocultados (dismiss) en preferencias
     try {
@@ -488,13 +476,13 @@ exports.list = async (req, res) => {
         current.insightsDismissed = dismissed;
         await db.query('UPDATE usuarios_preferencias SET data = ? WHERE usuario_id = ?', [JSON.stringify(current), usuario_id]);
       }
-      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture } };
-      setCached(usuario_id, includeFuture, result);
+      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode } };
+      setCached(usuario_id, includeFuture + (fastMode?':fast':''), result);
       return res.json(result);
     } catch (_) {
       // Si falla filtrado, devolver lista original
-      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture } };
-      setCached(usuario_id, includeFuture, result);
+      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode } };
+      setCached(usuario_id, includeFuture + (fastMode?':fast':''), result);
       return res.json(result);
     }
   } catch (err) {

@@ -72,7 +72,17 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 // Soporte preflight
-app.options('*', cors(corsOptions));
+app.options('*', (req, res) => {
+  // Responder preflight y cachear para reducir carga en Render
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, ngrok-skip-browser-warning');
+  // Cache del preflight 10 minutos
+  res.setHeader('Access-Control-Max-Age', '600');
+  res.status(204).end();
+});
 
 // Middleware básico
 const helmet = require('helmet');

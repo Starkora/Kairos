@@ -49,7 +49,7 @@ export default function Asesor() {
       // En la primera carga damos más margen por cold start del proveedor
       const timeoutMs = firstLoad ? 45000 : 15000;
       const timer = setTimeout(() => controller.abort(), timeoutMs);
-      const res = await fetch(`${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}`, { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller.signal });
+  const res = await fetch(`${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=1`, { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller.signal });
       clearTimeout(timer);
       if (!res.ok) {
         const txt = await res.text();
@@ -152,6 +152,30 @@ export default function Asesor() {
         <>
           {kpiCards}
           {/* Forecast 30/60/90 días */}
+          {meta?.fast && (
+            <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontWeight: 800 }}>Forecast detallado</div>
+                <button onClick={async () => {
+                  setLoading(true); setError(null);
+                  try {
+                    const controller2 = new AbortController();
+                    const t2 = setTimeout(() => controller2.abort(), 45000);
+                    const res2 = await fetch(`${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=0`, { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller2.signal });
+                    clearTimeout(t2);
+                    if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
+                    const json2 = await res2.json();
+                    setKpis(json2.kpis || null);
+                    setInsights(Array.isArray(json2.insights) ? json2.insights : []);
+                    setMeta(json2.meta || null);
+                  } catch (e:any) { setError(e?.message || 'No se pudo calcular el forecast'); }
+                  finally { setLoading(false); }
+                }}
+                style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Calcular ahora</button>
+              </div>
+              <div style={{ opacity: 0.8 }}>Para reducir carga en servidores gratuitos, el forecast detallado se calcula bajo demanda.</div>
+            </div>
+          )}
           {Array.isArray(meta?.forecast) && meta.forecast.length > 0 && (
             <div className="card" style={{ padding: 16, marginBottom: 12 }}>
               <div style={{ fontWeight: 800, marginBottom: 8 }}>Proyección de cashflow</div>
