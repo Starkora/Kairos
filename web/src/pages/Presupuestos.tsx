@@ -118,16 +118,44 @@ export default function Presupuestos() {
     const resPrev = await fetch(`${API_BASE}/api/presupuestos?anio=${prevAnio}&mes=${prevMes}`, { headers: { 'Authorization': 'Bearer ' + getToken() } });
     const ct = resPrev.headers.get('content-type') || '';
     const prevData: any[] = /application\/json/i.test(ct) ? await resPrev.json() : [];
-    const mapPrev = new Map<number, number>();
-    (prevData || []).forEach(b => mapPrev.set(Number(b.categoria_id), Number(b.monto || 0)));
+    // Mapear montos previos y también tener acceso al nombre de la categoría del mes pasado
+    const mapPrevMonto = new Map<number, number>();
+    const mapPrevNombre = new Map<number, string>();
+    (prevData || []).forEach(b => {
+      const cid = Number(b.categoria_id);
+      mapPrevMonto.set(cid, Number(b.monto || 0));
+      if (b.categoria) mapPrevNombre.set(cid, String(b.categoria));
+    });
 
-    const updated = items.map(it => {
-      const prev = mapPrev.get(it.categoria_id);
+    const curIds = new Set(items.map(it => it.categoria_id));
+
+    // 1) Actualizar lo existente según la opción elegida
+    const updatedBase = items.map(it => {
+      const prev = mapPrevMonto.get(it.categoria_id);
       if (prev === undefined) return it;
       if (pick.isDenied && Number(it.monto || 0) > 0) return it; // sólo llenar ceros
       return { ...it, monto: prev };
     });
-    setItems(updated);
+
+    // 2) Agregar categorías que existían el mes pasado pero no están en la lista actual (por filtros/plataforma)
+    const missingFromPrev = (prevData || [])
+      .map(b => ({
+        categoria_id: Number(b.categoria_id),
+        categoria: b.categoria as string | undefined,
+        monto: Number(b.monto || 0)
+      }))
+      .filter(b => !curIds.has(b.categoria_id));
+
+    const appended = missingFromPrev.map(b => ({
+      categoria_id: b.categoria_id,
+      categoria: b.categoria || mapPrevNombre.get(b.categoria_id) || String(b.categoria_id),
+      anio,
+      mes,
+      monto: b.monto,
+      gastado: 0
+    }));
+
+    setItems([...updatedBase, ...appended]);
     Swal.fire({ icon: 'success', title: 'Montos copiados', text: 'Revisa y guarda para aplicar.', timer: 1400, showConfirmButton: false });
   };
 
