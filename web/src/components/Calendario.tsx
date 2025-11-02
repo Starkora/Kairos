@@ -826,7 +826,7 @@ export default function Calendario() {
                 onClick={() => setFilters(f => ({ ...f, [t]: !f[t] }))}
                 style={{
                   padding: '6px 10px', borderRadius: 999, border: '1px solid var(--color-input-border)',
-                  background: filters[t] ? 'var(--color-primary)' : 'var(--color-card)',
+                  background: filters[t] ? 'var(--color-accent)' : 'var(--color-card)',
                   color: filters[t] ? '#fff' : 'var(--color-text)', fontWeight: 700
                 }}>
                 {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -916,7 +916,7 @@ export default function Calendario() {
       <style>{`
         .toolbar .btn { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--color-input-border); background: var(--color-card); color: var(--color-text); font-weight: 700; cursor: pointer; }
         .toolbar .btn:hover { filter: brightness(1.02); }
-        .toolbar .btn-primary { background: var(--color-primary); color: #fff; border: none; }
+  .toolbar .btn-primary { background: var(--color-accent); color: #fff; border: none; }
         .toolbar .btn-ghost { background: transparent; border: 1px solid var(--color-input-border); }
         .menu-popover { position: absolute; top: 100%; left: 0; margin-top: 6px; padding: 6px 0; background: var(--color-card); color: var(--color-text); border: 1px solid var(--color-input-border); border-radius: 10px; box-shadow: 0 12px 30px var(--card-shadow); z-index: 20; }
   .menu-item { padding: 8px 12px; white-space: nowrap; cursor: pointer; display:flex; align-items:center; gap: 8px; }
@@ -937,7 +937,7 @@ export default function Calendario() {
           box-shadow: 0 0 0 3px #f9a825 inset, 0 2px 12px #0002;
         }
         .big-light-calendar .react-calendar__tile--active {
-          background: #6c4fa1 !important;
+          background: var(--color-accent) !important;
           color: #fff !important;
         }
         .big-light-calendar .react-calendar__tile--now {
@@ -960,7 +960,7 @@ export default function Calendario() {
             box-shadow: 0 0 0 3px #f9a825 inset, 0 2px 12px var(--card-shadow);
           }
           .big-light-calendar .react-calendar__tile--active {
-            background: var(--color-primary) !important;
+            background: var(--color-accent) !important;
             color: #fff !important;
           }
           .big-light-calendar .react-calendar__tile--now {

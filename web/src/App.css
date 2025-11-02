@@ -100,6 +100,8 @@
 }
 :root {
   --color-primary: #6c4fa1;
+  /* Acento para estados activos/selección (botones, chips). En claro coincide con primary */
+  --color-accent: #6c4fa1;
   --color-caret: var(--color-primary);
   --color-secondary: #f5f5f5;
   --color-accent: #ff9800;
@@ -126,6 +128,8 @@
 /* Modo oscuro: al aplicar la clase .dark en <html> se re-definen variables */
 .dark {
   --color-primary: #2b2b2b;
+  /* En oscuro usamos un acento más luminoso para selección visible */
+  --color-accent: #8b5cf6;
   --color-caret: var(--color-text);
   --color-secondary: #1f1f23;
   --color-accent: #ffb74d;
