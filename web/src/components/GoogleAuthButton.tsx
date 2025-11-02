@@ -37,7 +37,8 @@ const GoogleAuthButton = ({ onLogin }) => {
       <GoogleLogin
         onSuccess={handleSuccess}
         onError={() => Swal.fire('Error', 'Error al autenticar con Google', 'error')}
-        useOneTap
+        // Deshabilitamos One Tap/FedCM para evitar bloqueos por COOP/FedCM en algunos navegadores/hostings
+        useOneTap={false}
       />
     </div>
   );

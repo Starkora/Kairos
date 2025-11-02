@@ -76,6 +76,10 @@ app.options('*', cors(corsOptions));
 const helmet = require('helmet');
 const enableApiCsp = process.env.ENABLE_API_CSP === 'true';
 app.use(helmet({
+  // Evitar aislar el contexto de apertura para permitir postMessage entre GIS y la app
+  crossOriginOpenerPolicy: { policy: 'unsafe-none' },
+  // No requerimos COEP y puede interferir con iframes/scripts de terceros
+  crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   contentSecurityPolicy: enableApiCsp ? {
     useDefaults: false,
@@ -88,6 +92,15 @@ app.use(helmet({
     }
   } : false
 }));
+
+// Sugerir permiso para FedCM (Google Identity Services) donde aplique
+app.use((req, res, next) => {
+  try {
+    // Nota: El frontend debería servir este encabezado; lo añadimos aquí para integradores que consumen páginas desde el backend.
+    res.setHeader('Permissions-Policy', 'identity-credentials-get=(self "https://accounts.google.com")');
+  } catch {}
+  next();
+});
 app.use(express.json({ limit: '1mb' }));
 
 // Agregar cookie-parser para poder leer req.cookies
