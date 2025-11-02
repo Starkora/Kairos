@@ -536,20 +536,20 @@ export default function Dashboard() {
                       }).map((p, idx) => (
                         <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
                           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            <div style={{ color: 'var(--color-primary)', display: 'flex', alignItems: 'center' }}>
+                            <div style={{ color: '#60a5fa', display: 'flex', alignItems: 'center' }}>
                               {React.createElement(FaCalendarAlt as any, { size: 20 })}
                             </div>
                             <div>
-                              <div style={{ fontWeight: 600 }}>{p.categoria || 'Sin categoría'}</div>
-                              <div style={{ fontSize: 12, color: '#666' }}>{p.cuenta || p.cuenta_nombre || ''}</div>
+                              <div style={{ fontWeight: 600, color: 'var(--color-text)' }}>{p.categoria || 'Sin categoría'}</div>
+                              <div style={{ fontSize: 12, color: 'var(--color-text-secondary, #999)' }}>{p.cuenta || p.cuenta_nombre || ''}</div>
                               {p.descripcion && (
-                                <div style={{ fontSize: 12, color: '#a3a3a3', marginTop: 2, fontStyle: 'italic' }}>{p.descripcion}</div>
+                                <div style={{ fontSize: 12, color: 'var(--color-text-secondary, #999)', marginTop: 2, fontStyle: 'italic' }}>{p.descripcion}</div>
                               )}
                             </div>
                           </div>
                           <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontWeight: 700 }}>S/ {Number(p.monto || 0).toLocaleString()}</div>
-                            <div style={{ fontSize: 12, color: '#666' }}>{p.fecha ? new Date(p.fecha).toLocaleDateString() : ''}</div>
+                            <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>S/ {Number(p.monto || 0).toLocaleString()}</div>
+                            <div style={{ fontSize: 12, color: 'var(--color-text-secondary, #999)' }}>{p.fecha ? new Date(p.fecha).toLocaleDateString() : ''}</div>
                           </div>
                         </div>
                       ))
