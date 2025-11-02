@@ -181,7 +181,7 @@ export default function Dashboard() {
 
   const indicadores = [
     {
-      icon: <FaWallet size={24} />,
+      IconComponent: FaWallet,
       color: saldoNegativo ? '#e53935' : '#7e57c2',
       titulo: cuentaSeleccionada === 'all' ? 'Saldo total' : 'Saldo actual',
       valor: `S/ ${saldoActual.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -192,19 +192,19 @@ export default function Dashboard() {
       isAmount: true,
     },
     {
-      icon: <FaArrowDown size={24} />,
+      IconComponent: FaArrowDown,
       color: '#ff9800',
       titulo: 'Indicadores Egresos',
       valor: filteredMovs.filter(m => m.tipo === 'egreso').length,
     },
     {
-      icon: <FaArrowUp size={24} />,
+      IconComponent: FaArrowUp,
       color: '#388e3c',
       titulo: 'Indicadores Ingresos',
       valor: filteredMovs.filter(m => m.tipo === 'ingreso').length,
     },
     {
-      icon: <FaUniversity size={24} />,
+      IconComponent: FaUniversity,
       color: '#ff7043',
       titulo: 'Ingreso',
       valor: `S/ ${totalIngreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -213,7 +213,7 @@ export default function Dashboard() {
       isAmount: true,
     },
     {
-      icon: <FaMoneyBillWave size={24} />,
+      IconComponent: FaMoneyBillWave,
       color: '#26c6da',
       titulo: 'Gastos',
       valor: `S/ ${totalEgreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -222,7 +222,7 @@ export default function Dashboard() {
       isAmount: true,
     },
     {
-      icon: <FaPiggyBank size={24} />,
+      IconComponent: FaPiggyBank,
       color: '#6c4fa1',
       titulo: 'Ahorro',
       valor: `S/ ${totalAhorro.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -320,36 +320,41 @@ export default function Dashboard() {
       </div>
       {/* Fila de indicadores/resumen */}
       <div style={{ display: 'flex', gap: 24, margin: '24px 0 32px 0', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-        {indicadores.map((item, idx) => (
-          <div key={idx} style={{
-            flex: 1,
-            minWidth: 220,
-            maxWidth: 320,
-            background: 'var(--color-card)',
-            borderRadius: 16,
-            boxShadow: '0 2px 8px var(--card-shadow)',
-            display: 'flex',
-            alignItems: 'center',
-            padding: '18px 28px',
-            margin: '0 0 8px 0',
-            gap: 18,
-          }}>
-            <div style={{ fontSize: 44, color: item.color, background: 'var(--color-input-bg)', borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.icon}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: item.color, fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{item.titulo}</div>
-              <div style={{ fontWeight: 700, fontSize: 22, color: item.isAmount ? 'var(--color-amount)' : 'var(--color-text)', marginTop: 6 }}>{item.valor}</div>
-              {item.subtitle ? (
-                <div style={{ fontSize: 12, color: 'var(--color-table-header-text)', marginTop: 4 }}>{item.subtitle}</div>
-              ) : null}
-              {item.subtitle2 ? (
-                <div style={{ fontSize: 12, color: 'var(--color-table-header-text)', marginTop: 2 }}>{item.subtitle2}</div>
-              ) : null}
-              {item.subtitle3 ? (
-                <div style={{ fontSize: 12, color: item.subtitle3Color || 'var(--color-table-header-text)', marginTop: 2 }}>{item.subtitle3}</div>
-              ) : null}
+        {indicadores.map((item, idx) => {
+          const Icon = item.IconComponent;
+          return (
+            <div key={idx} style={{
+              flex: 1,
+              minWidth: 220,
+              maxWidth: 320,
+              background: 'var(--color-card)',
+              borderRadius: 16,
+              boxShadow: '0 2px 8px var(--card-shadow)',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '18px 28px',
+              margin: '0 0 8px 0',
+              gap: 18,
+            }}>
+              <div style={{ fontSize: 44, color: item.color, background: 'var(--color-input-bg)', borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon size={28} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ color: item.color, fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{item.titulo}</div>
+                <div style={{ fontWeight: 700, fontSize: 22, color: item.isAmount ? 'var(--color-amount)' : 'var(--color-text)', marginTop: 6 }}>{item.valor}</div>
+                {item.subtitle ? (
+                  <div style={{ fontSize: 12, color: 'var(--color-table-header-text)', marginTop: 4 }}>{item.subtitle}</div>
+                ) : null}
+                {item.subtitle2 ? (
+                  <div style={{ fontSize: 12, color: 'var(--color-table-header-text)', marginTop: 2 }}>{item.subtitle2}</div>
+                ) : null}
+                {item.subtitle3 ? (
+                  <div style={{ fontSize: 12, color: item.subtitle3Color || 'var(--color-table-header-text)', marginTop: 2 }}>{item.subtitle3}</div>
+                ) : null}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       {/* Segmentador y gráfica horizontal ocupando todo el ancho */}
   <div className="card" style={{ width: '100%', marginBottom: 24 }}>
@@ -530,8 +535,8 @@ export default function Dashboard() {
                       }).map((p, idx) => (
                         <div key={p.id || idx} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-card)', padding: 8, borderRadius: 8, boxShadow: '0 1px 4px var(--card-shadow)' }}>
                           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            <div style={{ fontSize: 20, color: 'var(--color-primary)', display: 'flex', alignItems: 'center' }}>
-                              {p.icon || <FaCalendarAlt size={20} />}
+                            <div style={{ color: 'var(--color-primary)', display: 'flex', alignItems: 'center' }}>
+                              <FaCalendarAlt size={20} />
                             </div>
                             <div>
                               <div style={{ fontWeight: 600 }}>{p.categoria || 'Sin categoría'}</div>
