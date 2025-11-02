@@ -117,6 +117,39 @@ export default function Asesor() {
     finally { setLoading(false); }
   };
 
+  const fetchDetailedQuick = async () => {
+    setLoading(true); setError(null);
+    try {
+      try {
+        const warm = new AbortController();
+        const wt = setTimeout(() => warm.abort(), 5000);
+        await fetch(`${API_BASE}/api/health/db`, { signal: warm.signal }).catch(() => {});
+        clearTimeout(wt);
+      } catch {}
+      const controller2 = new AbortController();
+      const t2 = setTimeout(() => controller2.abort(), 20000);
+      const [y,m] = selectedMonth.split('-');
+      const url = `${API_BASE}/api/insights?includeFuture=${includeFuture ? '1' : '0'}&fast=0&quick=1&year=${encodeURIComponent(y)}&month=${encodeURIComponent(String(parseInt(m,10)))}`;
+      const res2 = await fetch(url, { headers: { 'Authorization': 'Bearer ' + getToken() }, signal: controller2.signal });
+      clearTimeout(t2);
+      if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
+      const json2 = await res2.json();
+      setKpis(json2.kpis || null);
+      setInsights(Array.isArray(json2.insights) ? json2.insights : []);
+      setMeta(json2.meta || null);
+      if (json2?.meta?.month && typeof json2.meta.month === 'string' && json2.meta.month.length === 7) {
+        setSelectedMonth(prev => (prev === json2.meta.month ? prev : json2.meta.month));
+      }
+    } catch (e:any) {
+      if (e?.name === 'AbortError') {
+        setError('Cálculo rápido abortado por tiempo. Te muestro la vista rápida.');
+      } else {
+        setError(e?.message || 'No se pudo calcular el forecast. Te muestro la vista rápida.');
+      }
+      try { await fetchData(); } catch {}
+    } finally { setLoading(false); }
+  };
+
   // Cargar preferencia inicial desde backend/local al montar
   useEffect(() => {
     (async () => {
@@ -130,9 +163,9 @@ export default function Asesor() {
   }, []);
 
   useEffect(() => {
-    // Si la vista actual es detallada, respetar ese modo al alternar 'Incluir movimientos futuros'
+    // Si la vista actual es detallada, respetar ese modo; si es "quick", usar quick
     if (meta && meta.fast === false) {
-      fetchDetailed();
+      if (meta.quick) fetchDetailedQuick(); else fetchDetailed();
     } else {
       fetchData();
     }
@@ -142,7 +175,7 @@ export default function Asesor() {
   useEffect(() => {
     const t = setTimeout(() => {
       if (meta && meta.fast === false) {
-        fetchDetailed();
+        if (meta.quick) fetchDetailedQuick(); else fetchDetailed();
       } else {
         fetchData();
       }

@@ -631,12 +631,12 @@ exports.list = async (req, res) => {
           await timedQuery('UPDATE usuarios_preferencias SET data = ? WHERE usuario_id = ?', [JSON.stringify(current), usuario_id], Math.min(800, timeLeft()));
         } catch (_) { /* si no se puede limpiar ahora, se hará luego */ }
       }
-      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: quickMode ? (timeLeftQuick() <= 0) : (!fastMode && timeLeft() <= 0), detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: quickMode ? true : !!doForecast }, horizonsUsed } };
+      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, quick: !!quickMode, degraded: quickMode ? (timeLeftQuick() <= 0) : (!fastMode && timeLeft() <= 0), detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: quickMode ? true : !!doForecast }, horizonsUsed } };
       setCached(usuario_id, variant, ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);
       return res.json(result);
     } catch (_) {
       // Si falla filtrado, devolver lista original
-      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: quickMode ? (timeLeftQuick() <= 0) : (!fastMode && timeLeft() <= 0), detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: quickMode ? true : !!doForecast }, horizonsUsed } };
+      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, quick: !!quickMode, degraded: quickMode ? (timeLeftQuick() <= 0) : (!fastMode && timeLeft() <= 0), detailsUsed: { budgets: !!doBudgets, recurrent: !!doRecurrent, fees: !!doFees, forecast: quickMode ? true : !!doForecast }, horizonsUsed } };
       setCached(usuario_id, variant, ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);
       return res.json(result);
     }
