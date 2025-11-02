@@ -216,8 +216,10 @@ export default function Asesor() {
             <div className="card" style={{ padding: 16, marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontWeight: 800 }}>Forecast detallado</div>
-                <button onClick={fetchDetailed}
-                style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700 }}>Calcular ahora</button>
+                <button onClick={fetchDetailed} disabled={loading}
+                style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: loading ? '#374151' : 'var(--color-card)', color: 'var(--color-text)', fontWeight: 700, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
+                  {loading ? 'Calculando…' : 'Calcular ahora'}
+                </button>
               </div>
               <div style={{ opacity: 0.8 }}>Para reducir carga en servidores gratuitos, el forecast detallado se calcula bajo demanda.</div>
             </div>

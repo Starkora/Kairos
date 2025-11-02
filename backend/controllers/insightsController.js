@@ -3,6 +3,8 @@ const db = require('../db');
 // Cache en memoria por usuario y parámetro includeFuture para acelerar respuestas repetidas
 // TTL corto para mantener datos frescos y no bloquear UX (p. ej., 30s)
 const CACHE_TTL_MS = Number(process.env.INSIGHTS_CACHE_TTL_MS || 30_000);
+const CACHE_TTL_DETAILS_MS = Number(process.env.INSIGHTS_CACHE_TTL_DETAILS_MS || 120_000);
+const DETAIL_TIME_BUDGET_MS = Number(process.env.INSIGHTS_DETAIL_BUDGET_MS || 8000);
 const insightsCache = new Map(); // key -> { expires: number, payload }
 
 // includeVariant puede ser boolean (true/false) o una cadena diferenciadora como '1:fast'/'1'
@@ -19,9 +21,10 @@ function getCached(userId, includeVariant, ym) {
   return rec.payload;
 }
 
-function setCached(userId, includeVariant, ym, payload) {
+function setCached(userId, includeVariant, ym, payload, ttlMs) {
   const key = cacheKey(userId, includeVariant, ym);
-  insightsCache.set(key, { expires: Date.now() + CACHE_TTL_MS, payload });
+  const ttl = Number(ttlMs || CACHE_TTL_MS);
+  insightsCache.set(key, { expires: Date.now() + ttl, payload });
 }
 
 function invalidateUser(userId) {
@@ -75,6 +78,17 @@ exports.list = async (req, res) => {
     const day = isCurrentMonth ? nowD : daysInMonth;
     const includeFuture = String((req.query && req.query.includeFuture) ?? '1') !== '0';
     const fastMode = String((req.query && req.query.fast) || '0') === '1';
+    const startedAt = Date.now();
+    const timeLeft = () => Math.max(0, DETAIL_TIME_BUDGET_MS - (Date.now() - startedAt));
+
+    const timedQuery = async (sql, params, ms) => {
+      const timeout = Number(ms || 0) > 0 ? Number(ms) : undefined;
+      if (!timeout) return db.query(sql, params);
+      return Promise.race([
+        db.query(sql, params),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('q_timeout')), timeout))
+      ]);
+    };
 
     // Cache rápido para aliviar carga cuando la pantalla hace refresh o varios widgets llaman lo mismo
     const ymKey = `${year}-${String(month).padStart(2,'0')}`;
@@ -96,16 +110,26 @@ exports.list = async (req, res) => {
     } catch (_) {}
 
     // TOTALES del mes (applied=1)
-    const [[incRow]] = await db.query(
+    let incRow = { total: 0 };
+    try {
+      const [[row]] = await timedQuery(
       `SELECT COALESCE(SUM(monto),0) AS total FROM movimientos
        WHERE usuario_id = ? AND applied = 1 AND tipo IN ('ingreso','ahorro') AND DATE(fecha) BETWEEN ? AND ?`,
-      [usuario_id, first, last]
+      [usuario_id, first, last],
+      fastMode ? 6000 : Math.min(6000, timeLeft())
     );
-    const [[expRow]] = await db.query(
+      incRow = row || incRow;
+    } catch (_) { /* fallback 0 */ }
+    let expRow = { total: 0 };
+    try {
+      const [[row]] = await timedQuery(
       `SELECT COALESCE(SUM(monto),0) AS total FROM movimientos
        WHERE usuario_id = ? AND applied = 1 AND tipo = 'egreso' AND DATE(fecha) BETWEEN ? AND ?`,
-      [usuario_id, first, last]
+      [usuario_id, first, last],
+      fastMode ? 6000 : Math.min(6000, timeLeft())
     );
+      expRow = row || expRow;
+    } catch (_) { /* fallback 0 */ }
     const ingresos = Number((incRow && incRow.total) || 0);
     const egresos = Number((expRow && expRow.total) || 0);
 
@@ -164,7 +188,7 @@ exports.list = async (req, res) => {
     // Para la regla "no-budgets" necesitaremos saber si hay presupuestos > 0
     const budgetsCount = (budgets || []).filter(b => Number(b.monto || 0) > 0).length;
     // Cálculo detallado de gasto por categoría solo en modo no-rápido
-    if (!fastMode) {
+    if (!fastMode && timeLeft() > 300) {
       const [spentRows] = await db.query(
         `SELECT categoria_id, SUM(monto) AS gastado
          FROM movimientos
@@ -202,7 +226,7 @@ exports.list = async (req, res) => {
     }
 
     // Regla 3: Presión por egresos recurrentes
-    if (!fastMode) try {
+    if (!fastMode && timeLeft() > 400) try {
       const [recRows] = await db.query(
         `SELECT tipo, monto, frecuencia, inicio, fin, indefinido
          FROM movimientos_recurrentes
@@ -252,7 +276,7 @@ exports.list = async (req, res) => {
     } catch (_) { /* opcional */ }
 
       // Regla 6: Comisiones/cargos bancarios elevados
-      if (!fastMode) try {
+      if (!fastMode && timeLeft() > 400) try {
         const [[feesRow]] = await db.query(
           `SELECT COALESCE(SUM(monto),0) AS total
            FROM movimientos
@@ -285,34 +309,38 @@ exports.list = async (req, res) => {
 
     // Forecast de cashflow 30/60/90 días (exacto por ocurrencias + movimientos futuros)
     let forecast = [];
-    if (!fastMode) try {
-      const horizons = [30, 60, 90];
+    if (!fastMode && timeLeft() > 800) try {
+      // Reducir horizontes si queda poco presupuesto de tiempo
+      const tl = timeLeft();
+      const horizons = tl < 2000 ? [30] : (tl < 4000 ? [30,60] : [30,60,90]);
       const today = clampDate(new Date());
       const todayISO = toISODate(today);
       const maxH = Math.max(...horizons);
       const endMax = addDays(today, maxH);
 
       // Saldo actual
-      const [[saldoRow]] = await db.query('SELECT COALESCE(SUM(saldo_actual),0) AS saldo FROM cuentas WHERE usuario_id = ?', [usuario_id]);
+      const [[saldoRow]] = await timedQuery('SELECT COALESCE(SUM(saldo_actual),0) AS saldo FROM cuentas WHERE usuario_id = ?', [usuario_id], Math.min(1500, timeLeft()));
       const saldoActual = Number((saldoRow && saldoRow.saldo) || 0);
 
       // Traer recurrentes del usuario
-      const [recAll] = await db.query(
+      const [recAll] = await timedQuery(
         `SELECT id, tipo, monto, frecuencia, inicio, fin, indefinido
          FROM movimientos_recurrentes
          WHERE usuario_id = ?`,
-        [usuario_id]
+        [usuario_id],
+        Math.min(1500, timeLeft())
       );
       const recIds = (recAll || []).map(r => r.id).filter(Boolean);
       // Excepciones relevantes dentro del rango
       let excByRec = new Map(); // id -> { byOriginal: Map(iso->exc), added: Set(iso) }
       if (recIds.length > 0) {
-        const [excs] = await db.query(
+        const [excs] = await timedQuery(
           `SELECT movimiento_recurrente_id AS rid, fecha_original, fecha_nueva, accion
            FROM movimientos_recurrentes_excepciones
            WHERE movimiento_recurrente_id IN (${recIds.map(()=>'?').join(',')})
              AND ( (fecha_original IS NOT NULL AND fecha_original BETWEEN ? AND ?) OR (fecha_nueva IS NOT NULL AND fecha_nueva BETWEEN ? AND ?) )`,
-          [...recIds, todayISO, toISODate(endMax), todayISO, toISODate(endMax)]
+          [...recIds, todayISO, toISODate(endMax), todayISO, toISODate(endMax)],
+          Math.min(1500, timeLeft())
         );
         for (const e of (excs || [])) {
           if (!excByRec.has(e.rid)) excByRec.set(e.rid, { byOriginal: new Map(), added: new Set() });
@@ -407,11 +435,12 @@ exports.list = async (req, res) => {
       // Movimientos futuros (applied=0) hasta el máximo horizonte
       let futs = [];
       if (includeFuture) {
-        const [frows] = await db.query(
+        const [frows] = await timedQuery(
           `SELECT tipo, monto, fecha
            FROM movimientos
            WHERE usuario_id = ? AND applied = 0 AND DATE(fecha) >= CURDATE() AND DATE(fecha) <= DATE_ADD(CURDATE(), INTERVAL ? DAY)`,
-          [usuario_id, maxH]
+          [usuario_id, maxH],
+          Math.min(1500, timeLeft())
         );
         futs = frows || [];
       }
@@ -441,7 +470,7 @@ exports.list = async (req, res) => {
         let projOut = recOut + futOut;
         // Deudas con vencimiento dentro del horizonte: sumar restante
         try {
-          const [[dueRow]] = await db.query(
+          const [[dueRow]] = await timedQuery(
             `SELECT COALESCE(SUM(monto_total - COALESCE(monto_pagado,0)),0) AS due
              FROM deudas
              WHERE usuario_id = ?
@@ -449,7 +478,8 @@ exports.list = async (req, res) => {
                AND fecha_vencimiento IS NOT NULL
                AND fecha_vencimiento > CURDATE()
                AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL ? DAY)`,
-            [usuario_id, H]
+            [usuario_id, H],
+            Math.min(1500, timeLeft())
           );
           const due = Number((dueRow && dueRow.due) || 0);
           projOut += due;
@@ -490,13 +520,13 @@ exports.list = async (req, res) => {
         current.insightsDismissed = dismissed;
         await db.query('UPDATE usuarios_preferencias SET data = ? WHERE usuario_id = ?', [JSON.stringify(current), usuario_id]);
       }
-      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode } };
-      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey, result);
+      const result = { kpis, insights: filtered, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: !fastMode && timeLeft() <= 0 } };
+      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);
       return res.json(result);
     } catch (_) {
       // Si falla filtrado, devolver lista original
-      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode } };
-      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey, result);
+      const result = { kpis, insights, meta: { month: `${year}-${String(month).padStart(2,'0')}`, thresholds: { warn: thresholdWarn, danger: thresholdDanger }, forecast, includeFuture, fast: fastMode, degraded: !fastMode && timeLeft() <= 0 } };
+      setCached(usuario_id, (includeFuture ? '1' : '0') + (fastMode ? ':fast' : ''), ymKey, result, fastMode ? CACHE_TTL_MS : CACHE_TTL_DETAILS_MS);
       return res.json(result);
     }
   } catch (err) {
