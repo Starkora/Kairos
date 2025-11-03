@@ -11,7 +11,7 @@ import {
   StatsGrid,
   Modal,
   Badge
-} from './shared';
+} from './ui';
 import { FaUser, FaEnvelope, FaPhone, FaEdit, FaCheck, FaTimes, FaShieldAlt, FaClock } from 'react-icons/fa';
 
 export default function MiCuenta() {

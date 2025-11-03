@@ -20,7 +20,7 @@ import {
   FaGlobe
 } from 'react-icons/fa';
 import { Badge } from './ui/Badge';
-import { FormButton } from './shared/FormComponents';
+import { FormButton } from './ui/FormComponents';
 
 export default function AcercaContent({ variant = 'public' }) {
   const navigate = useNavigate();
