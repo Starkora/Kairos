@@ -949,7 +949,20 @@ export default function Cuentas() {
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                       {/* Botón Ver Movimientos */}
                       <button 
-                        onClick={() => window.location.href = `/dashboard?cuenta=${cuenta.id}`}
+                        onClick={() => {
+                          window.location.href = `/calendario?cuenta=${cuenta.id}`;
+                          // Mostrar alerta después de la redirección
+                          setTimeout(() => {
+                            Swal.fire({
+                              icon: 'info',
+                              title: 'Movimientos de la cuenta',
+                              text: `Aquí podrás ver todos los movimientos de tu cuenta "${cuenta.nombre}"`,
+                              confirmButtonColor: '#6c4fa1',
+                              timer: 3000,
+                              timerProgressBar: true
+                            });
+                          }, 100);
+                        }}
                         title="Ver movimientos"
                         style={{ 
                           background: 'none', 
@@ -1160,7 +1173,20 @@ export default function Cuentas() {
                     paddingTop: 12
                   }}>
                     <button
-                      onClick={() => window.location.href = `/dashboard?cuenta=${cuenta.id}`}
+                      onClick={() => {
+                        window.location.href = `/calendario?cuenta=${cuenta.id}`;
+                        // Mostrar alerta después de la redirección
+                        setTimeout(() => {
+                          Swal.fire({
+                            icon: 'info',
+                            title: 'Movimientos de la cuenta',
+                            text: `Aquí podrás ver todos los movimientos de tu cuenta "${cuenta.nombre}"`,
+                            confirmButtonColor: '#6c4fa1',
+                            timer: 3000,
+                            timerProgressBar: true
+                          });
+                        }, 100);
+                      }}
                       style={{
                         flex: 1,
                         background: '#1976d2',

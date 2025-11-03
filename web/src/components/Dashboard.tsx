@@ -69,21 +69,16 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Cargar cuentas para filtro y leer parámetro de URL
+  // Cargar cuentas para filtro
   React.useEffect(() => {
-    // Leer parámetro de cuenta desde la URL
-    const params = new URLSearchParams(window.location.search);
-    const cuentaParam = params.get('cuenta');
-    const cuentaInicial = cuentaParam && !isNaN(Number(cuentaParam)) ? Number(cuentaParam) : 'all';
-    
     fetch(`${API_BASE}/api/cuentas?plataforma=web`, {
       headers: { 'Authorization': 'Bearer ' + getToken() }
     })
       .then(res => res.ok ? res.json() : [])
       .then(data => {
         setCuentas(Array.isArray(data) ? data : []);
-        // Establecer cuenta inicial desde URL o 'all'
-        setCuentaSeleccionada(cuentaInicial);
+        // Por defecto: Todas
+        setCuentaSeleccionada('all');
       })
       .catch(() => setCuentas([]));
   }, []);

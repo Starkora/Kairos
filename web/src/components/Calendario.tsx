@@ -149,6 +149,29 @@ export default function Calendario() {
     return () => window.removeEventListener('movimientos:refresh', handler);
   }, [refreshMovimientos]);
 
+  // Leer parámetro de cuenta desde la URL y mostrar alerta informativa
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cuentaParam = params.get('cuenta');
+    if (cuentaParam) {
+      // Esperar un poco para que la página cargue
+      setTimeout(() => {
+        Swal.fire({
+          icon: 'info',
+          title: '📅 Movimientos de tu cuenta',
+          html: 'Aquí podrás ver todos los movimientos registrados en tu cuenta.<br/><br/><strong>Filtra por fecha</strong> usando el calendario.',
+          confirmButtonColor: '#6c4fa1',
+          confirmButtonText: 'Entendido',
+          timer: 4000,
+          timerProgressBar: true
+        }).then(() => {
+          // Limpiar el parámetro de la URL sin recargar la página
+          window.history.replaceState({}, '', window.location.pathname);
+        });
+      }, 300);
+    }
+  }, []);
+
   // Determinar el día mostrado a la derecha (si hay rango, usar el primer día)
   const selectedDate = React.useMemo(() => {
     if (value instanceof Date) return value;
