@@ -35,7 +35,7 @@ function normalizeTo(to) {
   const withCountry = digits.startsWith('51') ? digits : ('51' + digits);
   return '+' + withCountry;
 }
-
+ 
 async function sendSMS(to, text) {
   if (!client) {
     console.error('[Kairos] Twilio no configurado. Falta TWILIO_ACCOUNT_SID o TWILIO_AUTH_TOKEN');

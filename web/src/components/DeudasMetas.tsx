@@ -1,7 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Swal from 'sweetalert2';
 import { getToken } from '../utils/auth';
 import API_BASE from '../utils/apiBase';
+import { 
+  EstadisticasMiniCards, 
+  ProgressBar, 
+  CircularProgress 
+} from './shared';
+import { FaMoneyBillWave, FaBullseye, FaSearch, FaFilter, FaSortAmountDown } from 'react-icons/fa';
 
 export default function DeudasMetas() {
   const [pago, setPago] = useState([]);
@@ -10,7 +16,11 @@ export default function DeudasMetas() {
   const [metas, setMetas] = useState([]);
   const [cuentas, setCuentas] = useState([]);
   const [nueva, setNueva] = useState({ descripcion: '', monto: '', tipo: 'deuda', fecha_inicio: '', fecha_vencimiento: '' });
-  // Eliminamos mensaje y error, usaremos SweetAlert
+  
+  // Nuevos estados para filtros y búsqueda
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState<'todas' | 'pendientes' | 'completadas'>('todas');
+  const [ordenamiento, setOrdenamiento] = useState<'fecha' | 'monto' | 'progreso'>('fecha');
 
   // Cargar deudas y metas al iniciar
   useEffect(() => {
@@ -39,6 +49,126 @@ export default function DeudasMetas() {
       .then(r => r.json())
       .then(data => setMetas(Array.isArray(data) ? data : []));
   }, []);
+
+  // Calcular estadísticas de deudas
+  const estadisticasDeudas = useMemo(() => {
+    const total = deudas.reduce((sum, d) => sum + Number(d.monto ?? d.monto_total ?? 0), 0);
+    const pagado = deudas.reduce((sum, d) => sum + Number(d.pagado ?? d.monto_pagado ?? 0), 0);
+    const pendiente = total - pagado;
+    const completadas = deudas.filter(d => {
+      const t = Number(d.monto ?? d.monto_total ?? 0);
+      const p = Number(d.pagado ?? d.monto_pagado ?? 0);
+      return (t - p) <= 0;
+    }).length;
+    
+    return [
+      { label: 'Total Deudas', valor: total, formato: 'moneda' as const, color: '#f44336', icono: '💳' },
+      { label: 'Pagado', valor: pagado, formato: 'moneda' as const, color: '#4caf50', icono: '✅' },
+      { label: 'Pendiente', valor: pendiente, formato: 'moneda' as const, color: '#ff9800', icono: '⏳' },
+      { label: 'Completadas', valor: completadas, formato: 'numero' as const, color: '#2196f3', icono: '🎯' }
+    ];
+  }, [deudas]);
+
+  // Calcular estadísticas de metas
+  const estadisticasMetas = useMemo(() => {
+    const objetivo = metas.reduce((sum, m) => sum + Number(m.monto_objetivo ?? 0), 0);
+    const ahorrado = metas.reduce((sum, m) => sum + Number(m.monto_ahorrado ?? 0), 0);
+    const falta = objetivo - ahorrado;
+    const completadas = metas.filter(m => {
+      const obj = Number(m.monto_objetivo ?? 0);
+      const aho = Number(m.monto_ahorrado ?? 0);
+      return (obj - aho) <= 0;
+    }).length;
+    
+    return [
+      { label: 'Objetivo Total', valor: objetivo, formato: 'moneda' as const, color: '#2196f3', icono: '🎯' },
+      { label: 'Ahorrado', valor: ahorrado, formato: 'moneda' as const, color: '#4caf50', icono: '💰' },
+      { label: 'Por Ahorrar', valor: falta, formato: 'moneda' as const, color: '#ff9800', icono: '📈' },
+      { label: 'Completadas', valor: completadas, formato: 'numero' as const, color: '#8bc34a', icono: '✨' }
+    ];
+  }, [metas]);
+
+  // Filtrar y ordenar deudas
+  const deudasFiltradas = useMemo(() => {
+    let resultado = [...deudas];
+    
+    // Aplicar búsqueda
+    if (busqueda) {
+      resultado = resultado.filter(d => 
+        d.descripcion?.toLowerCase().includes(busqueda.toLowerCase())
+      );
+    }
+    
+    // Aplicar filtro de estado
+    if (filtroEstado !== 'todas') {
+      resultado = resultado.filter(d => {
+        const total = Number(d.monto ?? d.monto_total ?? 0);
+        const pagado = Number(d.pagado ?? d.monto_pagado ?? 0);
+        const completada = (total - pagado) <= 0;
+        return filtroEstado === 'completadas' ? completada : !completada;
+      });
+    }
+    
+    // Aplicar ordenamiento
+    resultado.sort((a, b) => {
+      if (ordenamiento === 'monto') {
+        const montoA = Number(a.monto ?? a.monto_total ?? 0);
+        const montoB = Number(b.monto ?? b.monto_total ?? 0);
+        return montoB - montoA;
+      } else if (ordenamiento === 'progreso') {
+        const progA = Number(a.pagado ?? a.monto_pagado ?? 0) / Number(a.monto ?? a.monto_total ?? 1);
+        const progB = Number(b.pagado ?? b.monto_pagado ?? 0) / Number(b.monto ?? b.monto_total ?? 1);
+        return progB - progA;
+      } else {
+        const fechaA = new Date(a.fecha_vencimiento || a.fecha_inicio || 0).getTime();
+        const fechaB = new Date(b.fecha_vencimiento || b.fecha_inicio || 0).getTime();
+        return fechaB - fechaA;
+      }
+    });
+    
+    return resultado;
+  }, [deudas, busqueda, filtroEstado, ordenamiento]);
+
+  // Filtrar y ordenar metas
+  const metasFiltradas = useMemo(() => {
+    let resultado = [...metas];
+    
+    // Aplicar búsqueda
+    if (busqueda) {
+      resultado = resultado.filter(m => 
+        m.descripcion?.toLowerCase().includes(busqueda.toLowerCase())
+      );
+    }
+    
+    // Aplicar filtro de estado
+    if (filtroEstado !== 'todas') {
+      resultado = resultado.filter(m => {
+        const objetivo = Number(m.monto_objetivo ?? 0);
+        const ahorrado = Number(m.monto_ahorrado ?? 0);
+        const completada = (objetivo - ahorrado) <= 0;
+        return filtroEstado === 'completadas' ? completada : !completada;
+      });
+    }
+    
+    // Aplicar ordenamiento
+    resultado.sort((a, b) => {
+      if (ordenamiento === 'monto') {
+        const montoA = Number(a.monto_objetivo ?? 0);
+        const montoB = Number(b.monto_objetivo ?? 0);
+        return montoB - montoA;
+      } else if (ordenamiento === 'progreso') {
+        const progA = Number(a.monto_ahorrado ?? 0) / Number(a.monto_objetivo ?? 1);
+        const progB = Number(b.monto_ahorrado ?? 0) / Number(b.monto_objetivo ?? 1);
+        return progB - progA;
+      } else {
+        const fechaA = new Date(a.fecha_objetivo || a.fecha_inicio || 0).getTime();
+        const fechaB = new Date(b.fecha_objetivo || b.fecha_inicio || 0).getTime();
+        return fechaB - fechaA;
+      }
+    });
+    
+    return resultado;
+  }, [metas, busqueda, filtroEstado, ordenamiento]);
 
   const handleAdd = async () => {
     if (!nueva.descripcion || !nueva.monto) return;
@@ -389,241 +519,670 @@ export default function DeudasMetas() {
 
   return (
     <div className="card debts-card">
-        <h1 className="debts-title">Deudas y Metas</h1>
-      <div className="debts-tabs" style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-          <button onClick={() => setTab('deudas')} style={{ background: tab === 'deudas' ? 'var(--color-primary)' : 'var(--color-secondary)', color: tab === 'deudas' ? '#fff' : 'var(--color-text)', border: 'none', borderRadius: 8, padding: '8px 24px', fontWeight: 600 }}>Deudas</button>
-          <button onClick={() => setTab('metas')} style={{ background: tab === 'metas' ? 'var(--color-primary)' : 'var(--color-secondary)', color: tab === 'metas' ? '#fff' : 'var(--color-text)', border: 'none', borderRadius: 8, padding: '8px 24px', fontWeight: 600 }}>Metas</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+        <h1 className="debts-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+          {tab === 'deudas' ? <FaMoneyBillWave /> : <FaBullseye />}
+          Deudas y Metas
+        </h1>
+        <div className="debts-tabs" style={{ display: 'flex', gap: 12 }}>
+          <button 
+            onClick={() => setTab('deudas')} 
+            style={{ 
+              background: tab === 'deudas' ? 'linear-gradient(135deg, #f44336 0%, #e53935 100%)' : 'var(--color-secondary)', 
+              color: '#fff', 
+              border: 'none', 
+              borderRadius: 10, 
+              padding: '10px 20px', 
+              fontWeight: 700,
+              boxShadow: tab === 'deudas' ? '0 4px 12px rgba(244, 67, 54, 0.3)' : 'none',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            💳 Deudas
+          </button>
+          <button 
+            onClick={() => setTab('metas')} 
+            style={{ 
+              background: tab === 'metas' ? 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)' : 'var(--color-secondary)', 
+              color: '#fff', 
+              border: 'none', 
+              borderRadius: 10, 
+              padding: '10px 20px', 
+              fontWeight: 700,
+              boxShadow: tab === 'metas' ? '0 4px 12px rgba(76, 175, 80, 0.3)' : 'none',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            🎯 Metas
+          </button>
+        </div>
       </div>
-      <div className="debts-form">
-          <input type="text" placeholder="Descripción" value={nueva.descripcion} onChange={e => setNueva({ ...nueva, descripcion: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--color-input-border)', width: '100%', minWidth: 0, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} />
-          <input type="number" placeholder="Monto" value={nueva.monto} onChange={e => setNueva({ ...nueva, monto: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--color-input-border)', width: '100%', minWidth: 0, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} />
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', minWidth: 0 }}>
-          <label htmlFor="fecha_inicio" style={{ fontSize: '12px', color: '#555', marginBottom: '4px' }}>Fecha inicio</label>
-          <input id="fecha_inicio" type="date" value={nueva.fecha_inicio} onChange={e => setNueva({ ...nueva, fecha_inicio: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%' }} />
+
+      {/* Estadísticas */}
+      <EstadisticasMiniCards 
+        estadisticas={tab === 'deudas' ? estadisticasDeudas : estadisticasMetas} 
+      />
+
+      {/* Barra de herramientas: Búsqueda, Filtros y Ordenamiento */}
+      <div style={{ 
+        display: 'flex', 
+        gap: 12, 
+        marginBottom: 20, 
+        flexWrap: 'wrap',
+        padding: '16px',
+        background: 'var(--color-card)',
+        borderRadius: 12,
+        border: '1px solid var(--color-input-border)'
+      }}>
+        {/* Búsqueda */}
+        <div style={{ flex: '1 1 250px', position: 'relative' }}>
+          <FaSearch style={{ 
+            position: 'absolute', 
+            left: 12, 
+            top: '50%', 
+            transform: 'translateY(-50%)', 
+            color: 'var(--color-muted)',
+            fontSize: 14
+          }} />
+          <input 
+            type="text" 
+            placeholder="Buscar..." 
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            style={{ 
+              width: '100%',
+              padding: '10px 12px 10px 36px', 
+              borderRadius: 8, 
+              border: '1px solid var(--color-input-border)', 
+              background: 'var(--color-input-bg)', 
+              color: 'var(--color-text)',
+              fontSize: 14
+            }} 
+          />
+        </div>
+
+        {/* Filtro de estado */}
+        <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <FaFilter style={{ color: 'var(--color-muted)', fontSize: 14 }} />
+          <select 
+            value={filtroEstado}
+            onChange={e => setFiltroEstado(e.target.value as any)}
+            style={{ 
+              padding: '10px 12px', 
+              borderRadius: 8, 
+              border: '1px solid var(--color-input-border)', 
+              background: 'var(--color-input-bg)', 
+              color: 'var(--color-text)',
+              fontWeight: 600,
+              fontSize: 14
+            }}
+          >
+            <option value="todas">Todas</option>
+            <option value="pendientes">Pendientes</option>
+            <option value="completadas">Completadas</option>
+          </select>
+        </div>
+
+        {/* Ordenamiento */}
+        <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <FaSortAmountDown style={{ color: 'var(--color-muted)', fontSize: 14 }} />
+          <select 
+            value={ordenamiento}
+            onChange={e => setOrdenamiento(e.target.value as any)}
+            style={{ 
+              padding: '10px 12px', 
+              borderRadius: 8, 
+              border: '1px solid var(--color-input-border)', 
+              background: 'var(--color-input-bg)', 
+              color: 'var(--color-text)',
+              fontWeight: 600,
+              fontSize: 14
+            }}
+          >
+            <option value="fecha">Por Fecha</option>
+            <option value="monto">Por Monto</option>
+            <option value="progreso">Por Progreso</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Formulario de nueva deuda/meta */}
+      <div className="debts-form" style={{
+        marginBottom: 24,
+        padding: 20,
+        background: 'var(--color-card)',
+        borderRadius: 12,
+        border: '2px dashed var(--color-input-border)'
+      }}>
+        <h3 style={{ marginBottom: 16, fontSize: 16, fontWeight: 700, color: 'var(--color-text)' }}>
+          ➕ Agregar Nueva {nueva.tipo === 'deuda' ? 'Deuda' : 'Meta'}
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+          <input type="text" placeholder="Descripción" value={nueva.descripcion} onChange={e => setNueva({ ...nueva, descripcion: e.target.value })} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14 }} />
+          <input type="number" placeholder="Monto" value={nueva.monto} onChange={e => setNueva({ ...nueva, monto: e.target.value })} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14 }} />
+        <div>
+          <label htmlFor="fecha_inicio" style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 4, display: 'block' }}>Fecha inicio</label>
+          <input id="fecha_inicio" type="date" value={nueva.fecha_inicio} onChange={e => setNueva({ ...nueva, fecha_inicio: e.target.value })} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14 }} />
         </div>
         {nueva.tipo === 'meta' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', minWidth: 0 }}>
-            <label htmlFor="fecha_objetivo" style={{ fontSize: '12px', color: '#555', marginBottom: '4px' }}>Fecha objetivo</label>
-            <input id="fecha_objetivo" type="date" value={nueva.fecha_vencimiento} onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%' }} />
+          <div>
+            <label htmlFor="fecha_objetivo" style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 4, display: 'block' }}>Fecha objetivo</label>
+            <input id="fecha_objetivo" type="date" value={nueva.fecha_vencimiento} onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14 }} />
           </div>
         )}
         {nueva.tipo === 'deuda' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', minWidth: 0 }}>
-            <label htmlFor="fecha_vencimiento" style={{ fontSize: '12px', color: '#555', marginBottom: '4px' }}>Fecha vencimiento</label>
-            <input id="fecha_vencimiento" type="date" value={nueva.fecha_vencimiento} onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc', width: '100%' }} />
+          <div>
+            <label htmlFor="fecha_vencimiento" style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 4, display: 'block' }}>Fecha vencimiento</label>
+            <input id="fecha_vencimiento" type="date" value={nueva.fecha_vencimiento} onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14 }} />
           </div>
         )}
-        <select value={nueva.tipo} onChange={e => setNueva({ ...nueva, tipo: e.target.value })} style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--color-input-border)', width: '100%', backgroundColor: 'var(--color-input-bg)', minWidth: 0, color: 'var(--color-text)' }}>
-          <option value="deuda">Deuda</option>
-          <option value="meta">Meta</option>
+        <select value={nueva.tipo} onChange={e => setNueva({ ...nueva, tipo: e.target.value })} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', backgroundColor: 'var(--color-input-bg)', color: 'var(--color-text)', fontWeight: 600, fontSize: 14 }}>
+          <option value="deuda">💳 Deuda</option>
+          <option value="meta">🎯 Meta</option>
         </select>
-        <button onClick={handleAdd} style={{ backgroundColor: 'var(--color-success)', color: 'white', padding: '10px', borderRadius: '5px', border: 'none' }}>Agregar</button>
+        <button onClick={handleAdd} style={{ backgroundColor: 'var(--color-success)', color: 'white', padding: '10px 20px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'transform 0.2s ease', boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+          ✨ Agregar
+        </button>
+        </div>
       </div>
       {tab === 'deudas' ? (
         <div>
-          <h2 style={{ fontSize: 20, marginBottom: 12 }}>Mis Deudas</h2>
-          {deudas.length === 0 && <div style={{ color: '#888' }}>No tienes deudas registradas.</div>}
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            {deudas.map(d => (
-              <li key={d.id} style={{ background: 'var(--color-card)', marginBottom: 14, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px var(--card-shadow)', flexWrap: 'wrap', gap: 12, border: '1px solid var(--color-input-border)' }}>
-                <div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ fontWeight: 700 }}>{d.descripcion}</span>
-                    {(() => {
-                      const total = Number(d.monto ?? d.monto_total ?? 0);
-                      const pagado = Number(d.pagado ?? d.monto_pagado ?? 0);
-                      const pendiente = Math.max(total - pagado, 0);
-                      if (pendiente <= 0) {
-                        return <span style={{ background:'#2e7d32', color:'#fff', borderRadius:12, padding:'2px 8px', fontSize:12, fontWeight:800 }}>Completada</span>;
-                      }
-                      return null;
-                    })()}
+          <h2 style={{ fontSize: 20, marginBottom: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text)' }}>
+            💳 Mis Deudas
+            <span style={{ 
+              fontSize: 14, 
+              fontWeight: 600, 
+              padding: '4px 12px', 
+              borderRadius: 12, 
+              background: 'rgba(244, 67, 54, 0.1)', 
+              color: '#f44336' 
+            }}>
+              {deudasFiltradas.length}
+            </span>
+          </h2>
+          {deudasFiltradas.length === 0 && (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: 60, 
+              color: 'var(--color-muted)',
+              background: 'var(--color-card)',
+              borderRadius: 12,
+              border: '2px dashed var(--color-input-border)'
+            }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>💳</div>
+              <div style={{ fontSize: 16, fontWeight: 600 }}>
+                {busqueda || filtroEstado !== 'todas' 
+                  ? 'No se encontraron deudas con los filtros aplicados' 
+                  : 'No tienes deudas registradas'}
+              </div>
+            </div>
+          )}
+          <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 16 }}>
+            {deudasFiltradas.map(d => {
+              const total = Number(d.monto ?? d.monto_total ?? 0);
+              const pagado = Number(d.pagado ?? d.monto_pagado ?? 0);
+              const pendiente = Math.max(total - pagado, 0);
+              const porcentaje = total > 0 ? (pagado / total) * 100 : 0;
+              const completada = pendiente <= 0;
+
+              return (
+                <li key={d.id} style={{
+                  background: completada 
+                    ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, rgba(56, 142, 60, 0.05) 100%)'
+                    : 'var(--color-card)',
+                  borderRadius: 16,
+                  padding: 20,
+                  boxShadow: '0 2px 8px var(--card-shadow)',
+                  border: completada 
+                    ? '2px solid #4caf50' 
+                    : '1px solid var(--color-input-border)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  {/* Badge de completada */}
+                  {completada && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 12,
+                      right: 12,
+                      background: 'linear-gradient(135deg, #4caf50, #66bb6a)',
+                      color: '#fff',
+                      padding: '6px 12px',
+                      borderRadius: 20,
+                      fontSize: 12,
+                      fontWeight: 800,
+                      boxShadow: '0 2px 8px rgba(76, 175, 80, 0.4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}>
+                      ✅ Completada
+                    </div>
+                  )}
+
+                  <div style={{ marginBottom: 16 }}>
+                    <h3 style={{ 
+                      fontSize: 18, 
+                      fontWeight: 700, 
+                      marginBottom: 8, 
+                      color: 'var(--color-text)',
+                      paddingRight: completada ? 120 : 0
+                    }}>
+                      {d.descripcion}
+                    </h3>
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: 20, 
+                      fontSize: 14, 
+                      color: 'var(--color-muted)',
+                      flexWrap: 'wrap'
+                    }}>
+                      <span><strong>Total:</strong> S/ {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span style={{ color: '#4caf50' }}><strong>Pagado:</strong> S/ {pagado.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span style={{ color: '#f44336' }}><strong>Pendiente:</strong> S/ {pendiente.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    {(d.fecha_inicio || d.fecha_vencimiento) && (
+                      <div style={{ fontSize: 13, color: 'var(--color-muted)', marginTop: 6 }}>
+                        {d.fecha_inicio && <span>📅 Inicio: {new Date(d.fecha_inicio).toLocaleDateString()} </span>}
+                        {d.fecha_vencimiento && <span>⏰ Vence: {new Date(d.fecha_vencimiento).toLocaleDateString()}</span>}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ fontSize: 15, color: 'var(--color-muted)' }}>
-                    {(() => {
-                      const total = Number(d.monto ?? d.monto_total ?? 0);
-                      const pagado = Number(d.pagado ?? d.monto_pagado ?? 0);
-                      const pendiente = Math.max(total - pagado, 0);
-                      return (
-                        <>
-                          Monto: S/ {total.toLocaleString(undefined, { minimumFractionDigits: 2 })} | {' '}
-                          Pagado: S/ {pagado.toLocaleString(undefined, { minimumFractionDigits: 2 })} | {' '}
-                          Pendiente: S/ {pendiente.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                          <br />
-                          {d.fecha_inicio && <span>Inicio: {new Date(d.fecha_inicio).toLocaleDateString()} </span>}
-                          {d.fecha_vencimiento && <span>Vence: {new Date(d.fecha_vencimiento).toLocaleDateString()}</span>}
-                        </>
-                      );
-                    })()}
+
+                  {/* Barra de progreso */}
+                  <div style={{ marginBottom: 16 }}>
+                    <ProgressBar
+                      current={pagado}
+                      total={total}
+                      height={28}
+                      showPercentage={true}
+                      label="Progreso de pago"
+                      showLabel={true}
+                    />
                   </div>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  {(() => {
-                    const total = parseFloat(d.monto ?? d.monto_total ?? 0);
-                    const pagado = parseFloat(d.pagado ?? d.monto_pagado ?? 0);
-                    const pendiente = Math.max(total - pagado, 0);
-                    if (pendiente <= 0) {
-                      return <span title="Completada" style={{ fontSize: 18 }}>✅</span>;
-                    }
-                    return (
+
+                  {/* Acciones */}
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    {!completada && (
                       <>
-                        <input type="number" step="0.01" min={0.01} max={pendiente} placeholder="Pago" style={{ width: 100, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-deuda-${d.id}`} />
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          min={0.01} 
+                          max={pendiente} 
+                          placeholder="Monto a pagar" 
+                          id={`pago-deuda-${d.id}`}
+                          style={{ 
+                            flex: '1 1 150px',
+                            padding: '10px 12px', 
+                            borderRadius: 8, 
+                            border: '1px solid var(--color-input-border)', 
+                            background: 'var(--color-input-bg)', 
+                            color: 'var(--color-text)',
+                            fontSize: 14
+                          }} 
+                        />
                         <button
-                    onClick={() => {
-                      const val = (document.getElementById(`pago-deuda-${d.id}`) as HTMLInputElement).value;
-                      const montoPago = Number(val);
-                      const pagado = parseFloat(d.pagado ?? d.monto_pagado ?? 0);
-                      const total = parseFloat(d.monto ?? d.monto_total ?? 0);
-                      if (!val || isNaN(montoPago) || montoPago <= 0) {
-                        Swal.fire('Error', 'Ingrese un monto válido', 'error');
-                        return;
-                      }
-                      if (pagado + montoPago > total) {
-                        Swal.fire('Advertencia', 'El pago excede el monto de la deuda', 'warning');
-                        return;
-                      }
-                      handlePago(d.id, 'deuda', montoPago);
-                    }}
-                    style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 600 }}
-                  >Pagar</button>
+                          onClick={() => {
+                            const val = (document.getElementById(`pago-deuda-${d.id}`) as HTMLInputElement).value;
+                            const montoPago = Number(val);
+                            if (!val || isNaN(montoPago) || montoPago <= 0) {
+                              Swal.fire('Error', 'Ingrese un monto válido', 'error');
+                              return;
+                            }
+                            if (pagado + montoPago > total) {
+                              Swal.fire('Advertencia', 'El pago excede el monto de la deuda', 'warning');
+                              return;
+                            }
+                            handlePago(d.id, 'deuda', montoPago);
+                          }}
+                          style={{ 
+                            background: 'linear-gradient(135deg, #6c4fa1, #8e6ec7)', 
+                            color: '#fff', 
+                            border: 'none', 
+                            borderRadius: 8, 
+                            padding: '10px 20px', 
+                            fontWeight: 700,
+                            fontSize: 14,
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 8px rgba(108, 79, 161, 0.3)',
+                            transition: 'transform 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                          💰 Pagar
+                        </button>
                       </>
-                    );
-                  })()}
-                    <button
-                    onClick={() => handleEdit(d.id, 'deuda')}
-                    title="Editar"
-                    style={{ background: 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: 8, padding: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Editar">
-                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"></path>
-                      <path d="M20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.29a1 1 0 0 0-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83z"></path>
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(d.id, 'deuda')}
-                    className="icon-btn"
-                    style={{ background: 'var(--color-danger)', color: '#fff', border: 'none', borderRadius: 8, padding: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Eliminar">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-                      <path d="M10 11v6"></path>
-                      <path d="M14 11v6"></path>
-                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
-                    </svg>
-                    <span className="tooltip">Eliminar</span>
-                  </button>
-                </div>
-              </li>
-            ))}
+                    )}
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => handleEdit(d.id, 'deuda')}
+                        title="Editar"
+                        style={{ 
+                          background: 'var(--color-accent)', 
+                          color: '#fff', 
+                          border: 'none', 
+                          borderRadius: 8, 
+                          padding: 10, 
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'transform 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"></path>
+                          <path d="M20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.29a1 1 0 0 0-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83z"></path>
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(d.id, 'deuda')}
+                        title="Eliminar"
+                        style={{ 
+                          background: 'var(--color-danger)', 
+                          color: '#fff', 
+                          border: 'none', 
+                          borderRadius: 8, 
+                          padding: 10, 
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'transform 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                          <path d="M10 11v6"></path>
+                          <path d="M14 11v6"></path>
+                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : (
         <div>
-          <h2 style={{ fontSize: 20, marginBottom: 12 }}>Mis Metas</h2>
-          {metas.length === 0 && <div style={{ color: '#888' }}>No tienes metas registradas.</div>}
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            {metas.map(m => (
-              <li key={m.id} style={{ background: 'var(--color-card)', marginBottom: 14, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px var(--card-shadow)', flexWrap: 'wrap', gap: 12, border: '1px solid var(--color-input-border)' }}>
-                <div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ fontWeight: 700 }}>{m.descripcion}</span>
-                    {(() => {
-                      const objetivo = Number(m.monto_objetivo || 0);
-                      const ahorrado = Number(m.monto_ahorrado || 0);
-                      const falta = Math.max(objetivo - ahorrado, 0);
-                      if (falta <= 0) {
-                        return <span style={{ background:'#2e7d32', color:'#fff', borderRadius:12, padding:'2px 8px', fontSize:12, fontWeight:800 }}>Completada</span>;
-                      }
-                      return null;
-                    })()}
-                  </div>
-                  <div style={{ fontSize: 15, color: 'var(--color-muted)' }}>
-                    {(() => {
-                      const objetivo = Number(m.monto_objetivo || 0);
-                      const ahorrado = Number(m.monto_ahorrado || 0);
-                      const falta = Math.max(objetivo - ahorrado, 0);
-                      return (
-                        <>
-                          Meta: S/ {objetivo.toLocaleString(undefined, { minimumFractionDigits: 2 })} | {' '}
-                          Ahorrado: S/ {ahorrado.toLocaleString(undefined, { minimumFractionDigits: 2 })} | {' '}
-                          Falta: S/ {falta.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                          <br />
-                          {m.fecha_inicio && <span>Inicio: {new Date(m.fecha_inicio).toLocaleDateString()} </span>}
-                          {m.fecha_objetivo && <span>Objetivo: {new Date(m.fecha_objetivo).toLocaleDateString()} </span>}
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  {(() => {
-                    const objetivo = parseFloat(m.monto_objetivo ?? 0);
-                    const ahorrado = parseFloat(m.pagado ?? m.monto_ahorrado ?? 0);
-                    const falta = Math.max(objetivo - ahorrado, 0);
-                    if (falta <= 0) {
-                      return <span title="Completada" style={{ fontSize: 18 }}>✅</span>;
-                    }
-                    return (
-                      <>
-                        <input type="number" step="0.01" min={0.01} max={falta} placeholder="Aportar" style={{ width: 100, marginRight: 8, borderRadius: 6, border: '1px solid var(--color-input-border)', padding: 4, background: 'var(--color-input-bg)', color: 'var(--color-text)' }} id={`pago-meta-${m.id}`} />
-                        <button
-                    onClick={() => {
-                      const val = (document.getElementById(`pago-meta-${m.id}`) as HTMLInputElement).value;
-                      const montoAporte = Number(val);
-                      const ahorrado = parseFloat(m.pagado ?? m.monto_ahorrado ?? 0);
-                      const objetivo = parseFloat(m.monto_objetivo ?? 0);
-                      if (!val || isNaN(montoAporte) || montoAporte <= 0) {
-                        Swal.fire('Error', 'Ingrese un monto válido', 'error');
-                        return;
-                      }
-                      if (ahorrado + montoAporte > objetivo) {
-                        Swal.fire('Advertencia', 'El aporte excede el monto de la meta', 'warning');
-                        return;
-                      }
-                      handlePago(m.id, 'meta', montoAporte);
+          <h2 style={{ 
+            fontSize: 24, 
+            fontWeight: 700, 
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10
+          }}>
+            <FaBullseye style={{ color: '#4caf50' }} />
+            Mis Metas
+          </h2>
+          
+          {metasFiltradas.length === 0 ? (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '60px 20px',
+              color: 'var(--color-muted)',
+              background: 'var(--color-card)',
+              borderRadius: 12,
+              border: '2px dashed var(--color-input-border)'
+            }}>
+              <FaBullseye style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }} />
+              <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>
+                {busqueda || filtroEstado !== 'todas' ? 'No se encontraron metas' : 'No tienes metas registradas'}
+              </p>
+              <p style={{ fontSize: 14 }}>
+                {busqueda || filtroEstado !== 'todas' 
+                  ? 'Intenta ajustar los filtros de búsqueda' 
+                  : 'Agrega una meta para comenzar a ahorrar'}
+              </p>
+            </div>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+              {metasFiltradas.map(m => {
+                const objetivo = Number(m.monto_objetivo || 0);
+                const ahorrado = Number(m.monto_ahorrado || 0);
+                const falta = Math.max(objetivo - ahorrado, 0);
+                const progreso = objetivo > 0 ? (ahorrado / objetivo) * 100 : 0;
+                const completada = falta <= 0;
+
+                return (
+                  <li 
+                    key={m.id} 
+                    style={{ 
+                      background: completada 
+                        ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(56, 142, 60, 0.05) 100%)' 
+                        : 'var(--color-card)',
+                      marginBottom: 16, 
+                      borderRadius: 12, 
+                      padding: 20, 
+                      boxShadow: '0 2px 8px var(--card-shadow)', 
+                      border: completada 
+                        ? '2px solid rgba(76, 175, 80, 0.3)' 
+                        : '1px solid var(--color-input-border)',
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                     }}
-                    style={{ background: '#388e3c', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 600 }}
-                  >Aportar</button>
-                      </>
-                    );
-                  })()}
-                  <button
-                    onClick={() => handleEdit(m.id, 'meta')}
-                    title="Editar"
-                    style={{ background: 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: 8, padding: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Editar">
-                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"></path>
-                      <path d="M20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.29a1 1 0 0 0-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83z"></path>
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(m.id, 'meta')}
-                    className="icon-btn"
-                    style={{ background: 'var(--color-danger)', color: '#fff', border: 'none', borderRadius: 8, padding: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Eliminar">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-                      <path d="M10 11v6"></path>
-                      <path d="M14 11v6"></path>
-                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
-                    </svg>
-                    <span className="tooltip">Eliminar</span>
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+                    {/* Header con título y badge */}
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      marginBottom: 12,
+                      flexWrap: 'wrap',
+                      gap: 10
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <FaBullseye style={{ color: '#4caf50', fontSize: 20 }} />
+                        <span style={{ fontWeight: 700, fontSize: 18 }}>{m.descripcion}</span>
+                        {completada && (
+                          <span style={{ 
+                            background: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)',
+                            color: '#fff', 
+                            borderRadius: 12, 
+                            padding: '4px 12px', 
+                            fontSize: 12, 
+                            fontWeight: 700,
+                            boxShadow: '0 2px 4px rgba(76, 175, 80, 0.3)'
+                          }}>
+                            ✓ Completada
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div style={{ marginBottom: 16 }}>
+                      <ProgressBar 
+                        current={ahorrado}
+                        total={objetivo}
+                        height={28}
+                        showPercentage={true}
+                        label="Progreso de ahorro"
+                        showLabel={true}
+                      />
+                    </div>
+
+                    {/* Detalles financieros */}
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                      gap: 12,
+                      marginBottom: 16,
+                      fontSize: 14
+                    }}>
+                      <div>
+                        <span style={{ color: 'var(--color-muted)', display: 'block', fontSize: 12 }}>
+                          Meta Total
+                        </span>
+                        <span style={{ fontWeight: 700, fontSize: 16, color: '#4caf50' }}>
+                          S/ {objetivo.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--color-muted)', display: 'block', fontSize: 12 }}>
+                          Ahorrado
+                        </span>
+                        <span style={{ fontWeight: 700, fontSize: 16, color: '#2196f3' }}>
+                          S/ {ahorrado.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--color-muted)', display: 'block', fontSize: 12 }}>
+                          Por Ahorrar
+                        </span>
+                        <span style={{ fontWeight: 700, fontSize: 16, color: completada ? '#4caf50' : '#ff9800' }}>
+                          S/ {falta.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Fechas */}
+                    {(m.fecha_inicio || m.fecha_objetivo) && (
+                      <div style={{ 
+                        fontSize: 13, 
+                        color: 'var(--color-muted)',
+                        marginBottom: 16,
+                        display: 'flex',
+                        gap: 16,
+                        flexWrap: 'wrap'
+                      }}>
+                        {m.fecha_inicio && (
+                          <span>📅 Inicio: {new Date(m.fecha_inicio).toLocaleDateString()}</span>
+                        )}
+                        {m.fecha_objetivo && (
+                          <span>🎯 Objetivo: {new Date(m.fecha_objetivo).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Botones de acción */}
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: 10, 
+                      alignItems: 'center', 
+                      flexWrap: 'wrap',
+                      justifyContent: 'space-between'
+                    }}>
+                      {!completada && (
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            min={0.01} 
+                            max={falta} 
+                            placeholder="Monto a aportar" 
+                            style={{ 
+                              width: 140, 
+                              borderRadius: 8, 
+                              border: '1px solid var(--color-input-border)', 
+                              padding: '8px 12px', 
+                              background: 'var(--color-input-bg)', 
+                              color: 'var(--color-text)',
+                              fontSize: 14
+                            }} 
+                            id={`pago-meta-${m.id}`} 
+                          />
+                          <button
+                            onClick={() => {
+                              const val = (document.getElementById(`pago-meta-${m.id}`) as HTMLInputElement).value;
+                              const montoAporte = Number(val);
+                              if (!val || isNaN(montoAporte) || montoAporte <= 0) {
+                                Swal.fire('Error', 'Ingrese un monto válido', 'error');
+                                return;
+                              }
+                              if (ahorrado + montoAporte > objetivo) {
+                                Swal.fire('Advertencia', 'El aporte excede el monto de la meta', 'warning');
+                                return;
+                              }
+                              handlePago(m.id, 'meta', montoAporte);
+                            }}
+                            style={{ 
+                              background: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)',
+                              color: '#fff', 
+                              border: 'none', 
+                              borderRadius: 8, 
+                              padding: '8px 16px', 
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              fontSize: 14,
+                              boxShadow: '0 2px 4px rgba(76, 175, 80, 0.3)',
+                              transition: 'transform 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                          >
+                            💰 Aportar
+                          </button>
+                        </div>
+                      )}
+                      <div style={{ marginLeft: completada ? 0 : 'auto', display: 'flex', gap: 8 }}>
+                        <button
+                          onClick={() => handleEdit(m.id, 'meta')}
+                          title="Editar"
+                          style={{ 
+                            background: 'var(--color-accent)', 
+                            color: '#fff', 
+                            border: 'none', 
+                            borderRadius: 8, 
+                            padding: 10, 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'transform 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"></path>
+                            <path d="M20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.29a1 1 0 0 0-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83z"></path>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(m.id, 'meta')}
+                          title="Eliminar"
+                          style={{ 
+                            background: 'var(--color-danger)', 
+                            color: '#fff', 
+                            border: 'none', 
+                            borderRadius: 8, 
+                            padding: 10, 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'transform 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                            <path d="M10 11v6"></path>
+                            <path d="M14 11v6"></path>
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       )}
-      <style>{`
-        .icon-btn { position: relative; }
-        .icon-btn .tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px); background: #222; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
-        .icon-btn .tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #222; }
-        .icon-btn:hover .tooltip, .icon-btn:focus .tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }
-      `}</style>
     </div>
   );
 }

@@ -5,6 +5,13 @@ import { getToken } from '../utils/auth';
 import API_BASE from '../utils/apiBase';
 import Swal from 'sweetalert2';
 import { loadPreferences, savePreferences } from '../utils/preferences';
+import { 
+  TimelineView, 
+  DragDropProvider, 
+  DraggableMovimiento, 
+  RecordatoriosList, 
+  BadgeRecordatorio 
+} from './shared';
 
 type Value = Date | [Date, Date];
 
@@ -35,6 +42,14 @@ export default function Calendario() {
   const exportMenuRef = React.useRef<HTMLDivElement|null>(null);
   const quickMenuRef = React.useRef<HTMLDivElement|null>(null);
   const presetsMenuRef = React.useRef<HTMLDivElement|null>(null);
+  
+  // Nuevos estados para mejoras
+  const [vistaCompacta, setVistaCompacta] = React.useState(false);
+  const [cuentaFiltro, setCuentaFiltro] = React.useState<number | 'all'>('all');
+  const [cuentas, setCuentas] = React.useState<any[]>([]);
+  const [agruparPorCategoria, setAgruparPorCategoria] = React.useState(false);
+  const [vistaTimeline, setVistaTimeline] = React.useState(false);
+  const [draggedItem, setDraggedItem] = React.useState<any>(null);
 
   // Cerrar menús al hacer click fuera o al presionar Escape
   React.useEffect(() => {
@@ -149,11 +164,29 @@ export default function Calendario() {
     return () => window.removeEventListener('movimientos:refresh', handler);
   }, [refreshMovimientos]);
 
+  // Cargar cuentas para filtro
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const apiFetch = (await import('../utils/apiFetch')).default;
+        const res = await apiFetch(`${API_BASE}/api/cuentas?plataforma=web`);
+        const data = res.ok ? await res.json() : [];
+        setCuentas(Array.isArray(data) ? data : []);
+      } catch {
+        setCuentas([]);
+      }
+    })();
+  }, []);
+
   // Leer parámetro de cuenta desde la URL y mostrar alerta informativa
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const cuentaParam = params.get('cuenta');
     if (cuentaParam) {
+      const cuentaId = Number(cuentaParam);
+      if (!isNaN(cuentaId)) {
+        setCuentaFiltro(cuentaId);
+      }
       // Esperar un poco para que la página cargue
       setTimeout(() => {
         Swal.fire({
@@ -193,8 +226,144 @@ export default function Calendario() {
 
   const movimientosDelDia = todosMovimientos.filter(m => {
     const fechaMov = m.fecha ? m.fecha.slice(0, 10) : '';
-    return fechaMov === fechaSeleccionada;
+    if (fechaMov !== fechaSeleccionada) return false;
+    // Aplicar filtro por cuenta
+    if (cuentaFiltro !== 'all') {
+      const cuentaId = Number(m.cuenta_id || m.cuentaId || 0);
+      if (cuentaId !== Number(cuentaFiltro)) return false;
+    }
+    return true;
   });
+
+  // Funciones para rangos de fecha predefinidos
+  const seleccionarHoy = () => setValue(today);
+  const seleccionarSemanaActual = () => {
+    const inicio = new Date(today);
+    inicio.setDate(today.getDate() - today.getDay()); // Domingo
+    const fin = new Date(inicio);
+    fin.setDate(inicio.getDate() + 6); // Sábado
+    setValue([inicio, fin]);
+  };
+  const seleccionarMesActual = () => {
+    const inicio = new Date(today.getFullYear(), today.getMonth(), 1);
+    const fin = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    setValue([inicio, fin]);
+  };
+  const seleccionarUltimaSemana = () => {
+    const fin = new Date(today);
+    fin.setDate(today.getDate() - 1);
+    const inicio = new Date(fin);
+    inicio.setDate(fin.getDate() - 6);
+    setValue([inicio, fin]);
+  };
+  const seleccionarUltimoMes = () => {
+    const fin = new Date(today);
+    fin.setDate(today.getDate() - 1);
+    const inicio = new Date(fin);
+    inicio.setMonth(fin.getMonth() - 1);
+    setValue([inicio, fin]);
+  };
+  const seleccionarEsteAnio = () => {
+    const inicio = new Date(today.getFullYear(), 0, 1);
+    const fin = new Date(today.getFullYear(), 11, 31);
+    setValue([inicio, fin]);
+  };
+
+  // Estadísticas del día seleccionado
+  const estadisticasDia = React.useMemo(() => {
+    const ingresos = movimientosDelDia.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + Number(m.monto || 0), 0);
+    const egresos = movimientosDelDia.filter(m => m.tipo === 'egreso' || m.tipo === 'ahorro').reduce((sum, m) => sum + Number(m.monto || 0), 0);
+    const transferencias = movimientosDelDia.filter(m => m.tipo === 'transferencia').length;
+    const balance = ingresos - egresos;
+    const cantidad = movimientosDelDia.length;
+    
+    // Calcular promedio diario del mes
+    const mesActual = selectedDate.getMonth();
+    const anioActual = selectedDate.getFullYear();
+    const movimientosMes = todosMovimientos.filter(m => {
+      const fecha = new Date(m.fecha);
+      return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual;
+    });
+    const diasConMovimientos = new Set(movimientosMes.map(m => m.fecha.slice(0, 10))).size;
+    const promedioMes = diasConMovimientos > 0 ? movimientosMes.reduce((sum, m) => sum + Number(m.monto || 0), 0) / diasConMovimientos : 0;
+    
+    return { ingresos, egresos, balance, cantidad, transferencias, promedioMes };
+  }, [movimientosDelDia, todosMovimientos, selectedDate]);
+
+  // Calcular indicadores para cada día del calendario
+  const indicadoresPorDia = React.useMemo(() => {
+    const mapa = new Map<string, { cantidad: number; monto: number; tipos: Set<string> }>();
+    todosMovimientos.forEach(m => {
+      const fecha = m.fecha?.slice(0, 10);
+      if (!fecha) return;
+      if (!mapa.has(fecha)) {
+        mapa.set(fecha, { cantidad: 0, monto: 0, tipos: new Set() });
+      }
+      const dato = mapa.get(fecha)!;
+      dato.cantidad++;
+      dato.monto += Number(m.monto || 0);
+      dato.tipos.add(m.tipo);
+    });
+    return mapa;
+  }, [todosMovimientos]);
+
+  // Agrupar movimientos por categoría (si el toggle está activo)
+  const movimientosPorCategoria = React.useMemo(() => {
+    if (!agruparPorCategoria) return null;
+    const grupos = new Map<string, typeof movimientosDelDia>();
+    movimientosDelDia.forEach(m => {
+      const catNombre = m.categoria_nombre || 'Sin categoría';
+      if (!grupos.has(catNombre)) grupos.set(catNombre, []);
+      grupos.get(catNombre)!.push(m);
+    });
+    return grupos;
+  }, [movimientosDelDia, agruparPorCategoria]);
+
+  // Calcular recordatorios de movimientos recurrentes pendientes
+  const recordatoriosPendientes = React.useMemo(() => {
+    const hoy = new Date().toISOString().slice(0, 10);
+    const recordatorios: any[] = [];
+    
+    movimientosRecurrentes.forEach(rec => {
+      const fechaProxima = rec.proxima_fecha ? rec.proxima_fecha.slice(0, 10) : null;
+      
+      // Vencidos (fecha pasada y no aplicado)
+      if (fechaProxima && fechaProxima < hoy && !rec.applied) {
+        recordatorios.push({
+          id: rec.id,
+          tipo: 'vencido',
+          mensaje: `"${rec.descripcion}" estaba programado para ${fechaProxima}`,
+          fecha: rec.proxima_fecha,
+          accion: () => aplicarRecurrenteHoy(rec),
+          accionTexto: 'Aplicar ahora'
+        });
+      }
+      // Pendientes hoy
+      else if (fechaProxima === hoy && !rec.applied) {
+        recordatorios.push({
+          id: rec.id,
+          tipo: 'pendiente',
+          mensaje: `"${rec.descripcion}" programado para hoy`,
+          fecha: rec.proxima_fecha,
+          accion: () => aplicarRecurrenteHoy(rec),
+          accionTexto: 'Aplicar'
+        });
+      }
+      // Próximos (en los siguientes 3 días)
+      else if (fechaProxima && fechaProxima > hoy && fechaProxima <= new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10)) {
+        recordatorios.push({
+          id: rec.id,
+          tipo: 'proximo',
+          mensaje: `"${rec.descripcion}" programado pronto`,
+          fecha: rec.proxima_fecha,
+          accion: () => aplicarRecurrenteHoy(rec),
+          accionTexto: 'Adelantar'
+        });
+      }
+    });
+    
+    return recordatorios;
+  }, [movimientosRecurrentes]);
 
   // Agrupar transferencias por token [TRANSFER#code] y generar un ítem único Origen -> Destino
   const movimientosDelDiaAgrupados = React.useMemo(() => {
@@ -250,6 +419,47 @@ export default function Calendario() {
       return txt.includes(q);
     });
   }, [movimientosDelDiaAgrupados, filters, search]);
+
+  // Handler para cambiar fecha mediante drag & drop
+  const handleCambiarFecha = async (movimiento: any, nuevaFecha: Date) => {
+    const fechaStr = nuevaFecha.toISOString().slice(0, 10);
+    const fechaActual = movimiento.fecha ? movimiento.fecha.slice(0, 10) : '';
+    
+    if (fechaStr === fechaActual) {
+      return; // No hacer nada si es la misma fecha
+    }
+
+    try {
+      const apiFetch = (await import('../utils/apiFetch')).default;
+      const res = await apiFetch(`${API_BASE}/api/transacciones/${movimiento.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...movimiento,
+          fecha: fechaStr
+        })
+      });
+
+      if (res.ok) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Fecha actualizada',
+          text: `Movimiento actualizado a ${fechaStr.split('-').reverse().join('/')}`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+        refreshMovimientos();
+      } else {
+        throw new Error('Error al actualizar');
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo cambiar la fecha del movimiento'
+      });
+    }
+  };
 
   const handleEditMovimiento = async (mov) => {
     // Si es instancia de movimiento recurrente, redirigir/derivar a edición de serie
@@ -581,16 +791,6 @@ export default function Calendario() {
     }
   };
 
-  // Marcar días con movimientos
-  const tileContent = ({ date, view }) => {
-    if (view === 'month') {
-      const fecha = date.toISOString().slice(0, 10);
-      const hayMov = todosMovimientos.some(m => (m.fecha ? m.fecha.slice(0, 10) : '') === fecha);
-      if (hayMov) return <span style={{ color: '#6c4fa1', fontWeight: 700, fontSize: 18 }}>•</span>;
-    }
-    return null;
-  };
-
   const handleExport = async () => {
     // Si no está en modo exportación, activarlo para permitir selección de rango
     if (!exportMode) {
@@ -733,8 +933,25 @@ export default function Calendario() {
   };
 
   return (
+    <DragDropProvider>
     <div className="card calendar-card" style={{ color: 'var(--color-text)' }}>
-      <h1 className="calendar-title ">Calendario de Movimientos</h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h1 className="calendar-title">Calendario de Movimientos</h1>
+        {recordatoriosPendientes.length > 0 && (
+          <BadgeRecordatorio 
+            cantidad={recordatoriosPendientes.length} 
+            onClick={() => {
+              Swal.fire({
+                title: 'Recordatorios',
+                html: `<div style="text-align: left">${recordatoriosPendientes.map(r => 
+                  `<div style="margin-bottom: 10px"><strong>${r.mensaje}</strong><br/><small>${r.fecha || ''}</small></div>`
+                ).join('')}</div>`,
+                icon: 'info'
+              });
+            }}
+          />
+        )}
+      </div>
       <div className="calendar-actions toolbar" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center', position: 'relative' }}>
         <div ref={exportMenuRef} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
           <button type="button" className="btn btn-primary"
@@ -800,9 +1017,84 @@ export default function Calendario() {
           )}
         </div>
         <div className="spacer" style={{ flex: 1 }} />
+        
+        {/* Filtro por cuenta */}
+        <select 
+          value={cuentaFiltro} 
+          onChange={e => setCuentaFiltro(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+          style={{ 
+            padding: '6px 10px', 
+            borderRadius: 8, 
+            border: '1px solid var(--color-input-border)', 
+            background: 'var(--color-card)',
+            color: 'var(--color-text)',
+            cursor: 'pointer',
+            fontWeight: 500
+          }}
+          title="Filtrar por cuenta"
+        >
+          <option value="all">📊 Todas las cuentas</option>
+          {cuentas.map(c => (
+            <option key={c.id} value={c.id}>{c.nombre}</option>
+          ))}
+        </select>
+
+        {/* Rangos de fecha predefinidos */}
+        <div style={{ position: 'relative' }}>
+          <button 
+            type="button" 
+            className="btn"
+            onClick={(e) => {
+              const menu = e.currentTarget.nextElementSibling as HTMLElement;
+              if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+            }}
+          >
+            📅 Rangos ▾
+          </button>
+          <div 
+            className="menu-popover" 
+            style={{ display: 'none', minWidth: 180 }}
+            onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.display = 'none'}
+          >
+            <div className="menu-item" onClick={() => seleccionarHoy()}><span>📍</span><span>Hoy</span></div>
+            <div className="menu-item" onClick={() => seleccionarSemanaActual()}><span>📆</span><span>Semana actual</span></div>
+            <div className="menu-item" onClick={() => seleccionarMesActual()}><span>📅</span><span>Mes actual</span></div>
+            <div className="menu-sep" />
+            <div className="menu-item" onClick={() => seleccionarUltimaSemana()}><span>⏮</span><span>Última semana</span></div>
+            <div className="menu-item" onClick={() => seleccionarUltimoMes()}><span>⏮</span><span>Último mes</span></div>
+            <div className="menu-sep" />
+            <div className="menu-item" onClick={() => seleccionarEsteAnio()}><span>🗓</span><span>Este año</span></div>
+          </div>
+        </div>
+
+        {/* Toggles de vista */}
+        <button 
+          className={`btn ${vistaCompacta ? 'btn-primary' : ''}`}
+          onClick={() => setVistaCompacta(!vistaCompacta)}
+          title="Vista compacta"
+        >
+          {vistaCompacta ? '📑' : '📋'}
+        </button>
+        
+        <button 
+          className={`btn ${agruparPorCategoria ? 'btn-primary' : ''}`}
+          onClick={() => setAgruparPorCategoria(!agruparPorCategoria)}
+          title="Agrupar por categoría"
+        >
+          🏷️
+        </button>
+        
+        <button 
+          className={`btn ${vistaTimeline ? 'btn-primary' : ''}`}
+          onClick={() => setVistaTimeline(!vistaTimeline)}
+          title="Vista de línea de tiempo"
+        >
+          ⏱️
+        </button>
+
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." className="input" style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', minWidth: 200 }} />
-          <button className="btn" onClick={() => { setFilters(defaultFilters); setSearch(''); }}>Limpiar</button>
+          <button className="btn" onClick={() => { setFilters(defaultFilters); setSearch(''); setCuentaFiltro('all'); }}>Limpiar</button>
         </div>
       </div>
       {exportMode && (
@@ -831,7 +1123,43 @@ export default function Calendario() {
           <Calendar
             onChange={setValue}
             value={value}
-            tileContent={tileContent}
+            tileContent={({ date }) => {
+              const fechaStr = date.toISOString().slice(0, 10);
+              const dato = indicadoresPorDia.get(fechaStr);
+              if (!dato) return null;
+              
+              const tieneIngreso = dato.tipos.has('ingreso');
+              const tieneEgreso = dato.tipos.has('egreso') || dato.tipos.has('ahorro');
+              const tieneTransferencia = dato.tipos.has('transferencia');
+              
+              return (
+                <div style={{ 
+                  position: 'absolute', 
+                  bottom: 2, 
+                  right: 2, 
+                  display: 'flex', 
+                  gap: 2,
+                  flexDirection: 'column',
+                  alignItems: 'flex-end'
+                }}>
+                  <div style={{ 
+                    fontSize: 9, 
+                    fontWeight: 700, 
+                    background: 'rgba(0,0,0,0.6)', 
+                    color: '#fff',
+                    padding: '1px 4px',
+                    borderRadius: 3
+                  }}>
+                    {dato.cantidad}
+                  </div>
+                  <div style={{ display: 'flex', gap: 2 }}>
+                    {tieneIngreso && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4caf50' }} title="Ingreso" />}
+                    {tieneEgreso && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f44336' }} title="Egreso" />}
+                    {tieneTransferencia && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2196f3' }} title="Transferencia" />}
+                  </div>
+                </div>
+              );
+            }}
             locale="es-ES"
             calendarType="iso8601"
             selectRange={exportMode}
@@ -839,9 +1167,77 @@ export default function Calendario() {
           />
         </div>
         <div className="calendar-right">
-          <h2 style={{ fontSize: 22, marginBottom: 18, fontWeight: 700, color: 'var(--color-text)' }}>
-            Movimientos del {fechaSeleccionada.split('-').reverse().join('/')}
-          </h2>
+          {/* Tarjeta de estadísticas del día */}
+          <div style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: 12,
+            padding: 20,
+            marginBottom: 20,
+            color: '#fff',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          }}>
+            <h2 style={{ fontSize: 20, marginBottom: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              📊 {fechaSeleccionada.split('-').reverse().join('/')}
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: 12 }}>
+                <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 4 }}>Ingresos</div>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>+S/ {estadisticasDia.ingresos.toFixed(2)}</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: 12 }}>
+                <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 4 }}>Egresos</div>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>-S/ {estadisticasDia.egresos.toFixed(2)}</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: 12 }}>
+                <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 4 }}>Balance</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: estadisticasDia.balance >= 0 ? '#4caf50' : '#ff5252' }}>
+                  S/ {estadisticasDia.balance.toFixed(2)}
+                </div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: 12 }}>
+                <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 4 }}>Movimientos</div>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>{estadisticasDia.cantidad}</div>
+              </div>
+            </div>
+            {estadisticasDia.promedioMes > 0 && (
+              <div style={{ marginTop: 12, fontSize: 13, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>📈</span>
+                <span>Promedio del mes: S/ {estadisticasDia.promedioMes.toFixed(2)}/día</span>
+              </div>
+            )}
+          </div>
+
+          {/* Recordatorios visuales */}
+          {recordatoriosPendientes.length > 0 && (
+            <RecordatoriosList 
+              recordatorios={recordatoriosPendientes}
+              onDismiss={(id) => {
+                // Marcar como dismissed (podrías persistir esto)
+                console.log('Dismissed recordatorio:', id);
+              }}
+              maxVisible={3}
+            />
+          )}
+
+          {/* Vista Timeline o Lista normal */}
+          {vistaTimeline ? (
+            <div>
+              <h3 style={{ fontSize: 18, marginBottom: 12, fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                ⏱️ Línea de Tiempo
+              </h3>
+              <TimelineView 
+                movimientos={movimientosFiltrados.map(m => ({
+                  ...m,
+                  hora: m.fecha?.slice(11, 16) // Extraer hora si existe
+                }))}
+                onMovimientoClick={(mov) => handleEditMovimiento(mov)}
+              />
+            </div>
+          ) : (
+            <>
+              <h3 style={{ fontSize: 18, marginBottom: 12, fontWeight: 700, color: 'var(--color-text)' }}>
+                Movimientos del día
+              </h3>
           {/* Controles de filtro (segmentado) */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 12 }}>
             {(['ingreso','egreso','ahorro','transferencia'] as const).map(t => (
@@ -881,10 +1277,194 @@ export default function Calendario() {
           )}
           {movimientosFiltrados.length === 0 ? (
             <div style={{ color: 'var(--color-muted)', fontSize: 18 }}>No hay movimientos para este día.</div>
+          ) : agruparPorCategoria && movimientosPorCategoria ? (
+            // Vista agrupada por categoría
+            <div style={{ maxHeight: 480, overflowY: 'auto', paddingRight: 4 }}>
+              {Array.from(movimientosPorCategoria.entries()).map(([categoria, movs]) => {
+                // Aplicar los mismos filtros que movimientosFiltrados
+                const movsFiltrados = movs.filter(m => 
+                  filters[m.tipo as 'ingreso'|'egreso'|'ahorro'|'transferencia']
+                );
+                if (movsFiltrados.length === 0) return null;
+                
+                const totalCategoria = movsFiltrados.reduce((sum, m) => {
+                  const signo = (m.tipo === 'ingreso' || m.tipo === 'ahorro') ? 1 : -1;
+                  return sum + (Number(m.monto) * signo);
+                }, 0);
+
+                return (
+                  <div key={categoria} style={{ marginBottom: 20 }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      padding: '10px 14px',
+                      background: 'var(--color-card)',
+                      borderRadius: 10,
+                      marginBottom: 10,
+                      fontWeight: 700,
+                      fontSize: 16,
+                      color: 'var(--color-text)',
+                      borderLeft: '4px solid var(--color-accent)'
+                    }}>
+                      <span>📂 {categoria}</span>
+                      <span style={{ color: totalCategoria >= 0 ? '#4caf50' : '#f44336' }}>
+                        {totalCategoria >= 0 ? '+' : ''}S/ {totalCategoria.toFixed(2)}
+                      </span>
+                    </div>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, paddingLeft: 16 }}>
+                      {movsFiltrados.map(mov => (
+                        vistaCompacta ? (
+                          // Vista compacta
+                          <li key={mov.id} style={{
+                            marginBottom: 8,
+                            padding: '12px 16px',
+                            borderRadius: 10,
+                            background: 'var(--color-card)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            boxShadow: '0 1px 4px #0001',
+                            borderLeft: `3px solid ${mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336'}`
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                              <span style={{ fontSize: 20 }}>{mov.icon || (mov.tipo === 'egreso' ? '💸' : mov.tipo === 'transferencia' ? '🔁' : '💰')}</span>
+                              <div>
+                                <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text)' }}>{mov.descripcion}</div>
+                                <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{mov.cuenta}</div>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span style={{ fontWeight: 700, fontSize: 15, color: mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336' }}>
+                                {mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '+' : mov.tipo === 'transferencia' ? '' : '-'}S/ {Number(mov.monto).toFixed(2)}
+                              </span>
+                              {mov.tipo !== 'transferencia' && (
+                                <button onClick={() => handleEditMovimiento(mov)} style={{ 
+                                  background: 'var(--color-accent)', 
+                                  border: 'none', 
+                                  color: '#fff', 
+                                  padding: '4px 8px', 
+                                  borderRadius: 6, 
+                                  cursor: 'pointer', 
+                                  fontSize: 12,
+                                  fontWeight: 600
+                                }}>
+                                  ✏️
+                                </button>
+                              )}
+                              <button onClick={() => handleDeleteMovimiento(mov)} style={{ 
+                                background: '#f44336', 
+                                border: 'none', 
+                                color: '#fff', 
+                                padding: '4px 8px', 
+                                borderRadius: 6, 
+                                cursor: 'pointer', 
+                                fontSize: 12,
+                                fontWeight: 600
+                              }}>
+                                🗑️
+                              </button>
+                            </div>
+                          </li>
+                        ) : (
+                          // Vista normal dentro de categoría
+                          <li key={mov.id} style={{
+                            marginBottom: 12,
+                            padding: 18,
+                            borderRadius: 14,
+                            background: mov.color ? mov.color : (mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? 'linear-gradient(90deg, #1de9b6 0%, #43a047 100%)' : mov.tipo === 'transferencia' ? '#1976d2' : 'linear-gradient(90deg, #ff7043 0%, #c62828 100%)'),
+                            color: '#fff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            boxShadow: '0 2px 8px #0002'
+                          }}>
+                            <span style={{ fontSize: 28, marginRight: 14 }}>{mov.icon || (mov.tipo === 'egreso' ? '💸' : mov.tipo === 'transferencia' ? '🔁' : '💰')}</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 700, fontSize: 16 }}>{mov.descripcion}</div>
+                              <div style={{ fontSize: 13, opacity: 0.85 }}>{mov.cuenta}</div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <div style={{ fontWeight: 700, fontSize: 18, minWidth: 120, textAlign: 'right' }}>
+                                {mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '+' : mov.tipo === 'transferencia' ? '' : '-'}S/ {Number(mov.monto).toFixed(2)}
+                              </div>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                {mov.tipo !== 'transferencia' && (
+                                  <button onClick={() => handleEditMovimiento(mov)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                                    {mov._recurrente || mov.frecuencia ? 'Editar serie' : 'Editar'}
+                                  </button>
+                                )}
+                                <button onClick={() => handleDeleteMovimiento(mov)} style={{ background: 'rgba(0,0,0,0.15)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                                  {mov._recurrente || mov.frecuencia ? 'Eliminar serie' : 'Eliminar'}
+                                </button>
+                              </div>
+                            </div>
+                          </li>
+                        )
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
+            // Vista normal sin agrupar
             <div style={{ maxHeight: 480, overflowY: 'auto', paddingRight: 4 }}>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {movimientosFiltrados.map(mov => (
+                  vistaCompacta ? (
+                    // Vista compacta
+                    <li key={mov.id} style={{
+                      marginBottom: 10,
+                      padding: '14px 18px',
+                      borderRadius: 12,
+                      background: 'var(--color-card)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 2px 6px #0001',
+                      borderLeft: `4px solid ${mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336'}`
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                        <span style={{ fontSize: 24 }}>{mov.icon || (mov.tipo === 'egreso' ? '💸' : mov.tipo === 'transferencia' ? '🔁' : '💰')}</span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text)' }}>{mov.descripcion}</div>
+                          <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>{mov.cuenta}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontWeight: 800, fontSize: 17, color: mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336' }}>
+                          {mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '+' : mov.tipo === 'transferencia' ? '' : '-'}S/ {Number(mov.monto).toFixed(2)}
+                        </span>
+                        {mov.tipo !== 'transferencia' && (
+                          <button onClick={() => handleEditMovimiento(mov)} style={{ 
+                            background: 'var(--color-accent)', 
+                            border: 'none', 
+                            color: '#fff', 
+                            padding: '6px 10px', 
+                            borderRadius: 8, 
+                            cursor: 'pointer', 
+                            fontSize: 13,
+                            fontWeight: 700
+                          }}>
+                            ✏️
+                          </button>
+                        )}
+                        <button onClick={() => handleDeleteMovimiento(mov)} style={{ 
+                          background: '#f44336', 
+                          border: 'none', 
+                          color: '#fff', 
+                          padding: '6px 10px', 
+                          borderRadius: 8, 
+                          cursor: 'pointer', 
+                          fontSize: 13,
+                          fontWeight: 700
+                        }}>
+                          🗑️
+                        </button>
+                      </div>
+                    </li>
+                  ) : (
+                    // Vista normal completa (original)
                   <li key={mov.id} style={{
                     marginBottom: 18,
                     padding: 22,
@@ -930,9 +1510,12 @@ export default function Calendario() {
                       </div>
                     </div>
                   </li>
+                  )
                 ))}
               </ul>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>
@@ -1067,5 +1650,6 @@ export default function Calendario() {
           .big-light-calendar abbr { color: var(--color-text) !important; }
       `}</style>
     </div>
+    </DragDropProvider>
   );
 }
