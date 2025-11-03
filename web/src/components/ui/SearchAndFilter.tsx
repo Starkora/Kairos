@@ -122,20 +122,22 @@ export const FilterButton: React.FC<FilterButtonProps> = ({
   return (
     <button
       onClick={onClick}
+      className="filter-button"
       style={{
-        padding: '8px 16px',
+        padding: '10px 18px',
         borderRadius: 20,
         border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-input-border)'}`,
         background: active ? 'var(--color-primary)' : 'transparent',
         color: active ? '#fff' : 'var(--color-text)',
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: 600,
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
         gap: 6,
         transition: 'all 0.2s',
-        whiteSpace: 'nowrap'
+        whiteSpace: 'nowrap',
+        minHeight: '40px'
       }}
       onMouseEnter={(e) => {
         if (!active) {
@@ -154,10 +156,10 @@ export const FilterButton: React.FC<FilterButtonProps> = ({
           background: active ? 'rgba(255,255,255,0.3)' : 'var(--color-primary)',
           color: active ? '#fff' : '#fff',
           borderRadius: 10,
-          padding: '2px 8px',
-          fontSize: 11,
+          padding: '3px 9px',
+          fontSize: 12,
           fontWeight: 700,
-          minWidth: 20,
+          minWidth: 22,
           textAlign: 'center'
         }}>
           {count}

@@ -71,13 +71,14 @@ export const FormInput: React.FC<FormInputProps> = ({ label, error, style, ...pr
       <input 
         {...props}
         style={{ 
-          padding: 8, 
-          borderRadius: 6, 
+          padding: '12px 14px', 
+          borderRadius: 8, 
           width: '100%', 
           minWidth: 0,
           border: '1px solid var(--color-input-border)',
           background: 'var(--color-card)',
           color: 'var(--color-text)',
+          fontSize: '16px',
           ...style
         }}
       />
@@ -124,13 +125,14 @@ export const FormSelect: React.FC<FormSelectProps> = ({ label, error, options, s
       <select 
         {...props}
         style={{ 
-          padding: 8, 
-          borderRadius: 6, 
+          padding: '12px 14px', 
+          borderRadius: 8, 
           width: '100%', 
           minWidth: 0,
           border: '1px solid var(--color-input-border)',
           background: 'var(--color-card)',
           color: 'var(--color-text)',
+          fontSize: '16px',
           ...style
         }}
       >
@@ -201,8 +203,9 @@ export const FormButton: React.FC<FormButtonProps> = ({
       style={{ 
         border: 'none', 
         borderRadius: 8, 
-        padding: '8px 16px', 
+        padding: '12px 20px', 
         fontWeight: 600,
+        fontSize: '16px',
         cursor: 'pointer',
         transition: 'opacity 0.2s',
         width: fullWidth ? '100%' : 'auto',
@@ -210,6 +213,7 @@ export const FormButton: React.FC<FormButtonProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 4,
+        minHeight: '44px',
         ...getVariantStyles(),
         ...style
       }}
@@ -240,6 +244,14 @@ export const FormGrid: React.FC<FormGridProps> = ({ children, columns = 2, gap =
       alignItems: 'end'
     }}>
       {children}
+      <style>{`
+        @media (max-width: 768px) {
+          .categories-form {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

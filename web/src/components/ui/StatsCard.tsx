@@ -157,13 +157,28 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
   columns = 4 
 }) => {
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: `repeat(auto-fit, minmax(${columns === 4 ? '200px' : columns === 3 ? '250px' : '300px'}, 1fr))`,
-      gap: 16,
-      marginBottom: 24
-    }}>
+    <div 
+      className="stats-grid"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(auto-fit, minmax(${columns === 4 ? '200px' : columns === 3 ? '250px' : '300px'}, 1fr))`,
+        gap: 16,
+        marginBottom: 24
+      }}
+    >
       {children}
+      <style>{`
+        @media (max-width: 768px) {
+          .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .stats-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

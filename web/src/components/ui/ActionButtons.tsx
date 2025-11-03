@@ -17,23 +17,36 @@ export const ActionButton: React.FC<ActionButtonProps> = ({ onClick, type, ariaL
   return (
     <button
       onClick={onClick}
+      className="action-button-mobile"
       style={{ 
         background: 'none', 
         border: 'none', 
-        padding: 6, 
+        padding: '8px', 
         cursor: 'pointer',
-        transition: 'opacity 0.2s'
+        transition: 'all 0.2s',
+        minWidth: '36px',
+        minHeight: '36px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '6px'
       }}
       aria-label={ariaLabel}
       title={title}
-      onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-      onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.opacity = '0.7';
+        e.currentTarget.style.background = 'var(--table-row-hover)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.opacity = '1';
+        e.currentTarget.style.background = 'none';
+      }}
     >
       {isEdit ? (
         <svg 
           className="icon-accion" 
-          width="16" 
-          height="16" 
+          width="20" 
+          height="20" 
           viewBox="0 0 24 24" 
           fill="none" 
           stroke={color} 
@@ -47,8 +60,8 @@ export const ActionButton: React.FC<ActionButtonProps> = ({ onClick, type, ariaL
       ) : (
         <svg 
           className="icon-accion" 
-          width="16" 
-          height="16" 
+          width="20" 
+          height="20" 
           viewBox="0 0 24 24" 
           fill="none" 
           stroke={color} 
@@ -82,7 +95,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({ onEdit, onDelete }
         display: 'inline-flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
-        gap: 8 
+        gap: 4 
       }}
     >
       <ActionButton 
