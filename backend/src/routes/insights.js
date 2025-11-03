@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
 const auth = require('../utils/auth/jwt');
-const ctrl = require('../controllers/admin/insights.controller');
+const ctrl = require('../controllers/insights.controller');
 
 router.use(auth);
 router.get('/', ctrl.list);
