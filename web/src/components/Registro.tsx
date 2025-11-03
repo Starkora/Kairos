@@ -721,19 +721,37 @@ export default function Registro() {
           <div>
             <label>Icono:&nbsp;</label>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <select name="icon" value={form.icon} onChange={handleChange} style={{ padding: 6, borderRadius: 6 }}>
-                <option value="FaMoneyBillWave">💸 Dinero</option>
-                <option value="FaWallet">💰 Billetera</option>
-                <option value="FaUniversity">🏦 Banco</option>
-                <option value="FaAppleAlt">🍎 Comida</option>
-                <option value="FaCar">🚗 Transporte</option>
-                <option value="FaCreditCard">💳 Tarjeta</option>
-                <option value="FaLightning">🔌 Servicios</option>
-                <option value="FaGift">🎁 Regalo</option>
-                <option value="FaShoppingCart">🛒 Compras</option>
-                <option value="FaHospital">🏥 Salud</option>
-              </select>
-              <input type="color" name="color" value={form.color} onChange={handleChange} style={{ width: 48, height: 36, padding: 0, border: 'none', background: 'transparent' }} />
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ 
+                  padding: 8, 
+                  background: `${form.color}20`,
+                  border: `2px solid ${form.color}40`,
+                  borderRadius: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {renderIcon(form.icon, { fontSize: 24, color: form.color })}
+                </div>
+                <select 
+                  name="icon" 
+                  value={form.icon} 
+                  onChange={handleChange} 
+                  style={{ padding: 8, borderRadius: 6, minWidth: 150 }}
+                >
+                  <option value="FaMoneyBillWave">Dinero</option>
+                  <option value="FaWallet">Billetera</option>
+                  <option value="FaUniversity">Banco</option>
+                  <option value="FaAppleAlt">Comida</option>
+                  <option value="FaCar">Transporte</option>
+                  <option value="FaCreditCard">Tarjeta</option>
+                  <option value="FaLightning">Servicios</option>
+                  <option value="FaGift">Regalo</option>
+                  <option value="FaShoppingCart">Compras</option>
+                  <option value="FaHospital">Salud</option>
+                </select>
+              </div>
+              <input type="color" name="color" value={form.color} onChange={handleChange} style={{ width: 48, height: 48, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }} />
             </div>
           </div>
         ) : (
