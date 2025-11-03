@@ -9,6 +9,10 @@ import {
   FormInput, 
   FormButton, 
   FormGrid,
+  StatsCard,
+  StatsGrid,
+  ExportGroup,
+  useSortableData,
   type ColumnConfig
 } from './shared';
 
@@ -42,6 +46,20 @@ export default function CategoriasCuenta() {
     e.preventDefault();
     if (!form.nombre) {
       Swal.fire({ icon: 'warning', title: 'Nombre requerido', text: 'Debes ingresar un nombre de categoría de cuenta.' });
+      return;
+    }
+
+    // Validar duplicados
+    const nombreExiste = categorias.some(
+      cat => cat.nombre.toLowerCase() === form.nombre.toLowerCase()
+    );
+    
+    if (nombreExiste) {
+      Swal.fire({ 
+        icon: 'error', 
+        title: 'Categoría duplicada', 
+        text: 'Ya existe una categoría de cuenta con ese nombre.' 
+      });
       return;
     }
     const result = await Swal.fire({
@@ -137,6 +155,12 @@ export default function CategoriasCuenta() {
     });
   };
 
+  // Estadísticas
+  const totalCategorias = categorias.length;
+
+  // Ordenamiento
+  const { sortedData: categoriasSorted } = useSortableData(categorias);
+
   // Configuración de columnas para la tabla
   const columns: ColumnConfig<any>[] = [
     { header: 'Nombre', accessor: 'nombre', align: 'left' },
@@ -154,14 +178,48 @@ export default function CategoriasCuenta() {
 
   return (
     <div style={{ 
-      maxWidth: 480, 
+      maxWidth: 600, 
       margin: '32px auto', 
       background: '#fff', 
       borderRadius: 12, 
       boxShadow: '0 2px 8px #eee', 
       padding: 32 
     }}>
-      <h1 style={{ marginBottom: 24 }}>Categorías de Tipo de Cuenta</h1>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: 24 
+      }}>
+        <h1 style={{ margin: 0 }}>Categorías de Tipo de Cuenta</h1>
+        {categorias.length > 0 && (
+          <ExportGroup
+            data={categorias}
+            filename="categorias-cuenta"
+            columns={[
+              { header: 'Nombre', accessor: 'nombre' }
+            ]}
+          />
+        )}
+      </div>
+
+      {/* Estadísticas */}
+      <StatsGrid columns={2}>
+        <StatsCard
+          title="Total"
+          value={totalCategorias}
+          icon="📁"
+          color="primary"
+          subtitle="Tipos de cuenta"
+        />
+        <StatsCard
+          title="Última actualización"
+          value="Hoy"
+          icon="🕒"
+          color="info"
+          subtitle="Registros actualizados"
+        />
+      </StatsGrid>
       
       <FormCard>
         <FormGrid columns={2}>
@@ -180,10 +238,14 @@ export default function CategoriasCuenta() {
       </FormCard>
 
       <DataTable
-        data={categorias}
+        data={categoriasSorted}
         columns={columns}
         loading={loading}
         keyExtractor={(cat) => cat.id.toString()}
+        searchable={true}
+        searchPlaceholder="Buscar categorías de cuenta..."
+        emptyStateTitle="No hay categorías de cuenta"
+        emptyStateDescription="Crea tu primera categoría para organizar tus cuentas"
       />
     </div>
   );

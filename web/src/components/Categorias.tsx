@@ -11,6 +11,17 @@ import {
   FormButton, 
   FormGrid,
   useToast,
+  ExportGroup,
+  useFormValidation,
+  ValidationRules,
+  ValidationError,
+  StatsCard,
+  StatsGrid,
+  CategoryBadge,
+  FilterGroup,
+  FilterButton,
+  useSortableData,
+  SortableHeader,
   type ColumnConfig
 } from './shared';
 
@@ -19,6 +30,8 @@ export default function Categorias() {
   const [categorias, setCategorias] = React.useState([]);
   const [form, setForm] = React.useState({ nombre: '', tipo: 'ingreso' });
   const [loading, setLoading] = React.useState(true);
+  const [filtroTipo, setFiltroTipo] = React.useState<'all' | 'ingreso' | 'egreso' | 'ahorro'>('all');
+  
   // Categoría de cuenta
   const [formCuenta, setFormCuenta] = React.useState({ nombre: '' });
   const [loadingCuenta, setLoadingCuenta] = React.useState(false);
@@ -71,12 +84,32 @@ export default function Categorias() {
   const handleChange = e => {
     const { name, value } = e.target;
     setForm(f => ({ ...f, [name]: value }));
-    console.log('Estado del formulario actualizado:', form); // Depuración
   };
+
   const handleSubmit = async e => {
     e.preventDefault();
+    
+    // Validar campos vacíos
     if (!form.nombre || !form.tipo) {
-      Swal.fire({ icon: 'warning', title: 'Campos requeridos', text: 'Debes ingresar un nombre y seleccionar un tipo.' });
+      Swal.fire({ 
+        icon: 'warning', 
+        title: 'Campos requeridos', 
+        text: 'Debes ingresar un nombre y seleccionar un tipo.' 
+      });
+      return;
+    }
+
+    // Validar duplicados
+    const nombreExiste = categorias.some(
+      cat => cat.nombre.toLowerCase() === form.nombre.toLowerCase()
+    );
+    
+    if (nombreExiste) {
+      Swal.fire({ 
+        icon: 'error', 
+        title: 'Categoría duplicada', 
+        text: 'Ya existe una categoría con ese nombre.' 
+      });
       return;
     }
     const result = await Swal.fire({
@@ -141,8 +174,28 @@ export default function Categorias() {
   };
   const handleSubmitCuenta = async e => {
     e.preventDefault();
+    
+    // Validar campo vacío
     if (!formCuenta.nombre) {
-      Swal.fire({ icon: 'warning', title: 'Nombre requerido', text: 'Debes ingresar un nombre de categoría de cuenta.' });
+      Swal.fire({ 
+        icon: 'warning', 
+        title: 'Nombre requerido', 
+        text: 'Debes ingresar un nombre de categoría de cuenta.' 
+      });
+      return;
+    }
+
+    // Validar duplicados
+    const nombreExiste = categoriasCuenta.some(
+      cat => cat.nombre.toLowerCase() === formCuenta.nombre.toLowerCase()
+    );
+    
+    if (nombreExiste) {
+      Swal.fire({ 
+        icon: 'error', 
+        title: 'Categoría duplicada', 
+        text: 'Ya existe una categoría de cuenta con ese nombre.' 
+      });
       return;
     }
     const result = await Swal.fire({
@@ -374,10 +427,28 @@ export default function Categorias() {
     gap: 8,
   };
 
-  // Configuración de columnas para categorías
+  // Filtrar categorías
+  const categoriasFiltradas = filtroTipo === 'all' 
+    ? categorias 
+    : categorias.filter(cat => cat.tipo === filtroTipo);
+
+  // Estadísticas
+  const totalCategorias = categorias.length;
+  const totalIngresos = categorias.filter(c => c.tipo === 'ingreso').length;
+  const totalEgresos = categorias.filter(c => c.tipo === 'egreso').length;
+  const totalAhorros = categorias.filter(c => c.tipo === 'ahorro').length;
+
+  // Ordenamiento
+  const { sortedData: categoriasSorted, sortConfig, requestSort } = useSortableData(categoriasFiltradas);
+
+  // Configuración de columnas para categorías con badges
   const categoriasColumns: ColumnConfig<any>[] = [
     { header: 'Nombre', accessor: 'nombre', align: 'left' },
-    { header: 'Tipo', accessor: 'tipo', align: 'left' },
+    { 
+      header: 'Tipo', 
+      accessor: (cat) => <CategoryBadge tipo={cat.tipo} />, 
+      align: 'left' 
+    },
     { 
       header: 'Acciones', 
       accessor: (cat) => (
@@ -416,9 +487,58 @@ export default function Categorias() {
     <div className="card categories-card">
       {/* Bloque de Categorías ingreso/egreso */}
       <div style={{ marginBottom: 48 }}>
-        <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: 'var(--color-text)' }}>
-          Categorías
-        </h2>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: 24 
+        }}>
+          <h2 style={{ margin: 0, fontWeight: 700, fontSize: 26, color: 'var(--color-text)' }}>
+            Categorías
+          </h2>
+          {categorias.length > 0 && (
+            <ExportGroup
+              data={categorias}
+              filename="categorias"
+              columns={[
+                { header: 'Nombre', accessor: 'nombre' },
+                { header: 'Tipo', accessor: 'tipo' }
+              ]}
+            />
+          )}
+        </div>
+
+        {/* Estadísticas */}
+        <StatsGrid columns={4}>
+          <StatsCard
+            title="Total"
+            value={totalCategorias}
+            icon="📊"
+            color="primary"
+            subtitle="Categorías registradas"
+          />
+          <StatsCard
+            title="Ingresos"
+            value={totalIngresos}
+            icon="💰"
+            color="success"
+            subtitle={`${totalCategorias > 0 ? Math.round((totalIngresos / totalCategorias) * 100) : 0}% del total`}
+          />
+          <StatsCard
+            title="Egresos"
+            value={totalEgresos}
+            icon="💸"
+            color="danger"
+            subtitle={`${totalCategorias > 0 ? Math.round((totalEgresos / totalCategorias) * 100) : 0}% del total`}
+          />
+          <StatsCard
+            title="Ahorros"
+            value={totalAhorros}
+            icon="🏦"
+            color="info"
+            subtitle={`${totalCategorias > 0 ? Math.round((totalAhorros / totalCategorias) * 100) : 0}% del total`}
+          />
+        </StatsGrid>
         
         <FormCard>
           <FormGrid columns={3}>
@@ -446,9 +566,39 @@ export default function Categorias() {
           </FormGrid>
         </FormCard>
 
+        {/* Filtros */}
+        <div style={{ marginBottom: 16 }}>
+          <FilterGroup title="Filtrar por tipo">
+            <FilterButton
+              label="Todos"
+              active={filtroTipo === 'all'}
+              count={totalCategorias}
+              onClick={() => setFiltroTipo('all')}
+            />
+            <FilterButton
+              label="Ingresos"
+              active={filtroTipo === 'ingreso'}
+              count={totalIngresos}
+              onClick={() => setFiltroTipo('ingreso')}
+            />
+            <FilterButton
+              label="Egresos"
+              active={filtroTipo === 'egreso'}
+              count={totalEgresos}
+              onClick={() => setFiltroTipo('egreso')}
+            />
+            <FilterButton
+              label="Ahorros"
+              active={filtroTipo === 'ahorro'}
+              count={totalAhorros}
+              onClick={() => setFiltroTipo('ahorro')}
+            />
+          </FilterGroup>
+        </div>
+
         <FormCard>
           <DataTable
-            data={categorias}
+            data={categoriasSorted}
             columns={categoriasColumns}
             loading={loading}
             className="tabla-categorias"
@@ -466,9 +616,29 @@ export default function Categorias() {
 
       {/* Bloque de Categoría de Cuenta */}
       <div>
-        <h2 style={{ marginBottom: 24, fontWeight: 700, fontSize: 26, color: 'var(--color-text)' }}>
-          Categoría de Cuenta
-        </h2>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: 24 
+        }}>
+          <h2 style={{ margin: 0, fontWeight: 700, fontSize: 26, color: 'var(--color-text)' }}>
+            Categoría de Cuenta
+          </h2>
+          {categoriasCuenta.length > 0 && (
+            <ExportGroup
+              data={categoriasCuenta}
+              filename="categorias-cuenta"
+              columns={[
+                { header: 'Nombre', accessor: 'nombre' },
+                { 
+                  header: 'Fecha de creación', 
+                  accessor: (cat) => cat.created_at ? cat.created_at.substring(0, 10) : '' 
+                }
+              ]}
+            />
+          )}
+        </div>
         
         <FormCard>
           <FormGrid columns={2}>

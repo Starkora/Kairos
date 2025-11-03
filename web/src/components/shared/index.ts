@@ -39,3 +39,40 @@ export {
   useToast, 
   toast 
 } from './Toast';
+export {
+  useSortableData,
+  SortableHeader,
+  type SortDirection,
+  type SortConfig,
+  type SortableColumnConfig
+} from './SortableTable';
+export {
+  ExportButton,
+  ExportGroup
+} from './ExportButton';
+export {
+  useFormValidation,
+  ValidationRules,
+  ValidationError,
+  ValidationBadge,
+  type ValidationRule
+} from './Validation';
+
+// Stats and metrics
+export { 
+  StatsCard, 
+  StatsGrid, 
+  type StatsCardProps, 
+  type StatsGridProps 
+} from './StatsCard';
+
+// Badges
+export { 
+  Badge, 
+  CategoryBadge, 
+  type BadgeProps, 
+  type CategoryBadgeProps 
+} from './Badge';
+
+// Modal
+export { Modal, type ModalProps } from './Modal';
