@@ -16,7 +16,7 @@ import {
   FaCalendarAlt, FaChartBar, FaArrowUp, FaArrowDown, FaCoins, 
   FaTrash, FaTag, FaClock, FaChartLine, FaInfoCircle, FaExchangeAlt,
   FaUniversity, FaPiggyBank, FaList, FaBan, FaEye, FaSave, FaCalendarDay, FaFolder,
-  FaStepBackward
+  FaStepBackward, FaEdit
 } from 'react-icons/fa';
 
 type Value = Date | [Date, Date];
@@ -1289,7 +1289,7 @@ export default function Calendario() {
           {vistaTimeline ? (
             <div>
               <h3 style={{ fontSize: 18, marginBottom: 12, fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                ⏱️ Línea de Tiempo
+                {React.createElement(FaClock as any, { style: { fontSize: 18 } })} Línea de Tiempo
               </h3>
               <TimelineView 
                 movimientos={movimientosFiltrados.map(m => ({
@@ -1417,7 +1417,7 @@ export default function Calendario() {
                                   fontSize: 12,
                                   fontWeight: 600
                                 }}>
-                                  ✏️
+                                  {React.createElement(FaEdit as any, { style: { fontSize: 12 } })}
                                 </button>
                               )}
                               <button onClick={() => handleDeleteMovimiento(mov)} style={{ 
@@ -1514,7 +1514,7 @@ export default function Calendario() {
                             fontSize: 13,
                             fontWeight: 700
                           }}>
-                            ✏️
+                            {React.createElement(FaEdit as any, { style: { fontSize: 13 } })}
                           </button>
                         )}
                         <button onClick={() => handleDeleteMovimiento(mov)} style={{ 

@@ -2,6 +2,15 @@ import React from 'react';
 import API_BASE from '../utils/apiBase';
 import Swal from 'sweetalert2';
 import { getToken } from '../utils/auth';
+import { 
+  ActionButtons, 
+  DataTable, 
+  FormCard, 
+  FormInput, 
+  FormButton, 
+  FormGrid,
+  type ColumnConfig
+} from './shared';
 
 export default function CategoriasCuenta() {
   const [categorias, setCategorias] = React.useState([]);
@@ -128,81 +137,54 @@ export default function CategoriasCuenta() {
     });
   };
 
-  return (
-    <div style={{ maxWidth: 480, margin: '32px auto', background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #eee', padding: 32 }}>
-      <h1 style={{ marginBottom: 24 }}>Categorías de Tipo de Cuenta</h1>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 12, marginBottom: 24, alignItems: 'center' }}>
-        <input
-          type="text"
-          name="nombre"
-          placeholder="Nombre de la categoría de cuenta"
-          value={form.nombre}
-          onChange={handleChange}
-          required
-          style={{ flex: 2, padding: 8, borderRadius: 6 }}
+  // Configuración de columnas para la tabla
+  const columns: ColumnConfig<any>[] = [
+    { header: 'Nombre', accessor: 'nombre', align: 'left' },
+    { 
+      header: 'Acciones', 
+      accessor: (cat) => (
+        <ActionButtons 
+          onEdit={() => handleEdit(cat.id)} 
+          onDelete={() => handleDelete(cat.id)}
         />
-        <button type="submit" style={{ background: '#6c4fa1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600 }}>
-          Agregar
-        </button>
-      </form>
-      {loading ? (
-        <div>Cargando...</div>
-      ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
-          <thead>
-            <tr style={{ background: '#f7f7fa' }}>
-              <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
-              <th style={{ textAlign: 'center', padding: 8 }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {categorias.map(cat => (
-              <tr key={cat.id} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ fontWeight: 600, padding: 8 }}>{cat.nombre}</td>
-                <td style={{ textAlign: 'center', padding: 8 }}>
-                  <button className="icon-btn" style={{ background: '#4CAF50', color: '#fff', border: 'none', borderRadius: 8, padding: 8, marginRight: 8 }} onClick={() => handleEdit(cat.id)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Editar">
-                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"></path>
-                      <path d="M20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.29a1 1 0 0 0-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83z"></path>
-                    </svg>
-                    <span className="tooltip">Editar</span>
-                  </button>
-                  <button className="icon-btn" style={{ background: '#f44336', color: '#fff', border: 'none', borderRadius: 8, padding: 8 }} onClick={() => handleDelete(cat.id)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Eliminar">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-                      <path d="M10 11v6"></path>
-                      <path d="M14 11v6"></path>
-                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
-                    </svg>
-                    <span className="tooltip">Eliminar</span>
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      <style>{`
-        .icon-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; }
-        .icon-btn .tooltip {
-          position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
-          background: #222; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 12px; white-space: nowrap;
-          opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; box-shadow: 0 2px 8px rgba(0,0,0,.18);
-        }
-        .icon-btn .tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #222; }
-        .icon-btn:hover .tooltip, .icon-btn:focus .tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }
-      `}</style>
-      <style>{`
-        .icon-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; }
-        .icon-btn .tooltip {
-          position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
-          background: #222; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 12px; white-space: nowrap;
-          opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; box-shadow: 0 2px 8px rgba(0,0,0,.18);
-        }
-        .icon-btn .tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #222; }
-        .icon-btn:hover .tooltip, .icon-btn:focus .tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }
-      `}</style>
+      ),
+      align: 'center' 
+    }
+  ];
+
+  return (
+    <div style={{ 
+      maxWidth: 480, 
+      margin: '32px auto', 
+      background: '#fff', 
+      borderRadius: 12, 
+      boxShadow: '0 2px 8px #eee', 
+      padding: 32 
+    }}>
+      <h1 style={{ marginBottom: 24 }}>Categorías de Tipo de Cuenta</h1>
+      
+      <FormCard>
+        <FormGrid columns={2}>
+          <FormInput
+            type="text"
+            name="nombre"
+            placeholder="Nombre de la categoría de cuenta"
+            value={form.nombre}
+            onChange={handleChange}
+            required
+          />
+          <FormButton type="button" onClick={handleSubmit}>
+            Agregar
+          </FormButton>
+        </FormGrid>
+      </FormCard>
+
+      <DataTable
+        data={categorias}
+        columns={columns}
+        loading={loading}
+        keyExtractor={(cat) => cat.id.toString()}
+      />
     </div>
   );
 }
