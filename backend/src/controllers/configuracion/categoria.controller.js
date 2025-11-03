@@ -1,4 +1,4 @@
-﻿const Categoria = require('../../../models/categoria');
+﻿const Categoria = require('../../models/categoria');
 const db = require('../../config/database'); // Asegúrate de requerir tu conexión a la base de datos
 
 exports.getAll = async (req, res) => {
