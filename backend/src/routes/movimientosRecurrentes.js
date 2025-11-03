@@ -1,6 +1,6 @@
 ﻿const express = require('express');
 const router = express.Router();
-const movimientoRecurrenteController = require('../controllers/finanzas/movimientoRecurrenteController');
+const movimientoRecurrenteController = require('../controllers/configuracion/movimientoRecurrente.controller');
 const auth = require('../utils/auth/jwt');
 
 

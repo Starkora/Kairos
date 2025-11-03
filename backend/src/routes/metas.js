@@ -1,6 +1,6 @@
 ﻿const express = require('express');
 const router = express.Router();
-const metaController = require('../controllers/finanzas/metaController');
+const metaController = require('../controllers/finanzas/meta.controller');
 const auth = require('../utils/auth/jwt');
 
 router.use(auth); // Proteger todas las rutas de metas
