@@ -12,6 +12,12 @@ import {
   RecordatoriosList, 
   BadgeRecordatorio 
 } from './shared';
+import { 
+  FaCalendarAlt, FaChartBar, FaArrowUp, FaArrowDown, FaCoins, 
+  FaTrash, FaTag, FaClock, FaChartLine, FaInfoCircle, FaExchangeAlt,
+  FaUniversity, FaPiggyBank, FaList, FaBan, FaEye, FaSave, FaCalendarDay, FaFolder,
+  FaStepBackward
+} from 'react-icons/fa';
 
 type Value = Date | [Date, Date];
 
@@ -20,6 +26,16 @@ type Value = Date | [Date, Date];
 
 
 export default function Calendario() {
+  // Helper para renderizar iconos según tipo de movimiento
+  const getIconForTipo = (tipo: string, customIcon?: any) => {
+    if (customIcon) return customIcon;
+    const tipoLower = (tipo || '').toLowerCase();
+    if (tipoLower === 'egreso') return React.createElement(FaArrowDown as any, { style: { color: '#f44336' } });
+    if (tipoLower === 'transferencia') return React.createElement(FaExchangeAlt as any, { style: { color: '#2196f3' } });
+    if (tipoLower === 'ahorro') return React.createElement(FaPiggyBank as any, { style: { color: '#4caf50' } });
+    return React.createElement(FaArrowUp as any, { style: { color: '#4caf50' } }); // ingreso
+  };
+
   // Fecha de hoy a medianoche local
   const today = React.useMemo(() => {
     const d = new Date();
@@ -191,7 +207,7 @@ export default function Calendario() {
       setTimeout(() => {
         Swal.fire({
           icon: 'info',
-          title: '📅 Movimientos de tu cuenta',
+          title: 'Movimientos de tu cuenta',
           html: 'Aquí podrás ver todos los movimientos registrados en tu cuenta.<br/><br/><strong>Filtra por fecha</strong> usando el calendario.',
           confirmButtonColor: '#6c4fa1',
           confirmButtonText: 'Entendido',
@@ -398,7 +414,7 @@ export default function Calendario() {
         tipo: 'transferencia',
         monto,
         descripcion: `Transferencia: ${origenCuenta} → ${destinoCuenta}`,
-        icon: '🔁',
+        icon: React.createElement(FaExchangeAlt as any),
         color: '#1976d2',
         cuenta: `${origenCuenta} → ${destinoCuenta}`,
         _transfer: { code, origenId: egreso?.id, destinoId: ingreso?.id }
@@ -513,7 +529,7 @@ export default function Calendario() {
           `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Tipo</label><input id="swal-tipo" class="swal2-input" value="${mov.tipo}" disabled></div>` +
           `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Monto</label><input id="swal-monto" class="swal2-input" placeholder="Monto" value="${mov.monto}" type="number" step="0.01"></div>` +
           `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Fecha</label><input id="swal-fecha" class="swal2-input" placeholder="Fecha" value="${(mov.fecha || '').slice(0, 10)}" type="date"></div>` +
-          `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Icono</label><input id="swal-icon" class="swal2-input" placeholder="Ej: 💵, 💸, 🏦" value="${defaultIcon}"></div>` +
+          `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Icono</label><input id="swal-icon" class="swal2-input" placeholder="Emoji o icono" value="${defaultIcon}"></div>` +
           `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Color</label><input id="swal-color" class="swal2-input" type="color" value="${defaultColor || '#6c4fa1'}"></div>` +
           `<div style="display:flex;flex-direction:column;grid-column:1/3"><label style="font-weight:700;margin-bottom:6px">Descripción</label><input id="swal-descripcion" class="swal2-input" placeholder="Descripción" value="${mov.descripcion || ''}"></div>` +
           `<div style="display:flex;flex-direction:column;grid-column:1/3"><label style="font-weight:700;margin-bottom:6px">Categoría (opcional)</label><select id="swal-categoria" class="swal2-select"><option value="">- Ninguna -</option>${categoriasOptions}</select></div>` +
@@ -965,11 +981,23 @@ export default function Calendario() {
           </button>
           {showExportMenu && (
             <div className="menu-popover" style={{ minWidth: 220 }}>
-              <div className="menu-item" onClick={() => { exportLocalCSV(); setShowExportMenu(false); }}><span>📄</span><span>Exportar CSV (local)</span></div>
-              <div className="menu-item" onClick={async () => { await exportLocalXLSX(); setShowExportMenu(false); }}><span>📊</span><span>Exportar XLSX (local)</span></div>
+              <div className="menu-item" onClick={() => { exportLocalCSV(); setShowExportMenu(false); }}>
+                <span>{React.createElement(FaChartBar as any, { style: { fontSize: 14 } })}</span>
+                <span>Exportar CSV (local)</span>
+              </div>
+              <div className="menu-item" onClick={async () => { await exportLocalXLSX(); setShowExportMenu(false); }}>
+                <span>{React.createElement(FaChartBar as any, { style: { fontSize: 14 } })}</span>
+                <span>Exportar XLSX (local)</span>
+              </div>
               {!exportMode && <div className="menu-sep" />}
-              {!exportMode && <div className="menu-item" onClick={() => { setExportMode(true); setShowExportMenu(false); }}><span>📅</span><span>Seleccionar rango…</span></div>}
-              {exportMode && <div className="menu-item danger" onClick={() => { setExportMode(false); if (Array.isArray(value) && value[0] instanceof Date) setValue(value[0]); setShowExportMenu(false); }}><span>✖</span><span>Cancelar selección</span></div>}
+              {!exportMode && <div className="menu-item" onClick={() => { setExportMode(true); setShowExportMenu(false); }}>
+                <span>{React.createElement(FaCalendarAlt as any, { style: { fontSize: 14 } })}</span>
+                <span>Seleccionar rango…</span>
+              </div>}
+              {exportMode && <div className="menu-item danger" onClick={() => { setExportMode(false); if (Array.isArray(value) && value[0] instanceof Date) setValue(value[0]); setShowExportMenu(false); }}>
+                <span>✖</span>
+                <span>Cancelar selección</span>
+              </div>}
             </div>
           )}
         </div>
@@ -979,11 +1007,26 @@ export default function Calendario() {
           <button type="button" className="btn" onClick={() => { setShowQuickMenu(v => !v); setShowExportMenu(false); setShowPresetsMenu(false); }}>Vistas rápidas ▾</button>
           {showQuickMenu && (
             <div className="menu-popover" style={{ minWidth: 220 }}>
-              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: true }); setShowQuickMenu(false); }}><span>👀</span><span>Todos</span></div>
-              <div className="menu-item" onClick={() => { setFilters({ ingreso: false, egreso: true, ahorro: false, transferencia: false }); setShowQuickMenu(false); }}><span>💸</span><span>Solo egresos</span></div>
-              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: false, ahorro: true, transferencia: false }); setShowQuickMenu(false); }}><span>💰</span><span>Ingresos/Ahorros</span></div>
-              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: false }); setShowQuickMenu(false); }}><span>🚫</span><span>Sin transferencias</span></div>
-              <div className="menu-item" onClick={() => { setFilters({ ingreso: false, egreso: false, ahorro: false, transferencia: true }); setShowQuickMenu(false); }}><span>🔁</span><span>Solo transferencias</span></div>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: true }); setShowQuickMenu(false); }}>
+                <span>{React.createElement(FaEye as any, { style: { fontSize: 14 } })}</span>
+                <span>Todos</span>
+              </div>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: false, egreso: true, ahorro: false, transferencia: false }); setShowQuickMenu(false); }}>
+                <span>{React.createElement(FaArrowDown as any, { style: { fontSize: 14, color: '#f44336' } })}</span>
+                <span>Solo egresos</span>
+              </div>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: false, ahorro: true, transferencia: false }); setShowQuickMenu(false); }}>
+                <span>{React.createElement(FaCoins as any, { style: { fontSize: 14, color: '#4caf50' } })}</span>
+                <span>Ingresos/Ahorros</span>
+              </div>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: false }); setShowQuickMenu(false); }}>
+                <span>{React.createElement(FaBan as any, { style: { fontSize: 14 } })}</span>
+                <span>Sin transferencias</span>
+              </div>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: false, egreso: false, ahorro: false, transferencia: true }); setShowQuickMenu(false); }}>
+                <span>{React.createElement(FaExchangeAlt as any, { style: { fontSize: 14 } })}</span>
+                <span>Solo transferencias</span>
+              </div>
             </div>
           )}
         </div>
@@ -1008,11 +1051,14 @@ export default function Calendario() {
                 else { const next = [...savedPresets, { name, filters }]; persistPresets(next); setSelectedPreset(name); }
                 setShowPresetsMenu(false);
                 Swal.fire({ icon: 'success', title: 'Preset guardado', timer: 900, showConfirmButton: false });
-              }}><span>💾</span><span>Guardar actual…</span></div>
+              }}><span>{React.createElement(FaSave as any, { style: { fontSize: 14 } })}</span><span>Guardar actual…</span></div>
               <div className={`menu-item danger ${!selectedPreset ? 'disabled' : ''}`} onClick={async () => {
                 if (!selectedPreset) return; const c = await Swal.fire({ title: 'Eliminar preset', text: `¿Eliminar "${selectedPreset}"?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Eliminar' });
                 if (!c.isConfirmed) return; const next = savedPresets.filter(p => p.name !== selectedPreset); persistPresets(next); setSelectedPreset(''); setShowPresetsMenu(false);
-              }}><span>🗑</span><span>Eliminar seleccionado</span></div>
+              }}>
+                <span>{React.createElement(FaTrash as any, { style: { fontSize: 14 } })}</span>
+                <span>Eliminar seleccionado</span>
+              </div>
             </div>
           )}
         </div>
@@ -1033,7 +1079,7 @@ export default function Calendario() {
           }}
           title="Filtrar por cuenta"
         >
-          <option value="all">📊 Todas las cuentas</option>
+          <option value="all">Todas las cuentas</option>
           {cuentas.map(c => (
             <option key={c.id} value={c.id}>{c.nombre}</option>
           ))}
@@ -1048,22 +1094,42 @@ export default function Calendario() {
               const menu = e.currentTarget.nextElementSibling as HTMLElement;
               if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
             }}
+            style={{ display: 'flex', alignItems: 'center', gap: 8 }}
           >
-            📅 Rangos ▾
+            {React.createElement(FaCalendarAlt as any, { style: { fontSize: 14 } })}
+            Rangos ▾
           </button>
           <div 
             className="menu-popover" 
             style={{ display: 'none', minWidth: 180 }}
             onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.display = 'none'}
           >
-            <div className="menu-item" onClick={() => seleccionarHoy()}><span>📍</span><span>Hoy</span></div>
-            <div className="menu-item" onClick={() => seleccionarSemanaActual()}><span>📆</span><span>Semana actual</span></div>
-            <div className="menu-item" onClick={() => seleccionarMesActual()}><span>📅</span><span>Mes actual</span></div>
+            <div className="menu-item" onClick={() => seleccionarHoy()}>
+              <span>{React.createElement(FaCalendarAlt as any, { style: { fontSize: 14 } })}</span>
+              <span>Hoy</span>
+            </div>
+            <div className="menu-item" onClick={() => seleccionarSemanaActual()}>
+              <span>{React.createElement(FaCalendarAlt as any, { style: { fontSize: 14 } })}</span>
+              <span>Semana actual</span>
+            </div>
+            <div className="menu-item" onClick={() => seleccionarMesActual()}>
+              <span>{React.createElement(FaCalendarAlt as any, { style: { fontSize: 14 } })}</span>
+              <span>Mes actual</span>
+            </div>
             <div className="menu-sep" />
-            <div className="menu-item" onClick={() => seleccionarUltimaSemana()}><span>⏮</span><span>Última semana</span></div>
-            <div className="menu-item" onClick={() => seleccionarUltimoMes()}><span>⏮</span><span>Último mes</span></div>
+            <div className="menu-item" onClick={() => seleccionarUltimaSemana()}>
+              <span>{React.createElement(FaStepBackward as any, { style: { fontSize: 14 } })}</span>
+              <span>Última semana</span>
+            </div>
+            <div className="menu-item" onClick={() => seleccionarUltimoMes()}>
+              <span>{React.createElement(FaStepBackward as any, { style: { fontSize: 14 } })}</span>
+              <span>Último mes</span>
+            </div>
             <div className="menu-sep" />
-            <div className="menu-item" onClick={() => seleccionarEsteAnio()}><span>🗓</span><span>Este año</span></div>
+            <div className="menu-item" onClick={() => seleccionarEsteAnio()}>
+              <span>{React.createElement(FaCalendarDay as any, { style: { fontSize: 14 } })}</span>
+              <span>Este año</span>
+            </div>
           </div>
         </div>
 
@@ -1073,7 +1139,7 @@ export default function Calendario() {
           onClick={() => setVistaCompacta(!vistaCompacta)}
           title="Vista compacta"
         >
-          {vistaCompacta ? '📑' : '📋'}
+          {React.createElement(FaList as any, { style: { fontSize: 14 } })}
         </button>
         
         <button 
@@ -1081,7 +1147,7 @@ export default function Calendario() {
           onClick={() => setAgruparPorCategoria(!agruparPorCategoria)}
           title="Agrupar por categoría"
         >
-          🏷️
+          {React.createElement(FaTag as any, { style: { fontSize: 14 } })}
         </button>
         
         <button 
@@ -1089,7 +1155,7 @@ export default function Calendario() {
           onClick={() => setVistaTimeline(!vistaTimeline)}
           title="Vista de línea de tiempo"
         >
-          ⏱️
+          {React.createElement(FaClock as any, { style: { fontSize: 14 } })}
         </button>
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1177,7 +1243,7 @@ export default function Calendario() {
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
           }}>
             <h2 style={{ fontSize: 20, marginBottom: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-              📊 {fechaSeleccionada.split('-').reverse().join('/')}
+              {React.createElement(FaChartBar as any, { style: { fontSize: 18 } })} {fechaSeleccionada.split('-').reverse().join('/')}
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
               <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: 12 }}>
@@ -1201,7 +1267,7 @@ export default function Calendario() {
             </div>
             {estadisticasDia.promedioMes > 0 && (
               <div style={{ marginTop: 12, fontSize: 13, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>📈</span>
+                {React.createElement(FaChartLine as any, { style: { fontSize: 14 } })}
                 <span>Promedio del mes: S/ {estadisticasDia.promedioMes.toFixed(2)}/día</span>
               </div>
             )}
@@ -1269,7 +1335,7 @@ export default function Calendario() {
               padding: '8px 12px',
               marginBottom: 12
             }}>
-              <span style={{ fontSize: 18 }}>ℹ️</span>
+              {React.createElement(FaInfoCircle as any, { style: { fontSize: 18 } })}
               <div style={{ fontSize: 14 }}>
                 Las transferencias se agrupan como un solo elemento y no se pueden editar aquí. Puedes eliminarlas y se borrarán ambos lados.
               </div>
@@ -1307,7 +1373,9 @@ export default function Calendario() {
                       color: 'var(--color-text)',
                       borderLeft: '4px solid var(--color-accent)'
                     }}>
-                      <span>📂 {categoria}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {React.createElement(FaFolder as any, { style: { fontSize: 14 } })} {categoria}
+                      </span>
                       <span style={{ color: totalCategoria >= 0 ? '#4caf50' : '#f44336' }}>
                         {totalCategoria >= 0 ? '+' : ''}S/ {totalCategoria.toFixed(2)}
                       </span>
@@ -1328,7 +1396,7 @@ export default function Calendario() {
                             borderLeft: `3px solid ${mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336'}`
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-                              <span style={{ fontSize: 20 }}>{mov.icon || (mov.tipo === 'egreso' ? '💸' : mov.tipo === 'transferencia' ? '🔁' : '💰')}</span>
+                              <span style={{ fontSize: 20 }}>{getIconForTipo(mov.tipo, mov.icon)}</span>
                               <div>
                                 <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text)' }}>{mov.descripcion}</div>
                                 <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{mov.cuenta}</div>
@@ -1362,7 +1430,7 @@ export default function Calendario() {
                                 fontSize: 12,
                                 fontWeight: 600
                               }}>
-                                🗑️
+                                {React.createElement(FaTrash as any, { style: { fontSize: 12 } })}
                               </button>
                             </div>
                           </li>
@@ -1378,7 +1446,7 @@ export default function Calendario() {
                             alignItems: 'center',
                             boxShadow: '0 2px 8px #0002'
                           }}>
-                            <span style={{ fontSize: 28, marginRight: 14 }}>{mov.icon || (mov.tipo === 'egreso' ? '💸' : mov.tipo === 'transferencia' ? '🔁' : '💰')}</span>
+                            <span style={{ fontSize: 28, marginRight: 14 }}>{getIconForTipo(mov.tipo, mov.icon)}</span>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontWeight: 700, fontSize: 16 }}>{mov.descripcion}</div>
                               <div style={{ fontSize: 13, opacity: 0.85 }}>{mov.cuenta}</div>
@@ -1425,7 +1493,7 @@ export default function Calendario() {
                       borderLeft: `4px solid ${mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336'}`
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-                        <span style={{ fontSize: 24 }}>{mov.icon || (mov.tipo === 'egreso' ? '💸' : mov.tipo === 'transferencia' ? '🔁' : '💰')}</span>
+                        <span style={{ fontSize: 24 }}>{getIconForTipo(mov.tipo, mov.icon)}</span>
                         <div>
                           <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text)' }}>{mov.descripcion}</div>
                           <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>{mov.cuenta}</div>
@@ -1459,7 +1527,7 @@ export default function Calendario() {
                           fontSize: 13,
                           fontWeight: 700
                         }}>
-                          🗑️
+                          {React.createElement(FaTrash as any, { style: { fontSize: 13 } })}
                         </button>
                       </div>
                     </li>
@@ -1477,7 +1545,7 @@ export default function Calendario() {
                     boxShadow: '0 2px 12px #0002',
                     position: 'relative',
                   }}>
-                    <span style={{ fontSize: 36, marginRight: 18 }}>{mov.icon || (((mov.tipo || '').toLowerCase() === 'egreso') ? '💸' : ((mov.tipo || '').toLowerCase() === 'transferencia' ? '🔁' : '💰'))}</span>
+                    <span style={{ fontSize: 36, marginRight: 18 }}>{getIconForTipo((mov.tipo || '').toLowerCase(), mov.icon)}</span>
                     <div className="movimiento-main" style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--color-text)' }}>{mov.descripcion}</div>
