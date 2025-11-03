@@ -6,7 +6,7 @@ import {
   EstadisticasMiniCards, 
   ProgressBar, 
   CircularProgress 
-} from '../../../src/components/shared';
+} from '../../components/ui';
 import { FaMoneyBillWave, FaBullseye, FaSearch, FaFilter, FaSortAmountDown, FaCreditCard, FaCheckCircle, FaChartLine, FaCoins, FaStar, FaClock, FaHourglassHalf, FaPlus, FaCalendarAlt, FaCalendarCheck } from 'react-icons/fa';
 
 export default function DeudasMetas() {
