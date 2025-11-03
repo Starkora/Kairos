@@ -2,7 +2,7 @@ import React from 'react';
 import API_BASE from '../utils/apiBase';
 import Swal from 'sweetalert2';
 import { getToken } from '../utils/auth';
-import { FaBolt, FaRedo, FaFileDownload, FaFileUpload, FaWallet, FaExclamationTriangle, FaClipboardList, FaLightbulb } from 'react-icons/fa';
+import { FaBolt, FaRedo, FaFileDownload, FaFileUpload, FaWallet, FaExclamationTriangle, FaClipboardList, FaLightbulb, FaMoneyBillWave, FaUniversity, FaAppleAlt, FaCar, FaCreditCard, FaBolt as FaLightning, FaGift, FaShoppingCart, FaHospital, FaExchangeAlt } from 'react-icons/fa';
 
 
 export default function Registro() {
@@ -22,7 +22,7 @@ export default function Registro() {
     descripcion: '',
     cuenta: '', // origen
     cuentaDestino: '', // solo para transferencia
-    icon: '💸',
+    icon: 'FaMoneyBillWave',
     color: '#c62828'
   });
   const [repetir, setRepetir] = React.useState(false);
@@ -92,7 +92,7 @@ export default function Registro() {
           count: 0, 
           categoria_id: mov.categoria_id, 
           descripcion: mov.descripcion,
-          icon: mov.icon || '💸',
+          icon: mov.icon || 'FaMoneyBillWave',
           color: mov.color || '#c62828',
           tipo: mov.tipo,
           montos: []
@@ -111,6 +111,36 @@ export default function Registro() {
       }));
     
     setPlantillas(topPlantillas);
+  };
+
+  // Helper para renderizar iconos
+  const renderIcon = (iconName: string, style?: any) => {
+    const iconMap: Record<string, any> = {
+      'FaMoneyBillWave': FaMoneyBillWave,
+      'FaWallet': FaWallet,
+      'FaUniversity': FaUniversity,
+      'FaAppleAlt': FaAppleAlt,
+      'FaCar': FaCar,
+      'FaCreditCard': FaCreditCard,
+      'FaLightning': FaLightning,
+      'FaGift': FaGift,
+      'FaShoppingCart': FaShoppingCart,
+      'FaHospital': FaHospital,
+      'FaExchangeAlt': FaExchangeAlt,
+      '💸': FaMoneyBillWave,
+      '💰': FaWallet,
+      '🏦': FaUniversity,
+      '🍎': FaAppleAlt,
+      '🚗': FaCar,
+      '💳': FaCreditCard,
+      '🔌': FaLightning,
+      '🎁': FaGift,
+      '🛒': FaShoppingCart,
+      '🏥': FaHospital,
+      '🔁': FaExchangeAlt
+    };
+    const IconComponent = iconMap[iconName] || FaMoneyBillWave;
+    return React.createElement(IconComponent as any, { style });
   };
 
   // Cargar categorías desde la API según el tipo
@@ -239,7 +269,7 @@ export default function Registro() {
       tipo: ultima.tipo,
       categoria: ultima.categoria_id || '',
       descripcion: ultima.descripcion || '',
-      icon: ultima.icon || '💸',
+      icon: ultima.icon || 'FaMoneyBillWave',
       color: ultima.color || '#c62828',
       monto: parseFloat(ultima.monto).toFixed(2),
       cuenta: ultima.cuenta_id || prev.cuenta,
@@ -420,7 +450,7 @@ export default function Registro() {
         }
         if (res && res.ok) {
           Swal.fire({ icon: 'success', title: form.tipo === 'transferencia' ? 'Transferencia registrada' : 'Movimiento registrado', showConfirmButton: false, timer: 1200 });
-          setForm({ tipo: 'ingreso', monto: '', categoria: '', fecha: getToday(), descripcion: '', cuenta: cuentas[0]?.id || '', cuentaDestino: cuentas[1]?.id || cuentas[0]?.id || '', icon: '💸', color: '#c62828' });
+          setForm({ tipo: 'ingreso', monto: '', categoria: '', fecha: getToday(), descripcion: '', cuenta: cuentas[0]?.id || '', cuentaDestino: cuentas[1]?.id || cuentas[0]?.id || '', icon: 'FaMoneyBillWave', color: '#c62828' });
           setRepetir(false);
           setRepeticion({ frecuencia: 'mensual', inicio: '', fin: '', indefinido: true });
           // Refrescar cuentas para mostrar el saldo actualizado (asegurar plataforma=web)
@@ -493,7 +523,7 @@ export default function Registro() {
                 onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
               >
-                <div style={{ fontSize: 28, marginBottom: 8 }}>{plantilla.icon}</div>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>{renderIcon(plantilla.icon, { fontSize: 28 })}</div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>
                   {plantilla.descripcion}
                 </div>
@@ -692,7 +722,16 @@ export default function Registro() {
             <label>Icono:&nbsp;</label>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               <select name="icon" value={form.icon} onChange={handleChange} style={{ padding: 6, borderRadius: 6 }}>
-                {['💸','💰','🏦','🍎','🚗','💳','🔌','🎁','🛒','🏥'].map(i => <option key={i} value={i}>{i}</option>)}
+                <option value="FaMoneyBillWave">💸 Dinero</option>
+                <option value="FaWallet">💰 Billetera</option>
+                <option value="FaUniversity">🏦 Banco</option>
+                <option value="FaAppleAlt">🍎 Comida</option>
+                <option value="FaCar">🚗 Transporte</option>
+                <option value="FaCreditCard">💳 Tarjeta</option>
+                <option value="FaLightning">🔌 Servicios</option>
+                <option value="FaGift">🎁 Regalo</option>
+                <option value="FaShoppingCart">🛒 Compras</option>
+                <option value="FaHospital">🏥 Salud</option>
               </select>
               <input type="color" name="color" value={form.color} onChange={handleChange} style={{ width: 48, height: 36, padding: 0, border: 'none', background: 'transparent' }} />
             </div>
@@ -701,7 +740,7 @@ export default function Registro() {
           <div>
             <label>Icono:&nbsp;</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 24 }}>🔁</span>
+              {renderIcon('FaExchangeAlt', { fontSize: 24 })}
               <span style={{ fontSize: 12, color: 'var(--color-muted)' }}>(se asigna automáticamente)</span>
             </div>
           </div>
@@ -794,7 +833,7 @@ export default function Registro() {
                         border: `2px solid ${tr.color || '#6c4fa1'}40`
                       }}
                     >
-                      {tr.icon || '💸'}
+                      {renderIcon(tr.icon || 'FaMoneyBillWave', { fontSize: 22, color: tr.color || '#6c4fa1' })}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ 
