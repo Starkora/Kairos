@@ -23,6 +23,7 @@ import API_BASE from './utils/apiBase';
 import MovimientosRecurrentes from './pages/Configuracion/MovimientosRecurrentes';
 import Presupuestos from './pages/Finanzas/Presupuestos';
 import Asesor from './pages/Asesor/Asesor';
+import NoCategoriasAlert from './components/alerts/NoCategoriasAlert';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import './styles/App.css';
 import { MdFormatListBulleted } from 'react-icons/md';
@@ -207,6 +208,8 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                   )}
                 </div>
                 <main className="main-content" style={{ height: isMobile ? 'auto' : 'calc(100vh - 64px)' }}>
+                  {/* Alerta global si no hay categorías */}
+                  <NoCategoriasAlert />
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/registro" element={<Registro />} />

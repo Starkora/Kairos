@@ -24,21 +24,39 @@ import {
   SortableHeader,
   type ColumnConfig
 } from '../../components/ui';
-import { MdBarChart, MdTrendingUp, MdTrendingDown, MdAccountBalance } from 'react-icons/md';
+import { MdBarChart, MdTrendingUp, MdTrendingDown, MdAccountBalance, MdLightbulbOutline } from 'react-icons/md';
 import './Categorias.css';
 
 export default function Categorias() {
+  // Categorías predefinidas
+  const opcionesCategoriasIngreso = [
+    'Salario', 'Freelance', 'Inversiones', 'Regalos', 'Ventas', 'Bonos', 'Intereses', 'Otros ingresos'
+  ];
+  const opcionesCategoriasEgreso = [
+    'Alimentación', 'Transporte', 'Servicios', 'Entretenimiento', 'Salud', 'Educación', 
+    'Ropa', 'Hogar', 'Tecnología', 'Viajes', 'Regalos', 'Mascotas', 'Otros gastos'
+  ];
+  const opcionesCategoriasAhorro = [
+    'Emergencias', 'Vacaciones', 'Inversión', 'Retiro', 'Educación', 'Vivienda', 'Otros ahorros'
+  ];
+  const opcionesCategoriasCuenta = [
+    'Banco', 'Efectivo', 'Tarjeta de crédito', 'Billetera digital', 'Inversión', 
+    'Caja de ahorro', 'Cuenta corriente', 'Otros'
+  ];
+
   // Categorías de ingreso/egreso
   const [categorias, setCategorias] = React.useState([]);
   const [form, setForm] = React.useState({ nombre: '', tipo: 'ingreso' });
   const [loading, setLoading] = React.useState(true);
   const [filtroTipo, setFiltroTipo] = React.useState<'all' | 'ingreso' | 'egreso' | 'ahorro'>('all');
+  const [mostrarOpciones, setMostrarOpciones] = React.useState(false);
   
   // Categoría de cuenta
   const [formCuenta, setFormCuenta] = React.useState({ nombre: '' });
   const [loadingCuenta, setLoadingCuenta] = React.useState(false);
   const [categoriasCuenta, setCategoriasCuenta] = React.useState([]);
   const [loadingTablaCuenta, setLoadingTablaCuenta] = React.useState(true);
+  const [mostrarOpcionesCuenta, setMostrarOpcionesCuenta] = React.useState(false);
   // Obtener categorías de cuenta al cargar
   React.useEffect(() => {
     fetch(`${API_BASE}/api/categorias-cuenta`, {
@@ -73,14 +91,30 @@ export default function Categorias() {
       })
       .then(data => {
         console.log('Datos recibidos en GET /api/categorias:', data); // Depuración
-        if (Array.isArray(data)) setCategorias(data);
-        else setCategorias([]);
+        if (Array.isArray(data)) {
+          setCategorias(data);
+        } else {
+          setCategorias([]);
+        }
         setLoading(false);
       })
       .catch(() => {
         setCategorias([]);
         setLoading(false);
       });
+  }, []);
+
+  // Cerrar dropdowns al hacer clic fuera
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.categoria-dropdown')) {
+        setMostrarOpciones(false);
+        setMostrarOpcionesCuenta(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleChange = e => {
@@ -546,14 +580,116 @@ export default function Categorias() {
         
         <FormCard>
           <FormGrid columns={3}>
-            <FormInput
-              type="text"
-              name="nombre"
-              placeholder="Nombre de la categoría"
-              value={form.nombre}
-              onChange={handleChange}
-              required
-            />
+            <div className="categoria-dropdown" style={{ position: 'relative' }}>
+              <div style={{
+                fontSize: '12px',
+                color: 'var(--text-secondary, #666)',
+                marginBottom: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                {React.createElement(MdLightbulbOutline as any, { style: { fontSize: '14px' } })}
+                <span>Haz clic en la flecha para ver opciones</span>
+              </div>
+              <FormInput
+                type="text"
+                name="nombre"
+                placeholder="Nombre de la categoría"
+                value={form.nombre}
+                onChange={handleChange}
+                onFocus={() => setMostrarOpciones(true)}
+                required
+                style={{ paddingRight: '36px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setMostrarOpciones(!mostrarOpciones)}
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  color: 'var(--text-secondary, #666)',
+                  fontSize: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'transform 0.2s'
+                }}
+                title="Ver opciones predefinidas"
+              >
+                {mostrarOpciones ? '▲' : '▼'}
+              </button>
+              {mostrarOpciones && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: 'var(--card-bg, #fff)',
+                  border: '1px solid var(--border-color, #e0e0e0)',
+                  borderRadius: 8,
+                  marginTop: 4,
+                  maxHeight: 200,
+                  overflowY: 'auto',
+                  zIndex: 10,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }}>
+                  <div style={{ 
+                    padding: '8px 12px', 
+                    background: 'var(--table-header-bg, #f5f5f7)',
+                    fontWeight: 600,
+                    fontSize: 12,
+                    color: 'var(--text-secondary, #666)',
+                    borderBottom: '1px solid var(--border-color, #e0e0e0)'
+                  }}>
+                    Selecciona una opción o escribe tu propia categoría
+                  </div>
+                  {(form.tipo === 'ingreso' ? opcionesCategoriasIngreso :
+                    form.tipo === 'egreso' ? opcionesCategoriasEgreso :
+                    opcionesCategoriasAhorro).map(opcion => (
+                    <div
+                      key={opcion}
+                      onClick={() => {
+                        setForm(f => ({ ...f, nombre: opcion }));
+                        setMostrarOpciones(false);
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid var(--border-color, #e0e0e0)',
+                        transition: 'background 0.2s',
+                        fontSize: 14,
+                        color: 'var(--text-primary, #222)'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--table-row-hover, #f9f9fb)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {opcion}
+                    </div>
+                  ))}
+                  <div
+                    onClick={() => setMostrarOpciones(false)}
+                    style={{
+                      padding: '10px 12px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: 13,
+                      color: 'var(--primary-color, #6c4fa1)',
+                      background: 'var(--table-header-bg, #f5f5f7)'
+                    }}
+                  >
+                    Cerrar
+                  </div>
+                </div>
+              )}
+            </div>
             <FormSelect
               name="tipo"
               value={form.tipo}
@@ -646,14 +782,114 @@ export default function Categorias() {
         
         <FormCard>
           <FormGrid columns={2}>
-            <FormInput
-              type="text"
-              name="nombre"
-              placeholder="Nombre de la categoría de cuenta"
-              value={formCuenta.nombre}
-              onChange={handleChangeCuenta}
-              required
-            />
+            <div className="categoria-dropdown" style={{ position: 'relative' }}>
+              <div style={{
+                fontSize: '12px',
+                color: 'var(--text-secondary, #666)',
+                marginBottom: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                {React.createElement(MdLightbulbOutline as any, { style: { fontSize: '14px' } })}
+                <span>Haz clic en la flecha para ver opciones</span>
+              </div>
+              <FormInput
+                type="text"
+                name="nombre"
+                placeholder="Nombre de la categoría de cuenta"
+                value={formCuenta.nombre}
+                onChange={handleChangeCuenta}
+                onFocus={() => setMostrarOpcionesCuenta(true)}
+                required
+                style={{ paddingRight: '36px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setMostrarOpcionesCuenta(!mostrarOpcionesCuenta)}
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  color: 'var(--text-secondary, #666)',
+                  fontSize: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'transform 0.2s'
+                }}
+                title="Ver opciones predefinidas"
+              >
+                {mostrarOpcionesCuenta ? '▲' : '▼'}
+              </button>
+              {mostrarOpcionesCuenta && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: 'var(--card-bg, #fff)',
+                  border: '1px solid var(--border-color, #e0e0e0)',
+                  borderRadius: 8,
+                  marginTop: 4,
+                  maxHeight: 200,
+                  overflowY: 'auto',
+                  zIndex: 10,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }}>
+                  <div style={{ 
+                    padding: '8px 12px', 
+                    background: 'var(--table-header-bg, #f5f5f7)',
+                    fontWeight: 600,
+                    fontSize: 12,
+                    color: 'var(--text-secondary, #666)',
+                    borderBottom: '1px solid var(--border-color, #e0e0e0)'
+                  }}>
+                    Selecciona una opción o escribe tu propia categoría
+                  </div>
+                  {opcionesCategoriasCuenta.map(opcion => (
+                    <div
+                      key={opcion}
+                      onClick={() => {
+                        setFormCuenta(f => ({ ...f, nombre: opcion }));
+                        setMostrarOpcionesCuenta(false);
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid var(--border-color, #e0e0e0)',
+                        transition: 'background 0.2s',
+                        fontSize: 14,
+                        color: 'var(--text-primary, #222)'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--table-row-hover, #f9f9fb)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {opcion}
+                    </div>
+                  ))}
+                  <div
+                    onClick={() => setMostrarOpcionesCuenta(false)}
+                    style={{
+                      padding: '10px 12px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: 13,
+                      color: 'var(--primary-color, #6c4fa1)',
+                      background: 'var(--table-header-bg, #f5f5f7)'
+                    }}
+                  >
+                    Cerrar
+                  </div>
+                </div>
+              )}
+            </div>
             <FormButton type="button" onClick={handleSubmitCuenta} disabled={loadingCuenta}>
               {loadingCuenta ? 'Guardando...' : 'Agregar Categoría de Cuenta'}
             </FormButton>
