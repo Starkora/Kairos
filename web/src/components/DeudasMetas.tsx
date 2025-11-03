@@ -521,7 +521,7 @@ export default function DeudasMetas() {
     <div className="card debts-card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <h1 className="debts-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-          {tab === 'deudas' ? <FaMoneyBillWave /> : <FaBullseye />}
+          {tab === 'deudas' ? React.createElement(FaMoneyBillWave, { size: 24 }) : React.createElement(FaBullseye, { size: 24 })}
           Deudas y Metas
         </h1>
         <div className="debts-tabs" style={{ display: 'flex', gap: 12 }}>
@@ -576,14 +576,16 @@ export default function DeudasMetas() {
       }}>
         {/* Búsqueda */}
         <div style={{ flex: '1 1 250px', position: 'relative' }}>
-          <FaSearch style={{ 
-            position: 'absolute', 
-            left: 12, 
-            top: '50%', 
-            transform: 'translateY(-50%)', 
-            color: 'var(--color-muted)',
-            fontSize: 14
-          }} />
+          {React.createElement(FaSearch, { 
+            style: {
+              position: 'absolute', 
+              left: 12, 
+              top: '50%', 
+              transform: 'translateY(-50%)', 
+              color: 'var(--color-muted)',
+              fontSize: 14
+            }
+          })}
           <input 
             type="text" 
             placeholder="Buscar..." 
@@ -603,7 +605,7 @@ export default function DeudasMetas() {
 
         {/* Filtro de estado */}
         <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <FaFilter style={{ color: 'var(--color-muted)', fontSize: 14 }} />
+          {React.createElement(FaFilter, { style: { color: 'var(--color-muted)', fontSize: 14 } })}
           <select 
             value={filtroEstado}
             onChange={e => setFiltroEstado(e.target.value as any)}
@@ -625,7 +627,7 @@ export default function DeudasMetas() {
 
         {/* Ordenamiento */}
         <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <FaSortAmountDown style={{ color: 'var(--color-muted)', fontSize: 14 }} />
+          {React.createElement(FaSortAmountDown, { style: { color: 'var(--color-muted)', fontSize: 14 } })}
           <select 
             value={ordenamiento}
             onChange={e => setOrdenamiento(e.target.value as any)}
