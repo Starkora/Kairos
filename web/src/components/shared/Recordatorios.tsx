@@ -30,13 +30,13 @@ export const RecordatoriosList: React.FC<RecordatoriosListProps> = ({
   const getIcono = (tipo: Recordatorio['tipo']) => {
     switch (tipo) {
       case 'vencido':
-        return <FaExclamationTriangle style={{ color: '#f44336', fontSize: 18 }} />;
+        return React.createElement(FaExclamationTriangle as any, { style: { color: '#f44336', fontSize: 18 } });
       case 'pendiente':
-        return <FaBell style={{ color: '#ff9800', fontSize: 18 }} />;
+        return React.createElement(FaBell as any, { style: { color: '#ff9800', fontSize: 18 } });
       case 'proximo':
-        return <FaInfoCircle style={{ color: '#2196f3', fontSize: 18 }} />;
+        return React.createElement(FaInfoCircle as any, { style: { color: '#2196f3', fontSize: 18 } });
       case 'completado':
-        return <FaCheckCircle style={{ color: '#4caf50', fontSize: 18 }} />;
+        return React.createElement(FaCheckCircle as any, { style: { color: '#4caf50', fontSize: 18 } });
     }
   };
 
