@@ -1,4 +1,4 @@
-﻿const Transaccion = require('../../../models/transaccion');
+﻿const Transaccion = require('../../models/transaccion');
 const XLSX = require('xlsx');
 const ExcelJS = require('exceljs');
 

@@ -11,7 +11,7 @@ import {
   DraggableMovimiento, 
   RecordatoriosList, 
   BadgeRecordatorio 
-} from '../../components/shared';
+} from '../../components/ui';
 import { 
   FaCalendarAlt, FaChartBar, FaArrowUp, FaArrowDown, FaCoins, 
   FaTrash, FaTag, FaClock, FaChartLine, FaInfoCircle, FaExchangeAlt,
