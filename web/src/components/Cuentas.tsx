@@ -555,6 +555,7 @@ export default function Cuentas() {
         </div>
       </div>
 
+
       {/* Formulario de Nueva Cuenta */}
       <div className="card accounts-card" style={{ background: 'var(--color-card)', borderRadius: 12, padding: 24, marginBottom: 24, boxShadow: '0 2px 8px var(--card-shadow)' }}>
       <h2 style={{ marginBottom: 16, fontSize: 18, fontWeight: 600 }}>Agregar Nueva Cuenta</h2>
