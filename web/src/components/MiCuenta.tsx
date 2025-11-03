@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { getToken } from '../utils/auth';
-import Swal from 'sweetalert2';
+import { showAlert } from '../utils/sweetalert';
 import API_BASE from '../utils/apiBase';
 import {
   FormCard,
@@ -97,11 +97,10 @@ export default function MiCuenta() {
     if (name === 'telefono') {
       const regex = /^[0-9]{0,9}$/; // Permitir hasta 9 dígitos
       if (!regex.test(value)) {
-        Swal.fire({
+        showAlert({
           icon: 'error',
           title: 'Número inválido',
-          text: 'El número de teléfono debe tener exactamente 9 dígitos y solo contener números.',
-          confirmButtonColor: '#6C4AB6'
+          text: 'El número de teléfono debe tener exactamente 9 dígitos y solo contener números.'
         });
         return;
       }
@@ -122,27 +121,24 @@ export default function MiCuenta() {
     })
       .then((res) => {
         if (res.ok) {
-          Swal.fire({
+          showAlert({
             icon: 'success',
             title: 'Cuenta actualizada',
-            text: 'Tu información ha sido actualizada exitosamente.',
-            confirmButtonColor: '#6C4AB6'
+            text: 'Tu información ha sido actualizada exitosamente.'
           });
         } else {
-          Swal.fire({
+          showAlert({
             icon: 'error',
             title: 'Error',
-            text: 'Hubo un problema al actualizar tu cuenta.',
-            confirmButtonColor: '#6C4AB6'
+            text: 'Hubo un problema al actualizar tu cuenta.'
           });
         }
       })
       .catch(() => {
-        Swal.fire({
+        showAlert({
           icon: 'error',
           title: 'Error',
-          text: 'Hubo un problema al actualizar tu cuenta.',
-          confirmButtonColor: '#6C4AB6'
+          text: 'Hubo un problema al actualizar tu cuenta.'
         });
       });
   };
@@ -168,20 +164,18 @@ export default function MiCuenta() {
         }
       })
       .then((data) => {
-        Swal.fire({
+        showAlert({
           icon: 'success',
           title: 'Código enviado',
-          text: data.message || 'Por favor revisa tu correo.',
-          confirmButtonColor: '#6C4AB6'
+          text: data.message || 'Por favor revisa tu correo.'
         });
         setMostrarPopup(true);
       })
       .catch((err) => {
-        Swal.fire({
+        showAlert({
           icon: 'error',
           title: 'Error',
-          text: err.message || 'Hubo un problema al enviar el código de verificación.',
-          confirmButtonColor: '#6C4AB6'
+          text: err.message || 'Hubo un problema al enviar el código de verificación.'
         });
       });
   };
@@ -200,11 +194,10 @@ export default function MiCuenta() {
       .then(async (res) => {
         const data = await res.json();
         if (res.ok && data.message) {
-          Swal.fire({
+          showAlert({
             icon: 'success',
             title: 'Datos actualizados',
-            text: 'Tus datos han sido actualizados correctamente.',
-            confirmButtonColor: '#6C4AB6'
+            text: 'Tus datos han sido actualizados correctamente.'
           });
           setMostrarPopup(false);
           setEditableInputs({ email: false, telefono: false }); // Bloquear todos los campos
@@ -212,11 +205,10 @@ export default function MiCuenta() {
           setOriginalUserInfo((prev) => ({ ...prev, ...userInfo }));
           window.location.reload(); // Recargar la página
         } else {
-          Swal.fire({
+          showAlert({
             icon: 'error',
             title: 'Error',
-            text: data.error || 'El código ingresado es incorrecto.',
-            confirmButtonColor: '#6C4AB6'
+            text: data.error || 'El código ingresado es incorrecto.'
           });
         }
       })
@@ -243,26 +235,25 @@ export default function MiCuenta() {
       const e = (userInfo.email || '').trim();
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!e) {
-        Swal.fire({ icon: 'error', title: 'Email vacío', text: 'El email no puede estar vacío.', confirmButtonColor: '#6C4AB6' });
+        showAlert({ icon: 'error', title: 'Email vacío', text: 'El email no puede estar vacío.' });
         return;
       }
       if (!emailRegex.test(e)) {
-        Swal.fire({ icon: 'error', title: 'Email inválido', text: 'Ingresa un correo válido.', confirmButtonColor: '#6C4AB6' });
+        showAlert({ icon: 'error', title: 'Email inválido', text: 'Ingresa un correo válido.' });
         return;
       }
     }
     if (field === 'telefono') {
       const t = (userInfo.telefono || '').trim();
       if (!t) {
-        Swal.fire({ icon: 'error', title: 'Teléfono vacío', text: 'El teléfono no puede estar vacío.', confirmButtonColor: '#6C4AB6' });
+        showAlert({ icon: 'error', title: 'Teléfono vacío', text: 'El teléfono no puede estar vacío.' });
         return;
       }
       if (t.length !== 9) {
-      Swal.fire({
+      showAlert({
         icon: 'error',
         title: 'Número inválido',
-        text: 'El número de teléfono debe tener exactamente 9 dígitos.',
-        confirmButtonColor: '#6C4AB6'
+        text: 'El número de teléfono debe tener exactamente 9 dígitos.'
       });
       return;
     }
@@ -272,27 +263,27 @@ export default function MiCuenta() {
       const n = (userInfo.nombre || '').trim();
       const a = (userInfo.apellido || '').trim();
       if (!n) {
-        Swal.fire({ icon: 'error', title: 'Nombre vacío', text: 'El nombre no puede estar vacío.', confirmButtonColor: '#6C4AB6' });
+        showAlert({ icon: 'error', title: 'Nombre vacío', text: 'El nombre no puede estar vacío.' });
         return;
       }
       if (!nameRegex.test(n)) {
-        Swal.fire({ icon: 'error', title: 'Nombre inválido', text: 'El nombre solo puede contener letras y espacios.', confirmButtonColor: '#6C4AB6' });
+        showAlert({ icon: 'error', title: 'Nombre inválido', text: 'El nombre solo puede contener letras y espacios.' });
         return;
       }
       if (n.length > 50) {
-        Swal.fire({ icon: 'error', title: 'Nombre demasiado largo', text: 'Máximo 50 caracteres.', confirmButtonColor: '#6C4AB6' });
+        showAlert({ icon: 'error', title: 'Nombre demasiado largo', text: 'Máximo 50 caracteres.' });
         return;
       }
       if (!a) {
-        Swal.fire({ icon: 'error', title: 'Apellido vacío', text: 'El apellido no puede estar vacío.', confirmButtonColor: '#6C4AB6' });
+        showAlert({ icon: 'error', title: 'Apellido vacío', text: 'El apellido no puede estar vacío.' });
         return;
       }
       if (!nameRegex.test(a)) {
-        Swal.fire({ icon: 'error', title: 'Apellido inválido', text: 'El apellido solo puede contener letras y espacios.', confirmButtonColor: '#6C4AB6' });
+        showAlert({ icon: 'error', title: 'Apellido inválido', text: 'El apellido solo puede contener letras y espacios.' });
         return;
       }
       if (a.length > 50) {
-        Swal.fire({ icon: 'error', title: 'Apellido demasiado largo', text: 'Máximo 50 caracteres.', confirmButtonColor: '#6C4AB6' });
+        showAlert({ icon: 'error', title: 'Apellido demasiado largo', text: 'Máximo 50 caracteres.' });
         return;
       }
     }
@@ -314,11 +305,10 @@ export default function MiCuenta() {
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (res.ok && (data.message || data.success)) {
-          Swal.fire({
+          showAlert({
             icon: 'success',
             title: 'Datos actualizados',
-            text: data.message || 'Tus datos han sido actualizados correctamente.',
-            confirmButtonColor: '#6C4AB6'
+            text: data.message || 'Tus datos han sido actualizados correctamente.'
           });
           setMostrarPopup(false);
           setEditableInputs({ email: false, telefono: false });
@@ -326,21 +316,19 @@ export default function MiCuenta() {
           // Opcional: recargar para reflejar cambios en toda la app
           window.location.reload();
         } else {
-          Swal.fire({
+          showAlert({
             icon: 'error',
             title: 'Error de verificación',
-            text: (data && (data.error || data.message)) || 'El código ingresado es incorrecto.',
-            confirmButtonColor: '#6C4AB6'
+            text: (data && (data.error || data.message)) || 'El código ingresado es incorrecto.'
           });
         }
       })
       .catch((err) => {
         console.error('Error al verificar el código:', err);
-        Swal.fire({
+        showAlert({
           icon: 'error',
           title: 'Error',
-          text: 'Hubo un problema al verificar el código.',
-          confirmButtonColor: '#6C4AB6'
+          text: 'Hubo un problema al verificar el código.'
         });
       });
   };
@@ -414,7 +402,8 @@ export default function MiCuenta() {
           {/* Email */}
           <div>
             <label style={{ 
-              display: 'block', 
+              display: 'flex',
+              alignItems: 'center',
               marginBottom: 8, 
               fontSize: 14, 
               fontWeight: 600,
@@ -472,7 +461,8 @@ export default function MiCuenta() {
           {/* Teléfono */}
           <div>
             <label style={{ 
-              display: 'block', 
+              display: 'flex',
+              alignItems: 'center',
               marginBottom: 8, 
               fontSize: 14, 
               fontWeight: 600,

@@ -103,13 +103,19 @@ export const StatsCard: React.FC<StatsCardProps> = ({
           {title}
         </div>
         
-        <div style={{
-          fontSize: 28,
-          fontWeight: 700,
-          color: 'var(--text-primary, #222)',
-          lineHeight: 1,
-          marginBottom: subtitle || trend ? 6 : 0
-        }}>
+        <div 
+          style={{
+            fontSize: typeof value === 'string' && value.length > 25 ? 20 : 28,
+            fontWeight: 700,
+            color: 'var(--text-primary, #222)',
+            lineHeight: 1.2,
+            marginBottom: subtitle || trend ? 6 : 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}
+          title={typeof value === 'string' && value.length > 20 ? value : undefined}
+        >
           {value}
         </div>
         

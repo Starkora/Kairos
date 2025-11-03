@@ -250,3 +250,37 @@ html.dark {
 	height: 1.2rem;
 	margin-right: 0.5rem;
 }
+
+/* SweetAlert2 - Soporte modo claro/oscuro */
+.swal-dark-mode {
+  background: var(--card-bg, #fff) !important;
+  border: 1px solid var(--border-color, #e0e0e0) !important;
+}
+
+.swal-title {
+  color: var(--text-primary, #222) !important;
+}
+
+.swal-text {
+  color: var(--text-secondary, #666) !important;
+}
+
+html.dark .swal2-popup {
+  background: var(--card-bg, #1e1e1e) !important;
+}
+
+html.dark .swal2-title {
+  color: var(--text-primary, #f3f4f6) !important;
+}
+
+html.dark .swal2-html-container {
+  color: var(--text-secondary, #bbb) !important;
+}
+
+html.dark .swal2-input,
+html.dark .swal2-textarea,
+html.dark .swal2-select {
+  background: var(--input-bg, #2a2a2a) !important;
+  color: var(--text-primary, #f3f4f6) !important;
+  border: 1px solid var(--border-color, #444) !important;
+}
