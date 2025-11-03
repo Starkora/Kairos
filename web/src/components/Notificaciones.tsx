@@ -49,7 +49,7 @@ export default function Notificaciones() {
     }
   };
 
-  
+
   // Función para obtener color según medio
   const getMedioColor = (medio: string): 'primary' | 'success' | 'info' | 'warning' => {
     switch(medio.toLowerCase()) {
@@ -413,7 +413,7 @@ export default function Notificaciones() {
         onClose={() => setIsAdding(false)}
         title="Agregar Notificación"
       >
-        <FormCard>
+        <FormCard style={{ background: 'transparent', padding: 0, marginBottom: 0 }}>
           <FormGrid columns={1}>
             <FormSelect
               name="frecuencia"
@@ -481,11 +481,8 @@ export default function Notificaciones() {
               Guardar Configuración
             </FormButton>
             <FormButton 
+              variant="danger"
               onClick={() => setIsAdding(false)}
-              style={{ 
-                background: 'var(--danger-color, #f44336)',
-                borderColor: 'var(--danger-color, #f44336)'
-              }}
             >
               Cancelar
             </FormButton>
@@ -499,7 +496,7 @@ export default function Notificaciones() {
         onClose={() => setIsEditing(false)}
         title="Editar Notificación"
       >
-        <FormCard>
+        <FormCard style={{ background: 'transparent', padding: 0, marginBottom: 0 }}>
           <FormGrid columns={1}>
             <FormSelect
               name="frecuencia"
@@ -562,11 +559,8 @@ export default function Notificaciones() {
               Guardar Cambios
             </FormButton>
             <FormButton 
+              variant="danger"
               onClick={() => setIsEditing(false)}
-              style={{ 
-                background: 'var(--danger-color, #f44336)',
-                borderColor: 'var(--danger-color, #f44336)'
-              }}
             >
               Cancelar
             </FormButton>

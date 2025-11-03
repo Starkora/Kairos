@@ -187,7 +187,7 @@ export const FormButton: React.FC<FormButtonProps> = ({
         };
       case 'danger':
         return { 
-          background: '#f44336', 
+          background: 'var(--danger-color, #f44336)', 
           color: '#fff' 
         };
       default:

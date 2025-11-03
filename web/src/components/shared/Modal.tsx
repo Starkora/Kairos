@@ -65,7 +65,7 @@ export const Modal: React.FC<ModalProps> = ({
         justifyContent: 'center',
         zIndex: 9999,
         padding: 20,
-        backdropFilter: 'blur(2px)',
+        backdropFilter: 'blur(4px)',
         animation: 'fadeIn 0.2s ease-out'
       }}
       onClick={(e) => {
@@ -75,20 +75,20 @@ export const Modal: React.FC<ModalProps> = ({
       }}
     >
       <div style={{
-        background: '#fff',
+        background: 'var(--card-bg, #fff)',
         borderRadius: 16,
         maxWidth: sizeMap[size],
         width: '100%',
         maxHeight: '90vh',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        boxShadow: 'var(--card-shadow-hover, 0 20px 60px rgba(0,0,0,0.3))',
         animation: 'slideUp 0.3s ease-out'
       }}>
         {/* Header */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid #eee',
+          borderBottom: '1px solid var(--border-color, #eee)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between'
@@ -97,7 +97,7 @@ export const Modal: React.FC<ModalProps> = ({
             margin: 0,
             fontSize: 20,
             fontWeight: 700,
-            color: '#222'
+            color: 'var(--text-primary, #222)'
           }}>
             {title}
           </h3>
@@ -109,13 +109,13 @@ export const Modal: React.FC<ModalProps> = ({
               border: 'none',
               fontSize: 24,
               cursor: 'pointer',
-              color: '#666',
+              color: 'var(--text-secondary, #666)',
               padding: 4,
               lineHeight: 1,
               transition: 'color 0.2s'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#222'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#666'}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary, #222)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary, #666)'}
           >
             ×
           </button>
@@ -134,7 +134,7 @@ export const Modal: React.FC<ModalProps> = ({
         {footer && (
           <div style={{
             padding: '16px 24px',
-            borderTop: '1px solid #eee',
+            borderTop: '1px solid var(--border-color, #eee)',
             display: 'flex',
             justifyContent: 'flex-end',
             gap: 12

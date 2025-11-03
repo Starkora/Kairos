@@ -2,6 +2,17 @@ import React, { useState } from 'react';
 import { getToken } from '../utils/auth';
 import Swal from 'sweetalert2';
 import API_BASE from '../utils/apiBase';
+import {
+  FormCard,
+  FormInput,
+  FormButton,
+  FormGrid,
+  StatsCard,
+  StatsGrid,
+  Modal,
+  Badge
+} from './shared';
+import { FaUser, FaEnvelope, FaPhone, FaEdit, FaCheck, FaTimes, FaShieldAlt, FaClock } from 'react-icons/fa';
 
 export default function MiCuenta() {
   const [userInfo, setUserInfo] = useState({
@@ -335,173 +346,349 @@ export default function MiCuenta() {
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '720px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ textAlign: 'center', color: '#6C4AB6' }}>Mi Cuenta</h1>
+    <div style={{ maxWidth: 1200, margin: '24px auto', padding: '0 16px' }}>
+      {/* Header */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: 24 
+      }}>
+        <h1 style={{ 
+          margin: 0, 
+          fontWeight: 700, 
+          fontSize: 28, 
+          color: 'var(--text-primary, #222)' 
+        }}>
+          Mi Cuenta
+        </h1>
+      </div>
+
+      {/* Estadísticas */}
+      <StatsGrid columns={3}>
+        <StatsCard
+          title="Usuario"
+          value={`${userInfo.nombre} ${userInfo.apellido}`}
+          icon={React.createElement(FaUser as any)}
+          color="primary"
+          subtitle="Nombre completo"
+        />
+        <StatsCard
+          title="Email"
+          value={userInfo.email || 'No configurado'}
+          icon={React.createElement(FaEnvelope as any)}
+          color="info"
+          subtitle="Correo electrónico"
+        />
+        <StatsCard
+          title="Teléfono"
+          value={userInfo.telefono || 'No configurado'}
+          icon={React.createElement(FaPhone as any)}
+          color="success"
+          subtitle="Número de contacto"
+        />
+      </StatsGrid>
 
       {/* Sección: Datos principales */}
-  <section style={{ background: 'var(--color-card)', borderRadius: 12, padding: 16, boxShadow: '0 2px 10px var(--card-shadow)', marginBottom: 20 }}>
-        <h2 style={{ color: '#6C4AB6', marginTop: 0 }}>Datos principales</h2>
-        {/* Email */}
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ fontSize: 14, fontWeight: 'bold' }}>Email:</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <input
-              type="email"
-              name="email"
-              value={userInfo.email}
-              onChange={handleInputChange}
-              disabled={!editableInputs.email}
-              maxLength={120}
-              style={{ padding: '8px', borderRadius: 6, border: '1px solid #ccc', flex: 1 }}
-            />
-            <button type="button" onClick={() => handleEditClick('email')} className="icon-btn" title={editableInputs.email ? 'Cancelar' : 'Editar'} aria-label={editableInputs.email ? 'Cancelar' : 'Editar'}
-              style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}>
-              {editableInputs.email ? (
-                <span style={{ color: '#6C4AB6', fontWeight: 600 }}>Cancelar</span>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c4fa1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9"/>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-                </svg>
-              )}
-            </button>
-            {editableInputs.email && (
-              <button
-                type="button"
-                onClick={() => handleSaveClick('email')}
-                disabled={userInfo.email === originalUserInfo.email}
-                style={{ padding: '6px 12px', background: userInfo.email === originalUserInfo.email ? '#a5d6a7' : '#28a745', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: userInfo.email === originalUserInfo.email ? 'not-allowed' : 'pointer' }}
-              >
-                Guardar
-              </button>
-            )}
-          </div>
+      <FormCard>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: 20
+        }}>
+          <h2 style={{ 
+            margin: 0, 
+            fontSize: 20, 
+            fontWeight: 600,
+            color: 'var(--text-primary, #222)'
+          }}>
+            Datos principales
+          </h2>
+          {React.createElement(FaShieldAlt as any, { 
+            style: { color: 'var(--success-color, #4caf50)', fontSize: 20 } 
+          })}
         </div>
-        {/* Teléfono */}
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ fontSize: 14, fontWeight: 'bold' }}>Teléfono:</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <input
-              type="text"
-              name="telefono"
-              value={userInfo.telefono}
-              onChange={handleInputChange}
-              disabled={!editableInputs.telefono}
-              maxLength={9}
-              style={{ padding: '8px', borderRadius: 6, border: '1px solid #ccc', flex: 1 }}
-            />
-            <button type="button" onClick={() => handleEditClick('telefono')} className="icon-btn" title={editableInputs.telefono ? 'Cancelar' : 'Editar'} aria-label={editableInputs.telefono ? 'Cancelar' : 'Editar'}
-              style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}>
-              {editableInputs.telefono ? (
-                <span style={{ color: '#6C4AB6', fontWeight: 600 }}>Cancelar</span>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c4fa1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9"/>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-                </svg>
-              )}
-            </button>
-            {editableInputs.telefono && (
-              <button
+
+        <FormGrid columns={1}>
+          {/* Email */}
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: 8, 
+              fontSize: 14, 
+              fontWeight: 600,
+              color: 'var(--text-primary, #222)'
+            }}>
+              {React.createElement(FaEnvelope as any, { 
+                style: { marginRight: 8, color: 'var(--info-color, #2196f3)' } 
+              })}
+              Email
+            </label>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <FormInput
+                type="email"
+                name="email"
+                placeholder="tu@email.com"
+                value={userInfo.email}
+                onChange={handleInputChange}
+                disabled={!editableInputs.email}
+                style={{ flex: 1 }}
+              />
+              <FormButton
                 type="button"
-                onClick={() => handleSaveClick('telefono')}
-                disabled={userInfo.telefono === originalUserInfo.telefono}
-                style={{ padding: '6px 12px', background: userInfo.telefono === originalUserInfo.telefono ? '#a5d6a7' : '#28a745', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: userInfo.telefono === originalUserInfo.telefono ? 'not-allowed' : 'pointer' }}
+                onClick={() => handleEditClick('email')}
+                variant="secondary"
+                fullWidth={false}
+                style={{ minWidth: 100 }}
               >
-                Guardar
-              </button>
-            )}
+                {editableInputs.email ? (
+                  <>
+                    {React.createElement(FaTimes as any, { style: { marginRight: 6 } })}
+                    Cancelar
+                  </>
+                ) : (
+                  <>
+                    {React.createElement(FaEdit as any, { style: { marginRight: 6 } })}
+                    Editar
+                  </>
+                )}
+              </FormButton>
+              {editableInputs.email && (
+                <FormButton
+                  type="button"
+                  onClick={() => handleSaveClick('email')}
+                  disabled={userInfo.email === originalUserInfo.email}
+                  fullWidth={false}
+                  style={{ minWidth: 100 }}
+                >
+                  {React.createElement(FaCheck as any, { style: { marginRight: 6 } })}
+                  Guardar
+                </FormButton>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+
+          {/* Teléfono */}
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: 8, 
+              fontSize: 14, 
+              fontWeight: 600,
+              color: 'var(--text-primary, #222)'
+            }}>
+              {React.createElement(FaPhone as any, { 
+                style: { marginRight: 8, color: 'var(--success-color, #4caf50)' } 
+              })}
+              Teléfono
+            </label>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <FormInput
+                type="text"
+                name="telefono"
+                placeholder="999999999"
+                value={userInfo.telefono}
+                onChange={handleInputChange}
+                disabled={!editableInputs.telefono}
+                style={{ flex: 1 }}
+              />
+              <FormButton
+                type="button"
+                onClick={() => handleEditClick('telefono')}
+                variant="secondary"
+                fullWidth={false}
+                style={{ minWidth: 100 }}
+              >
+                {editableInputs.telefono ? (
+                  <>
+                    {React.createElement(FaTimes as any, { style: { marginRight: 6 } })}
+                    Cancelar
+                  </>
+                ) : (
+                  <>
+                    {React.createElement(FaEdit as any, { style: { marginRight: 6 } })}
+                    Editar
+                  </>
+                )}
+              </FormButton>
+              {editableInputs.telefono && (
+                <FormButton
+                  type="button"
+                  onClick={() => handleSaveClick('telefono')}
+                  disabled={userInfo.telefono === originalUserInfo.telefono}
+                  fullWidth={false}
+                  style={{ minWidth: 100 }}
+                >
+                  {React.createElement(FaCheck as any, { style: { marginRight: 6 } })}
+                  Guardar
+                </FormButton>
+              )}
+            </div>
+          </div>
+        </FormGrid>
+      </FormCard>
 
       {/* Sección: Perfil */}
-  <section style={{ background: 'var(--color-card)', borderRadius: 12, padding: 16, boxShadow: '0 2px 10px var(--card-shadow)' }}>
-        <h2 style={{ color: '#6C4AB6', marginTop: 0 }}>Perfil</h2>
-  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 240px))', justifyContent: 'start', columnGap: 24, rowGap: 16, marginBottom: 16 }}>
+      <FormCard>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: 20
+        }}>
+          <h2 style={{ 
+            margin: 0, 
+            fontSize: 20, 
+            fontWeight: 600,
+            color: 'var(--text-primary, #222)'
+          }}>
+            Perfil
+          </h2>
+          {React.createElement(FaUser as any, { 
+            style: { color: 'var(--primary-color, #6c4fa1)', fontSize: 20 } 
+          })}
+        </div>
+
+        <FormGrid columns={2}>
           <div>
-            <label style={{ fontSize: 14, fontWeight: 'bold', display: 'block', marginBottom: 6 }}>Nombre:</label>
-            <input
+            <label style={{ 
+              display: 'block', 
+              marginBottom: 8, 
+              fontSize: 14, 
+              fontWeight: 600,
+              color: 'var(--text-primary, #222)'
+            }}>
+              Nombre
+            </label>
+            <FormInput
               type="text"
               name="nombre"
+              placeholder="Tu nombre"
               value={userInfo.nombre}
               onChange={handleInputChange}
               disabled={!perfilEditMode}
-              maxLength={50}
-              style={{ padding: '6px', borderRadius: 4, border: '1px solid #ccc', width: '100%', marginTop: 2, fontSize: 14 }}
             />
           </div>
-            <div>
-            <label style={{ fontSize: 14, fontWeight: 'bold', display: 'block', marginBottom: 6 }}>Apellido:</label>
-            <input
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: 8, 
+              fontSize: 14, 
+              fontWeight: 600,
+              color: 'var(--text-primary, #222)'
+            }}>
+              Apellido
+            </label>
+            <FormInput
               type="text"
               name="apellido"
+              placeholder="Tu apellido"
               value={userInfo.apellido}
               onChange={handleInputChange}
               disabled={!perfilEditMode}
-              maxLength={50}
-              style={{ padding: '6px', borderRadius: 4, border: '1px solid #ccc', width: '100%', marginTop: 2, fontSize: 14 }}
             />
           </div>
-        </div>
-        {!perfilEditMode ? (
-          <button type="button" onClick={() => handleEditClick('perfil')} className="icon-btn" title="Editar" aria-label="Editar"
-            style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c4fa1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 20h9"/>
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-            </svg>
-          </button>
-        ) : (
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button type="button" onClick={() => { setPerfilEditMode(false); setUserInfo((prev) => ({ ...prev, nombre: originalUserInfo.nombre || '', apellido: originalUserInfo.apellido || '' })); }} style={{ padding: '8px 16px', background: '#bbb', color: '#333', border: 'none', borderRadius: 6, fontWeight: 700 }}>
-              Cancelar
-            </button>
-            <button
+        </FormGrid>
+
+        <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+          {!perfilEditMode ? (
+            <FormButton
               type="button"
-              onClick={() => handleSaveClick('perfil')}
-              disabled={userInfo.nombre === originalUserInfo.nombre && userInfo.apellido === originalUserInfo.apellido}
-              style={{ padding: '8px 16px', background: (userInfo.nombre === originalUserInfo.nombre && userInfo.apellido === originalUserInfo.apellido) ? '#a5d6a7' : '#28a745', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: (userInfo.nombre === originalUserInfo.nombre && userInfo.apellido === originalUserInfo.apellido) ? 'not-allowed' : 'pointer' }}
+              onClick={() => handleEditClick('perfil')}
+              variant="secondary"
+              fullWidth={false}
             >
-              Guardar
-            </button>
-          </div>
-        )}
-      </section>
-      {mostrarPopup && (
-        <>
-          <div className="micuenta-overlay" onClick={() => { setMostrarPopup(false); setCodigoVerificacion(''); }} />
-          <div className="micuenta-modal" role="dialog" aria-modal="true" aria-labelledby="micuenta-verify-title">
-            <h2 id="micuenta-verify-title" style={{ color: 'var(--color-text)', marginTop: 0 }}>Verificación</h2>
-            <p style={{ marginTop: 0, color: 'var(--color-text)' }}>Ingresa el código enviado a tu correo:</p>
-            <input
-              type="text"
-              value={codigoVerificacion}
-              onChange={(e) => setCodigoVerificacion(e.target.value)}
-              style={{ width: '100%' }}
-            />
-            <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-start' }}>
-              <button
+              {React.createElement(FaEdit as any, { style: { marginRight: 6 } })}
+              Editar Perfil
+            </FormButton>
+          ) : (
+            <>
+              <FormButton
                 type="button"
-                onClick={handleVerificationSubmit}
-                className="btn btn-primary"
-                style={{ padding: '8px 14px', fontWeight: 700 }}
+                onClick={() => { 
+                  setPerfilEditMode(false); 
+                  setUserInfo((prev) => ({ 
+                    ...prev, 
+                    nombre: originalUserInfo.nombre || '', 
+                    apellido: originalUserInfo.apellido || '' 
+                  })); 
+                }}
+                variant="danger"
+                fullWidth={false}
               >
-                Verificar
-              </button>
-              <button
+                {React.createElement(FaTimes as any, { style: { marginRight: 6 } })}
+                Cancelar
+              </FormButton>
+              <FormButton
                 type="button"
-                onClick={() => { setMostrarPopup(false); setCodigoVerificacion(''); }}
-                className="btn"
-                style={{ padding: '8px 14px', fontWeight: 700 }}
+                onClick={() => handleSaveClick('perfil')}
+                disabled={userInfo.nombre === originalUserInfo.nombre && userInfo.apellido === originalUserInfo.apellido}
+                fullWidth={false}
               >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-      {/* Tooltips nativos via title en iconos de editar */}
+                {React.createElement(FaCheck as any, { style: { marginRight: 6 } })}
+                Guardar Cambios
+              </FormButton>
+            </>
+          )}
+        </div>
+      </FormCard>
+
+      {/* Modal de Verificación */}
+      <Modal
+        isOpen={mostrarPopup}
+        onClose={() => {
+          setMostrarPopup(false);
+          setCodigoVerificacion('');
+        }}
+        title="Verificación de Seguridad"
+      >
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          {React.createElement(FaShieldAlt as any, { 
+            style: { fontSize: 48, color: 'var(--primary-color, #6c4fa1)', marginBottom: 16 } 
+          })}
+          <p style={{ 
+            margin: 0, 
+            color: 'var(--text-secondary, #666)',
+            fontSize: 14
+          }}>
+            Hemos enviado un código de verificación a tu correo electrónico. 
+            Por favor, ingrésalo para confirmar los cambios.
+          </p>
+        </div>
+
+        <FormGrid columns={1}>
+          <FormInput
+            type="text"
+            placeholder="Ingresa el código de 6 dígitos"
+            value={codigoVerificacion}
+            onChange={(e) => setCodigoVerificacion(e.target.value)}
+            style={{ textAlign: 'center', fontSize: 18, letterSpacing: 4 }}
+          />
+        </FormGrid>
+
+        <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+          <FormButton
+            type="button"
+            onClick={handleVerificationSubmit}
+            disabled={!codigoVerificacion}
+          >
+            {React.createElement(FaCheck as any, { style: { marginRight: 6 } })}
+            Verificar Código
+          </FormButton>
+          <FormButton
+            type="button"
+            variant="danger"
+            onClick={() => {
+              setMostrarPopup(false);
+              setCodigoVerificacion('');
+            }}
+          >
+            {React.createElement(FaTimes as any, { style: { marginRight: 6 } })}
+            Cancelar
+          </FormButton>
+        </div>
+      </Modal>
     </div>
   );
 }
