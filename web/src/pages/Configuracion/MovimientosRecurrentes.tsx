@@ -375,7 +375,9 @@ const MovimientosRecurrentes = () => {
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#e0f2fe' }}>{mov.fin || '-'}</td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#e0f2fe' }}>{mov.indefinido ? 'Sí' : 'No'}</td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#fbbf24' }}>{mov.categoria_id ? (categoriasMap[mov.categoria_id] ?? mov.categoria_id) : '-'}</td>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#fbbf24' }}>{mov.icon || '-'}</td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#fbbf24' }}>
+                                            <span className="rec-icon">{mov.icon || '-'}</span>
+                                        </td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px' }}>
                                             <span
                                                 style={{
@@ -394,7 +396,7 @@ const MovimientosRecurrentes = () => {
                                             </span>
                                         </td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px' }}>
-                                            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                                            <div className="rec-acciones" style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                                                 <ActionButton
                                                     icon={FaEdit}
                                                     color="text-cyan-300 hover:text-cyan-100"

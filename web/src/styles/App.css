@@ -555,6 +555,24 @@ input::-ms-input-placeholder, textarea::-ms-input-placeholder { color: var(--col
   .search-input::placeholder { text-indent: 22px; }
 }
 
+/* ===== Movimientos Recurrentes: iconos y acciones en móvil ===== */
+@media (max-width: 768px) {
+  /* Aumentar tamaño visual del icono/emoji en la columna Icono */
+  .rec-icon {
+    font-size: 22px !important;
+    line-height: 1 !important;
+    display: inline-block;
+  }
+
+  /* Botones de acciones con mayor área táctil e iconos más grandes */
+  .rec-acciones button {
+    min-width: 48px !important;
+    min-height: 48px !important;
+    padding: 12px !important;
+    font-size: 22px !important; /* escala los react-icons (1em) */
+  }
+}
+
 /* Caret color theming */
 input, textarea { caret-color: var(--color-caret); }
 
