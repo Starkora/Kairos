@@ -150,7 +150,7 @@ exports.deleteById = async (req, res) => {
     const mov = rows[0];
     if (mov.usuario_id !== usuario_id) return res.status(403).json({ error: 'No autorizado' });
 
-    const Transaccion = require('../../../models/transaccion');
+    const Transaccion = require('../../models/transaccion');
     await Transaccion.deleteById(id);
 
     // Detectar marcadores ocultos en la descripción para revertir progreso de deuda/meta
@@ -194,7 +194,7 @@ exports.update = async (req, res) => {
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   if (!cuenta_id || !tipo || !monto || !fecha) return res.status(400).json({ error: 'Faltan campos requeridos' });
   try {
-    const Transaccion = require('../../../models/transaccion');
+    const Transaccion = require('../../models/transaccion');
     await Transaccion.update({ id, usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, icon, color });
     res.json({ success: true });
   } catch (err) {

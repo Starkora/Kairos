@@ -25,9 +25,9 @@ exports.eliminar = async (req, res) => {
     res.status(500).json({ error: 'No se pudo eliminar el movimiento recurrente.' });
   }
 };
-const MovimientoRecurrente = require('../../../models/movimientoRecurrente');
-const MovimientoRecurrenteExcepcion = require('../../../models/movimientoRecurrenteExcepcion');
-const Transaccion = require('../../../models/transaccion');
+const MovimientoRecurrente = require('../../models/movimientoRecurrente');
+const MovimientoRecurrenteExcepcion = require('../../models/movimientoRecurrenteExcepcion');
+const Transaccion = require('../../models/transaccion');
 
 // Crear movimiento recurrente
 exports.crear = async (req, res) => {
@@ -76,7 +76,7 @@ exports.aplicarAhora = async (req, res) => {
     const id = req.params.id;
     const mov = await MovimientoRecurrente.findOne({ where: { id, usuario_id } });
     if (!mov) return res.status(404).json({ error: 'Movimiento recurrente no encontrado.' });
-    const Transaccion = require('../../../models/transaccion');
+    const Transaccion = require('../../models/transaccion');
     const todayStr = new Date().toISOString().slice(0,10);
     const marker = `[RECURRENTE#${mov.id}]`;
     await Transaccion.create({

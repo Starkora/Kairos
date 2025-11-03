@@ -1,11 +1,11 @@
-﻿const db = require('../../config/database'); // Importar el módulo de base de datos
+﻿const db = require('../../../config/database'); // Importar el módulo de base de datos
 const crypto = require('crypto');
 const mailer = require('../../utils/notifications/mailer');
 const sms = require('../../utils/notifications/sms');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'kairos_secret';
-const UsuarioPendiente = require('../../../models/usuarioPendiente');
+const UsuarioPendiente = require('../../models/usuarioPendiente');
 
 // Método para obtener información del usuario
 const getUserInfo = async (req, res) => {

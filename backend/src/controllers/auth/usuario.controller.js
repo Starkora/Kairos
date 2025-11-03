@@ -66,8 +66,8 @@ exports.confirmarRecuperacion = async (req, res) => {
   }
 };
 
-const Usuario = require('../../../models/usuario');
-const UsuarioPendiente = require('../../../models/usuarioPendiente');
+const Usuario = require('../../models/usuario');
+const UsuarioPendiente = require('../../models/usuarioPendiente');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { sendMail } = require('../../utils/notifications/mailer');

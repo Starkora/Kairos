@@ -72,11 +72,11 @@ exports.loginGoogle = async (req, res) => {
     const apellido = payload.family_name || '';
     const googleId = payload.sub;
 
-    let users = await require('../../../models/usuario').findByEmailAndPlataforma(email, plat);
+    let users = await require('../../models/usuario').findByEmailAndPlataforma(email, plat);
     let user = users[0];
     if (!user) {
       console.log('Usuario no existe, creando usuario nuevo');
-      const result = await require('../../../models/usuario').create({
+      const result = await require('../../models/usuario').create({
         email,
         numero: googleId,
         password: '',

@@ -1,5 +1,5 @@
-﻿const db = require('../../config/database');
-const Presupuesto = require('../../../models/presupuesto');
+﻿const db = require('../../../config/database');
+const Presupuesto = require('../../models/presupuesto');
 
 exports.listar = async (req, res) => {
   try {

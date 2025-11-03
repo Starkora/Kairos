@@ -1,4 +1,4 @@
-﻿const Meta = require('../../../models/meta');
+﻿const Meta = require('../../models/meta');
 
 exports.crearMeta = async (req, res) => {
   const usuario_id = req.user && req.user.id;
