@@ -2,7 +2,7 @@ import React from 'react';
 import API_BASE from '../utils/apiBase';
 import Swal from 'sweetalert2';
 import { getToken } from '../utils/auth';
-import { FaBolt, FaRedo, FaFileDownload, FaFileUpload, FaWallet, FaExclamationTriangle, FaClipboardList, FaLightbulb, FaMoneyBillWave, FaUniversity, FaAppleAlt, FaCar, FaCreditCard, FaBolt as FaLightning, FaGift, FaShoppingCart, FaHospital, FaExchangeAlt } from 'react-icons/fa';
+import { FaBolt, FaRedo, FaFileDownload, FaFileUpload, FaWallet, FaExclamationTriangle, FaClipboardList, FaLightbulb, FaMoneyBillWave, FaUniversity, FaAppleAlt, FaCar, FaCreditCard, FaBolt as FaLightning, FaGift, FaShoppingCart, FaHospital, FaExchangeAlt, FaCheckCircle, FaTimesCircle, FaStar, FaRegStar, FaSearch, FaFilter, FaCopy, FaTrash, FaEdit } from 'react-icons/fa';
 
 
 export default function Registro() {
@@ -13,6 +13,16 @@ export default function Registro() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [transaccionesRecientes, setTransaccionesRecientes] = React.useState<any[]>([]);
   const [plantillas, setPlantillas] = React.useState<any[]>([]);
+  const [busquedaRecientes, setBusquedaRecientes] = React.useState('');
+  const [filtroTipoRecientes, setFiltroTipoRecientes] = React.useState('all');
+  
+  // Estado para validación
+  const [erroresValidacion, setErroresValidacion] = React.useState({
+    monto: '',
+    categoria: '',
+    descripcion: '',
+    cuenta: ''
+  });
 
   const [form, setForm] = React.useState({
     tipo: 'ingreso',
@@ -159,9 +169,26 @@ export default function Registro() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Limpiar error cuando el usuario empieza a escribir
+    if (erroresValidacion[name as keyof typeof erroresValidacion]) {
+      setErroresValidacion(prev => ({ ...prev, [name]: '' }));
+    }
+    
     if (name === 'monto') {
       // Aceptar coma o punto y guardar con punto para evitar NaN
       const normalized = String(value).replace(',', '.');
+      
+      // Validación en tiempo real
+      if (normalized && isNaN(Number(normalized))) {
+        setErroresValidacion(prev => ({ ...prev, monto: 'Ingresa un monto válido' }));
+      } else if (Number(normalized) < 0) {
+        setErroresValidacion(prev => ({ ...prev, monto: 'El monto no puede ser negativo' }));
+      } else if (Number(normalized) > 1000000) {
+        setErroresValidacion(prev => ({ ...prev, monto: 'El monto es demasiado alto' }));
+      } else if (normalized) {
+        setErroresValidacion(prev => ({ ...prev, monto: '' }));
+      }
       
       // Evaluar si es una expresión matemática simple
       if (/^[\d\s+\-*/().]+$/.test(normalized)) {
@@ -180,6 +207,15 @@ export default function Registro() {
       
       setForm((prev) => ({ ...prev, [name]: normalized }));
       return;
+    }
+    
+    // Validación de descripción
+    if (name === 'descripcion') {
+      if (value.length > 100) {
+        setErroresValidacion(prev => ({ ...prev, descripcion: 'Máximo 100 caracteres' }));
+      } else {
+        setErroresValidacion(prev => ({ ...prev, descripcion: '' }));
+      }
     }
     
     // Sugerencia inteligente de categoría basada en descripción
@@ -264,15 +300,19 @@ export default function Registro() {
     if (transaccionesRecientes.length === 0) return;
     
     const ultima = transaccionesRecientes[0];
+    copiarTransaccion(ultima);
+  };
+
+  const copiarTransaccion = (transaccion: any) => {
     setForm(prev => ({
       ...prev,
-      tipo: ultima.tipo,
-      categoria: ultima.categoria_id || '',
-      descripcion: ultima.descripcion || '',
-      icon: ultima.icon || 'FaMoneyBillWave',
-      color: ultima.color || '#c62828',
-      monto: parseFloat(ultima.monto).toFixed(2),
-      cuenta: ultima.cuenta_id || prev.cuenta,
+      tipo: transaccion.tipo,
+      categoria: transaccion.categoria_id || '',
+      descripcion: transaccion.descripcion || '',
+      icon: transaccion.icon || 'FaMoneyBillWave',
+      color: transaccion.color || '#c62828',
+      monto: parseFloat(transaccion.monto).toFixed(2),
+      cuenta: transaccion.cuenta_id || prev.cuenta,
       fecha: getToday() // Usar fecha de hoy
     }));
     
@@ -281,14 +321,35 @@ export default function Registro() {
     
     Swal.fire({
       icon: 'success',
-      title: 'Transacción duplicada',
-      text: 'Se han copiado los datos de la última transacción',
+      title: 'Transacción copiada',
+      text: 'Se han copiado los datos de la transacción',
       showConfirmButton: false,
       timer: 1500,
       toast: true,
       position: 'top-end'
     });
   };
+
+  // Filtrar transacciones recientes
+  const transaccionesFiltradas = React.useMemo(() => {
+    let filtradas = transaccionesRecientes;
+
+    // Filtrar por búsqueda
+    if (busquedaRecientes.trim()) {
+      const busqueda = busquedaRecientes.toLowerCase();
+      filtradas = filtradas.filter(tr => 
+        (tr.descripcion && tr.descripcion.toLowerCase().includes(busqueda)) ||
+        tr.monto.toString().includes(busqueda)
+      );
+    }
+
+    // Filtrar por tipo
+    if (filtroTipoRecientes !== 'all') {
+      filtradas = filtradas.filter(tr => tr.tipo === filtroTipoRecientes);
+    }
+
+    return filtradas;
+  }, [transaccionesRecientes, busquedaRecientes, filtroTipoRecientes]);
 
   const handleDownloadTemplate = async () => {
     try {
@@ -630,7 +691,7 @@ export default function Registro() {
         <div>
           <label>Monto:&nbsp;</label>
           <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'column', gap: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', width: '100%', position: 'relative' }}>
               <span style={{ marginRight: 4, fontWeight: 600 }}>S/</span>
               <input
                 type="text"
@@ -638,9 +699,34 @@ export default function Registro() {
                 value={form.monto}
                 onChange={handleChange}
                 placeholder="Ej: 50+20+30"
-                style={{ padding: 6, borderRadius: 6, width: '100%' }}
+                style={{ 
+                  padding: 6, 
+                  paddingRight: 32,
+                  borderRadius: 6, 
+                  width: '100%',
+                  border: erroresValidacion.monto 
+                    ? '2px solid #ef5350' 
+                    : form.monto && !isNaN(Number(form.monto)) && Number(form.monto) > 0 
+                    ? '2px solid #66bb6a'
+                    : '1px solid var(--color-border)'
+                }}
               />
+              {form.monto && (
+                <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)' }}>
+                  {erroresValidacion.monto 
+                    ? React.createElement(FaTimesCircle as any, { style: { color: '#ef5350', fontSize: 18 } })
+                    : !isNaN(Number(form.monto)) && Number(form.monto) > 0
+                    ? React.createElement(FaCheckCircle as any, { style: { color: '#66bb6a', fontSize: 18 } })
+                    : null
+                  }
+                </div>
+              )}
             </div>
+            {erroresValidacion.monto && (
+              <div style={{ fontSize: 12, color: '#ef5350', alignSelf: 'flex-start', paddingLeft: 26 }}>
+                {erroresValidacion.monto}
+              </div>
+            )}
             <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', alignSelf: 'flex-start', paddingLeft: 26, display: 'flex', alignItems: 'center', gap: 4 }}>
               {React.createElement(FaLightbulb as any, { style: { fontSize: 12 } })}
               Puedes escribir operaciones: 50+20, 100-15, 25*4
@@ -769,7 +855,34 @@ export default function Registro() {
         </div>
         <div>
           <label>Descripción:&nbsp;</label>
-          <input type="text" name="descripcion" value={form.descripcion} onChange={handleChange} style={{ padding: 6, borderRadius: 6, width: '100%' }} />
+          <div style={{ position: 'relative' }}>
+            <input 
+              type="text" 
+              name="descripcion" 
+              value={form.descripcion} 
+              onChange={handleChange} 
+              maxLength={100}
+              placeholder="Ej: Compra en supermercado"
+              style={{ 
+                padding: 6, 
+                borderRadius: 6, 
+                width: '100%',
+                border: erroresValidacion.descripcion 
+                  ? '2px solid #ef5350' 
+                  : '1px solid var(--color-border)'
+              }} 
+            />
+            <div style={{ 
+              fontSize: 11, 
+              color: form.descripcion.length > 80 ? '#ef5350' : 'var(--color-text-secondary)', 
+              marginTop: 4,
+              display: 'flex',
+              justifyContent: 'space-between'
+            }}>
+              <span>{erroresValidacion.descripcion || 'Opcional pero recomendado'}</span>
+              <span>{form.descripcion.length}/100</span>
+            </div>
+          </div>
         </div>
         {form.tipo !== 'transferencia' && (
           <div>
@@ -819,8 +932,125 @@ export default function Registro() {
             {React.createElement(FaClipboardList as any, { style: { fontSize: 20, color: '#6c4fa1' } })}
             Transacciones Recientes
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {transaccionesRecientes.map((tr) => {
+          
+          {/* Barra de búsqueda y filtros */}
+          <div style={{ 
+            display: 'flex', 
+            gap: 12, 
+            marginBottom: 16, 
+            flexWrap: 'wrap',
+            alignItems: 'center'
+          }}>
+            {/* Búsqueda */}
+            <div style={{ 
+              flex: 1, 
+              minWidth: 200, 
+              position: 'relative' 
+            }}>
+              <div style={{ 
+                position: 'absolute', 
+                left: 12, 
+                top: '50%', 
+                transform: 'translateY(-50%)',
+                color: 'var(--color-text-secondary)',
+                pointerEvents: 'none'
+              }}>
+                {React.createElement(FaSearch as any, { style: { fontSize: 14 } })}
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar transacción..."
+                value={busquedaRecientes}
+                onChange={(e) => setBusquedaRecientes(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px 10px 36px',
+                  borderRadius: 8,
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-bg)',
+                  color: 'var(--color-text)',
+                  fontSize: 14,
+                  outline: 'none',
+                  transition: 'all 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#6c4fa1'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
+              />
+            </div>
+
+            {/* Filtro por tipo */}
+            <div style={{ 
+              position: 'relative',
+              minWidth: 140
+            }}>
+              <div style={{ 
+                position: 'absolute', 
+                left: 12, 
+                top: '50%', 
+                transform: 'translateY(-50%)',
+                color: 'var(--color-text-secondary)',
+                pointerEvents: 'none'
+              }}>
+                {React.createElement(FaFilter as any, { style: { fontSize: 14 } })}
+              </div>
+              <select
+                value={filtroTipoRecientes}
+                onChange={(e) => setFiltroTipoRecientes(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px 10px 36px',
+                  borderRadius: 8,
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-bg)',
+                  color: 'var(--color-text)',
+                  fontSize: 14,
+                  outline: 'none',
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center',
+                  backgroundSize: '16px',
+                  paddingRight: 32
+                }}
+              >
+                <option value="todos">Todos</option>
+                <option value="ingreso">Ingresos</option>
+                <option value="egreso">Egresos</option>
+                <option value="ahorro">Ahorros</option>
+                <option value="transferencia">Transferencias</option>
+              </select>
+            </div>
+
+            {/* Contador de resultados */}
+            <div style={{
+              fontSize: 13,
+              color: 'var(--color-text-secondary)',
+              whiteSpace: 'nowrap'
+            }}>
+              {transaccionesFiltradas.length} de {transaccionesRecientes.length}
+            </div>
+          </div>
+
+          {/* Lista de transacciones */}
+          {transaccionesFiltradas.length === 0 ? (
+            <div style={{
+              textAlign: 'center',
+              padding: 40,
+              color: 'var(--color-text-secondary)',
+              fontSize: 14
+            }}>
+              {React.createElement(FaSearch as any, { 
+                style: { fontSize: 32, marginBottom: 12, opacity: 0.3 } 
+              })}
+              <div>No se encontraron transacciones</div>
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                Intenta con otros términos de búsqueda o filtros
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {transaccionesFiltradas.map((tr) => {
               const esEgreso = tr.tipo === 'egreso' || tr.tipo === 'ahorro';
               const esTransferencia = tr.tipo === 'transferencia';
               return (
@@ -870,21 +1100,58 @@ export default function Registro() {
                       </div>
                     </div>
                   </div>
-                  <div
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 700,
-                      color: esEgreso ? '#d32f2f' : esTransferencia ? '#1976d2' : '#388e3c',
-                      whiteSpace: 'nowrap',
-                      marginLeft: 12
-                    }}
-                  >
-                    {esEgreso ? '-' : esTransferencia ? '' : '+'}S/ {parseFloat(tr.monto).toFixed(2)}
+                  
+                  {/* Monto y botón copiar */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: esEgreso ? '#d32f2f' : esTransferencia ? '#1976d2' : '#388e3c',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {esEgreso ? '-' : esTransferencia ? '' : '+'}S/ {parseFloat(tr.monto).toFixed(2)}
+                    </div>
+                    
+                    {/* Botón copiar */}
+                    <button
+                      onClick={() => copiarTransaccion(tr)}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 6,
+                        padding: '6px 10px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        color: 'var(--color-text-secondary)',
+                        fontSize: 13,
+                        transition: 'all 0.2s',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--color-primary)';
+                        e.currentTarget.style.borderColor = 'var(--color-primary)';
+                        e.currentTarget.style.color = '#fff';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.borderColor = 'var(--color-border)';
+                        e.currentTarget.style.color = 'var(--color-text-secondary)';
+                      }}
+                      title="Copiar transacción"
+                    >
+                      {React.createElement(FaCopy as any, { style: { fontSize: 12 } })}
+                      Copiar
+                    </button>
                   </div>
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>
