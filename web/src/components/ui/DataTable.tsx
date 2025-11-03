@@ -124,9 +124,9 @@ export function DataTable<T>({
         />
       ) : (
         <>
-          <div className={`table-responsive ${wrapperClassName}`} style={{ width: '100%', overflowX: 'auto' }}>
+          <div className={`table-responsive ${wrapperClassName}`} style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <table className={className} style={{ 
-              minWidth: 600,
+              minWidth: 800,
               width: '100%', 
               borderCollapse: 'separate',
               borderSpacing: 0,

@@ -175,9 +175,9 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                   </button>
                   {(name || email) && (
                     <div className="user-header-block">
-                      <span style={{ fontSize: '1.1rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', letterSpacing: 0.2, overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60vw' }}>{name || email}</span>
-                      <span style={{ fontSize: '1.7rem', color: '#fff', display: 'flex', alignItems: 'center' }}>
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                      <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', letterSpacing: 0.2, overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60vw' }}>{name || email}</span>
+                      <span style={{ fontSize: '2rem', color: '#fff', display: 'flex', alignItems: 'center' }}>
+                        <svg width="38" height="38" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
                           <circle cx="12" cy="8" r="4" fill="#fff" fillOpacity="1" />
                           <ellipse cx="12" cy="18" rx="7" ry="5" fill="#fff" fillOpacity="1" />
                         </svg>
@@ -191,17 +191,17 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                           background: 'transparent', 
                           border: '1px solid rgba(255,255,255,0.12)', 
                           color: '#fff', 
-                          padding: '10px 12px', 
+                          padding: '12px 14px', 
                           borderRadius: 8, 
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          minWidth: '44px',
-                          minHeight: '44px'
+                          minWidth: '52px',
+                          minHeight: '52px'
                         }}
                       >
-                        {darkMode ? React.createElement(FaMoon as any, { style: { fontSize: 20 } }) : React.createElement(FaSun as any, { style: { fontSize: 20 } })}
+                        {darkMode ? React.createElement(FaMoon as any, { style: { fontSize: 28 } }) : React.createElement(FaSun as any, { style: { fontSize: 28 } })}
                       </button>
                     </div>
                   )}

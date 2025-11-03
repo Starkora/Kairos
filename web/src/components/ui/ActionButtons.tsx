@@ -21,11 +21,11 @@ export const ActionButton: React.FC<ActionButtonProps> = ({ onClick, type, ariaL
       style={{ 
         background: 'none', 
         border: 'none', 
-        padding: '8px', 
+        padding: '10px', 
         cursor: 'pointer',
         transition: 'all 0.2s',
-        minWidth: '36px',
-        minHeight: '36px',
+        minWidth: '44px',
+        minHeight: '44px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -45,8 +45,8 @@ export const ActionButton: React.FC<ActionButtonProps> = ({ onClick, type, ariaL
       {isEdit ? (
         <svg 
           className="icon-accion" 
-          width="20" 
-          height="20" 
+          width="24" 
+          height="24" 
           viewBox="0 0 24 24" 
           fill="none" 
           stroke={color} 
@@ -60,8 +60,8 @@ export const ActionButton: React.FC<ActionButtonProps> = ({ onClick, type, ariaL
       ) : (
         <svg 
           className="icon-accion" 
-          width="20" 
-          height="20" 
+          width="24" 
+          height="24" 
           viewBox="0 0 24 24" 
           fill="none" 
           stroke={color} 
