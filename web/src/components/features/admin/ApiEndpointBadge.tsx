@@ -1,5 +1,5 @@
 import React from 'react';
-import API_BASE from '../utils/apiBase';
+import API_BASE from '../../../utils/apiBase';
 
 function isDev() {
   return process.env.REACT_APP_SHOW_API_BADGE === 'true';

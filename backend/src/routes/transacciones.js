@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
 
-const transaccionController = require('../controllers/transaccionController');
+const transaccionController = require('../controllers/finanzas/transaccion.controller');
 const auth = require('../utils/auth/jwt');
 const multer = require('multer');
 const upload = multer({
