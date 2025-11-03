@@ -49,6 +49,7 @@ export default function Notificaciones() {
     }
   };
 
+  
   // Función para obtener color según medio
   const getMedioColor = (medio: string): 'primary' | 'success' | 'info' | 'warning' => {
     switch(medio.toLowerCase()) {
