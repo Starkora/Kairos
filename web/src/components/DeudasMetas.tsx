@@ -22,7 +22,7 @@ export default function DeudasMetas() {
   const [filtroEstado, setFiltroEstado] = useState<'todas' | 'pendientes' | 'completadas'>('todas');
   const [ordenamiento, setOrdenamiento] = useState<'fecha' | 'monto' | 'progreso'>('fecha');
 
-  // Cargar deudas y metas al iniciar
+  // Cargar deudas y metas al iniciar 
   useEffect(() => {
     // Cargar cuentas para poder seleccionar desde qué cuenta pagar/aportar
     (async () => {
