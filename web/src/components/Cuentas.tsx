@@ -977,7 +977,6 @@ export default function Cuentas() {
                         {React.createElement(FaEye as any, { style: { fontSize: 16 } })}
                       </button>
                       
-                      
                       {/* Botón Editar */}
                       <button 
                         onClick={() => openEdit(cuenta)}
