@@ -183,8 +183,25 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                         </svg>
                       </span>
                       {/* Toggle modo oscuro */}
-                      <button onClick={() => setDarkMode(d => !d)} title="Alternar tema" style={{ marginLeft: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', padding: '6px 10px', borderRadius: 8, cursor: 'pointer' }}>
-                        {darkMode ? React.createElement(FaMoon as any, { style: { fontSize: 14 } }) : React.createElement(FaSun as any, { style: { fontSize: 14 } })}
+                      <button 
+                        onClick={() => setDarkMode(d => !d)} 
+                        title="Alternar tema" 
+                        style={{ 
+                          marginLeft: 8, 
+                          background: 'transparent', 
+                          border: '1px solid rgba(255,255,255,0.12)', 
+                          color: '#fff', 
+                          padding: '10px 12px', 
+                          borderRadius: 8, 
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: '44px',
+                          minHeight: '44px'
+                        }}
+                      >
+                        {darkMode ? React.createElement(FaMoon as any, { style: { fontSize: 20 } }) : React.createElement(FaSun as any, { style: { fontSize: 20 } })}
                       </button>
                     </div>
                   )}

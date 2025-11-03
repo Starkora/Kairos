@@ -314,6 +314,23 @@ html.dark .swal2-select {
   background: var(--primary-color);
 }
 
+/* Asegurar que las tablas tengan scroll horizontal en móvil */
+@media (max-width: 768px) {
+  .table-responsive,
+  .tabla-categorias-wrapper,
+  .tabla-categorias-cuenta-wrapper {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .table-responsive table,
+  .tabla-categorias,
+  .tabla-categorias-cuenta {
+    min-width: 700px !important;
+  }
+}
+
 /* Asegurar que los inputs en iOS no hagan zoom al enfocar */
 @media screen and (max-width: 768px) {
   input, select, textarea {
