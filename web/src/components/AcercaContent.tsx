@@ -132,7 +132,7 @@ export default function AcercaContent({ variant = 'public' }) {
           <div style={{ marginTop: 24 }}>
             <FormButton
               type="button"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/')}
               style={{ minWidth: 200 }}
             >
               {React.createElement(FaRocket as any, { style: { marginRight: 8 } })}

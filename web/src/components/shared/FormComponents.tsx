@@ -206,6 +206,10 @@ export const FormButton: React.FC<FormButtonProps> = ({
         cursor: 'pointer',
         transition: 'opacity 0.2s',
         width: fullWidth ? '100%' : 'auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
         ...getVariantStyles(),
         ...style
       }}
