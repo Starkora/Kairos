@@ -1,4 +1,8 @@
 import React from 'react';
+import { 
+  FaCreditCard, FaCheckCircle, FaHourglassHalf, FaBullseye, 
+  FaCoins, FaChartLine, FaStar 
+} from 'react-icons/fa';
 
 interface Estadistica {
   label: string;
@@ -7,6 +11,17 @@ interface Estadistica {
   color?: string;
   icono?: string;
 }
+
+// Mapeo de nombres de iconos a componentes
+const iconMap: { [key: string]: any } = {
+  FaCreditCard,
+  FaCheckCircle,
+  FaHourglassHalf,
+  FaBullseye,
+  FaCoins,
+  FaChartLine,
+  FaStar
+};
 
 interface EstadisticasCardProps {
   titulo: string;
@@ -86,7 +101,7 @@ export const EstadisticasCard: React.FC<EstadisticasCardProps> = ({
               alignItems: 'center',
               gap: 4
             }}>
-              {stat.icono && <span>{stat.icono}</span>}
+              {stat.icono && iconMap[stat.icono] && React.createElement(iconMap[stat.icono], { style: { fontSize: 16 } })}
               {stat.label}
             </div>
             <div style={{ 
@@ -110,7 +125,7 @@ export const EstadisticasCard: React.FC<EstadisticasCardProps> = ({
           alignItems: 'center', 
           gap: 6 
         }}>
-          <span>📈</span>
+          {React.createElement(FaChartLine as any, { style: { fontSize: 14 } })}
           <span>{notaAdicional}</span>
         </div>
       )}
@@ -150,7 +165,7 @@ export const EstadisticasMiniCards: React.FC<{ estadisticas: Estadistica[] }> = 
             alignItems: 'center',
             gap: 6
           }}>
-            {stat.icono && <span style={{ fontSize: 16 }}>{stat.icono}</span>}
+            {stat.icono && iconMap[stat.icono] && React.createElement(iconMap[stat.icono] as any, { style: { fontSize: 16 } })}
             {stat.label}
           </div>
           <div style={{ 

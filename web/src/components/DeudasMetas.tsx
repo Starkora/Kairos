@@ -7,7 +7,7 @@ import {
   ProgressBar, 
   CircularProgress 
 } from './shared';
-import { FaMoneyBillWave, FaBullseye, FaSearch, FaFilter, FaSortAmountDown } from 'react-icons/fa';
+import { FaMoneyBillWave, FaBullseye, FaSearch, FaFilter, FaSortAmountDown, FaCreditCard, FaCheckCircle, FaChartLine, FaCoins, FaStar, FaClock, FaHourglassHalf, FaPlus, FaCalendarAlt, FaCalendarCheck } from 'react-icons/fa';
 
 export default function DeudasMetas() {
   const [pago, setPago] = useState([]);
@@ -62,10 +62,10 @@ export default function DeudasMetas() {
     }).length;
     
     return [
-      { label: 'Total Deudas', valor: total, formato: 'moneda' as const, color: '#f44336', icono: '💳' },
-      { label: 'Pagado', valor: pagado, formato: 'moneda' as const, color: '#4caf50', icono: '✅' },
-      { label: 'Pendiente', valor: pendiente, formato: 'moneda' as const, color: '#ff9800', icono: '⏳' },
-      { label: 'Completadas', valor: completadas, formato: 'numero' as const, color: '#2196f3', icono: '🎯' }
+      { label: 'Total Deudas', valor: total, formato: 'moneda' as const, color: '#f44336', icono: 'FaCreditCard' },
+      { label: 'Pagado', valor: pagado, formato: 'moneda' as const, color: '#4caf50', icono: 'FaCheckCircle' },
+      { label: 'Pendiente', valor: pendiente, formato: 'moneda' as const, color: '#ff9800', icono: 'FaHourglassHalf' },
+      { label: 'Completadas', valor: completadas, formato: 'numero' as const, color: '#2196f3', icono: 'FaBullseye' }
     ];
   }, [deudas]);
 
@@ -81,10 +81,10 @@ export default function DeudasMetas() {
     }).length;
     
     return [
-      { label: 'Objetivo Total', valor: objetivo, formato: 'moneda' as const, color: '#2196f3', icono: '🎯' },
-      { label: 'Ahorrado', valor: ahorrado, formato: 'moneda' as const, color: '#4caf50', icono: '💰' },
-      { label: 'Por Ahorrar', valor: falta, formato: 'moneda' as const, color: '#ff9800', icono: '📈' },
-      { label: 'Completadas', valor: completadas, formato: 'numero' as const, color: '#8bc34a', icono: '✨' }
+      { label: 'Objetivo Total', valor: objetivo, formato: 'moneda' as const, color: '#2196f3', icono: 'FaBullseye' },
+      { label: 'Ahorrado', valor: ahorrado, formato: 'moneda' as const, color: '#4caf50', icono: 'FaCoins' },
+      { label: 'Por Ahorrar', valor: falta, formato: 'moneda' as const, color: '#ff9800', icono: 'FaChartLine' },
+      { label: 'Completadas', valor: completadas, formato: 'numero' as const, color: '#8bc34a', icono: 'FaStar' }
     ];
   }, [metas]);
 
@@ -535,10 +535,14 @@ export default function DeudasMetas() {
               padding: '10px 20px', 
               fontWeight: 700,
               boxShadow: tab === 'deudas' ? '0 4px 12px rgba(244, 67, 54, 0.3)' : 'none',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
             }}
           >
-            💳 Deudas
+            {React.createElement(FaCreditCard as any, { style: { fontSize: 16 } })}
+            Deudas
           </button>
           <button 
             onClick={() => setTab('metas')} 
@@ -550,10 +554,14 @@ export default function DeudasMetas() {
               padding: '10px 20px', 
               fontWeight: 700,
               boxShadow: tab === 'metas' ? '0 4px 12px rgba(76, 175, 80, 0.3)' : 'none',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
             }}
           >
-            🎯 Metas
+            {React.createElement(FaBullseye as any, { style: { fontSize: 16 } })}
+            Metas
           </button>
         </div>
       </div>
@@ -656,8 +664,9 @@ export default function DeudasMetas() {
         borderRadius: 12,
         border: '2px dashed var(--color-input-border)'
       }}>
-        <h3 style={{ marginBottom: 16, fontSize: 16, fontWeight: 700, color: 'var(--color-text)' }}>
-          ➕ Agregar Nueva {nueva.tipo === 'deuda' ? 'Deuda' : 'Meta'}
+        <h3 style={{ marginBottom: 16, fontSize: 16, fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {React.createElement(FaPlus as any, { style: { fontSize: 14 } })}
+          Agregar Nueva {nueva.tipo === 'deuda' ? 'Deuda' : 'Meta'}
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
           <input type="text" placeholder="Descripción" value={nueva.descripcion} onChange={e => setNueva({ ...nueva, descripcion: e.target.value })} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14 }} />
@@ -679,18 +688,20 @@ export default function DeudasMetas() {
           </div>
         )}
         <select value={nueva.tipo} onChange={e => setNueva({ ...nueva, tipo: e.target.value })} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', backgroundColor: 'var(--color-input-bg)', color: 'var(--color-text)', fontWeight: 600, fontSize: 14 }}>
-          <option value="deuda">💳 Deuda</option>
-          <option value="meta">🎯 Meta</option>
+          <option value="deuda">Deuda</option>
+          <option value="meta">Meta</option>
         </select>
-        <button onClick={handleAdd} style={{ backgroundColor: 'var(--color-success)', color: 'white', padding: '10px 20px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'transform 0.2s ease', boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-          ✨ Agregar
+        <button onClick={handleAdd} style={{ backgroundColor: 'var(--color-success)', color: 'white', padding: '10px 20px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'transform 0.2s ease', boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+          {React.createElement(FaStar as any, { style: { fontSize: 14 } })}
+          Agregar
         </button>
         </div>
       </div>
       {tab === 'deudas' ? (
         <div>
           <h2 style={{ fontSize: 20, marginBottom: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text)' }}>
-            💳 Mis Deudas
+            {React.createElement(FaCreditCard as any, { style: { fontSize: 20 } })}
+            Mis Deudas
             <span style={{ 
               fontSize: 14, 
               fontWeight: 600, 
@@ -711,7 +722,9 @@ export default function DeudasMetas() {
               borderRadius: 12,
               border: '2px dashed var(--color-input-border)'
             }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>💳</div>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>
+                {React.createElement(FaCreditCard as any, { style: { fontSize: 48, opacity: 0.3 } })}
+              </div>
               <div style={{ fontSize: 16, fontWeight: 600 }}>
                 {busqueda || filtroEstado !== 'todas' 
                   ? 'No se encontraron deudas con los filtros aplicados' 
@@ -758,7 +771,8 @@ export default function DeudasMetas() {
                       alignItems: 'center',
                       gap: 4
                     }}>
-                      ✅ Completada
+                      {React.createElement(FaCheckCircle as any, { style: { fontSize: 12 } })}
+                      Completada
                     </div>
                   )}
 
@@ -784,9 +798,19 @@ export default function DeudasMetas() {
                       <span style={{ color: '#f44336' }}><strong>Pendiente:</strong> S/ {pendiente.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                     {(d.fecha_inicio || d.fecha_vencimiento) && (
-                      <div style={{ fontSize: 13, color: 'var(--color-muted)', marginTop: 6 }}>
-                        {d.fecha_inicio && <span>📅 Inicio: {new Date(d.fecha_inicio).toLocaleDateString()} </span>}
-                        {d.fecha_vencimiento && <span>⏰ Vence: {new Date(d.fecha_vencimiento).toLocaleDateString()}</span>}
+                      <div style={{ fontSize: 13, color: 'var(--color-muted)', marginTop: 6, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        {d.fecha_inicio && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {React.createElement(FaCalendarAlt as any, { style: { fontSize: 12 } })}
+                            Inicio: {new Date(d.fecha_inicio).toLocaleDateString()}
+                          </span>
+                        )}
+                        {d.fecha_vencimiento && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {React.createElement(FaClock as any, { style: { fontSize: 12 } })}
+                            Vence: {new Date(d.fecha_vencimiento).toLocaleDateString()}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -848,12 +872,16 @@ export default function DeudasMetas() {
                             fontSize: 14,
                             cursor: 'pointer',
                             boxShadow: '0 2px 8px rgba(108, 79, 161, 0.3)',
-                            transition: 'transform 0.2s ease'
+                            transition: 'transform 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8
                           }}
                           onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                           onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                         >
-                          💰 Pagar
+                          {React.createElement(FaCoins as any, { style: { fontSize: 14 } })}
+                          Pagar
                         </button>
                       </>
                     )}
@@ -924,7 +952,7 @@ export default function DeudasMetas() {
             alignItems: 'center',
             gap: 10
           }}>
-            <FaBullseye style={{ color: '#4caf50' }} />
+            {React.createElement(FaBullseye as any, { style: { color: '#4caf50' } })}
             Mis Metas
           </h2>
           
@@ -1058,10 +1086,16 @@ export default function DeudasMetas() {
                         flexWrap: 'wrap'
                       }}>
                         {m.fecha_inicio && (
-                          <span>📅 Inicio: {new Date(m.fecha_inicio).toLocaleDateString()}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {React.createElement(FaCalendarAlt as any, { style: { fontSize: 12 } })}
+                            Inicio: {new Date(m.fecha_inicio).toLocaleDateString()}
+                          </span>
                         )}
                         {m.fecha_objetivo && (
-                          <span>🎯 Objetivo: {new Date(m.fecha_objetivo).toLocaleDateString()}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {React.createElement(FaCalendarCheck as any, { style: { fontSize: 12 } })}
+                            Objetivo: {new Date(m.fecha_objetivo).toLocaleDateString()}
+                          </span>
                         )}
                       </div>
                     )}
@@ -1117,12 +1151,16 @@ export default function DeudasMetas() {
                               cursor: 'pointer',
                               fontSize: 14,
                               boxShadow: '0 2px 4px rgba(76, 175, 80, 0.3)',
-                              transition: 'transform 0.2s ease'
+                              transition: 'transform 0.2s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8
                             }}
                             onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                           >
-                            💰 Aportar
+                            {React.createElement(FaCoins as any, { style: { fontSize: 14 } })}
+                            Aportar
                           </button>
                         </div>
                       )}
