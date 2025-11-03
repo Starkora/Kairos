@@ -124,8 +124,9 @@ export function DataTable<T>({
         />
       ) : (
         <>
-          <div className={`table-responsive ${wrapperClassName}`}>
+          <div className={`table-responsive ${wrapperClassName}`} style={{ width: '100%', overflowX: 'auto' }}>
             <table className={className} style={{ 
+              minWidth: 600,
               width: '100%', 
               borderCollapse: 'separate',
               borderSpacing: 0,
@@ -159,6 +160,7 @@ export function DataTable<T>({
                         color: 'var(--text-secondary, #666)',
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px',
+                        whiteSpace: 'nowrap',
                         borderRight: idx < columns.length - 1 ? '1px solid var(--border-color, #e0e0e0)' : 'none'
                       }}
                     >
@@ -193,6 +195,7 @@ export function DataTable<T>({
                           fontWeight: idx === 0 ? 600 : 'normal',
                           color: 'var(--text-primary, #222)',
                           fontSize: 14,
+                          whiteSpace: 'nowrap',
                           borderRight: idx < columns.length - 1 ? '1px solid var(--border-color, #e0e0e0)' : 'none'
                         }}
                       >
