@@ -18,7 +18,7 @@
     res.status(500).json({ error: err.message });
   }
 };
-const Cuenta = require('../../../models/cuenta');
+const Cuenta = require('../../models/cuenta');
 
 exports.getAll = async (req, res) => {
   const usuario_id = req.user && req.user.id;
@@ -53,7 +53,7 @@ exports.deleteById = async (req, res) => {
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   if (!id) return res.status(400).json({ error: 'ID inválido' });
 
-  const db = require('../../config/database');
+  const db = require('../../../config/database');
   try {
     // 1) Verificar que la cuenta pertenezca al usuario
     const [owns] = await db.query('SELECT id FROM cuentas WHERE id = ? AND usuario_id = ? LIMIT 1', [id, usuario_id]);
