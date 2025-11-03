@@ -73,7 +73,7 @@ export const RecordatoriosList: React.FC<RecordatoriosListProps> = ({
           alignItems: 'center',
           gap: 8
         }}>
-          <FaBell style={{ color: 'var(--color-accent)' }} />
+          {React.createElement(FaBell as any, { style: { color: 'var(--color-accent)' } })}
           Recordatorios
           {recordatorios.length > 0 && (
             <span style={{
@@ -215,11 +215,13 @@ export const BadgeRecordatorio: React.FC<BadgeRecordatorioProps> = ({ cantidad, 
         cursor: onClick ? 'pointer' : 'default'
       }}
     >
-      <FaBell style={{ 
-        fontSize: 20, 
-        color: 'var(--color-accent)',
-        animation: cantidad > 0 ? 'bell-ring 1s ease-in-out infinite' : 'none'
-      }} />
+      {React.createElement(FaBell as any, { 
+        style: { 
+          fontSize: 20, 
+          color: 'var(--color-accent)',
+          animation: cantidad > 0 ? 'bell-ring 1s ease-in-out infinite' : 'none'
+        }
+      })}
       <span style={{
         position: 'absolute',
         top: -6,
