@@ -571,6 +571,70 @@ input::-ms-input-placeholder, textarea::-ms-input-placeholder { color: var(--col
     padding: 12px !important;
     font-size: 22px !important; /* escala los react-icons (1em) */
   }
+
+  /* ===== Cuentas: iconos y acciones en móvil ===== */
+  .cuenta-icon {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .cuenta-icon svg {
+    font-size: 24px !important;
+  }
+
+  .cuenta-acciones button {
+    min-width: 48px !important;
+    min-height: 48px !important;
+    padding: 12px !important;
+  }
+
+  .cuenta-acciones button svg {
+    font-size: 22px !important;
+  }
+
+  /* ===== Mi Cuenta: reducir tamaños en móvil ===== */
+  .micuenta-title {
+    font-size: 16px !important;
+  }
+
+  .micuenta-icon {
+    font-size: 16px !important;
+  }
+
+  .micuenta-label {
+    font-size: 12px !important;
+  }
+
+  .micuenta-label-icon {
+    font-size: 14px !important;
+  }
+
+  /* ===== StatsCard: reducir tamaños en móvil ===== */
+  .stats-card {
+    padding: 14px 16px !important;
+    gap: 12px !important;
+  }
+
+  .stats-card-icon {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 16px !important;
+  }
+
+  .stats-card-title {
+    font-size: 11px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .stats-card-value {
+    font-size: 16px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .stats-card-subtitle {
+    font-size: 10px !important;
+    margin-top: 2px !important;
+  }
 }
 
 /* Caret color theming */
@@ -768,6 +832,21 @@ input, textarea { caret-color: var(--color-caret); }
   /* Botones fijos: evitar que causen overflow en móviles muy estrechos */
   .fixed-bottom-btn { max-width: calc(100vw - 48px); white-space: nowrap; }
   .flex-row { flex-wrap: wrap; gap: 16px; }
+}
+
+/* Placeholder para input de búsqueda en Cuentas */
+.search-input-cuentas::placeholder {
+  padding-left: 8px;
+  text-indent: 8px;
+}
+
+/* Valor seleccionado y opciones de select en Cuentas con padding adicional */
+.select-cuentas {
+  text-indent: 10px;
+}
+
+.select-cuentas option {
+  padding-left: 20px;
 }
 
 /* Animación para la alerta de categorías */

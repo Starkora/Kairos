@@ -229,8 +229,8 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                 </main>
                 {process.env.REACT_APP_SHOW_API_BADGE === 'true' && <ApiEndpointBadge />}
                 {/* Controles fijos: siempre en esquinas */}
-                <button onClick={handleLogout} className="fixed-bottom-btn" style={{ position: 'fixed', left: 16, bottom: 16, background: '#6C4AB6', color: '#fff', border: 'none', borderRadius: 20, padding: '10px 28px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', zIndex: 10, display: (isMobile && !sidebarOpen) ? 'inline-flex' : 'none' }}>
-                  <span style={{ marginRight: 8, fontSize: '1.1em' }}>⎋</span> Cerrar sesión
+                <button onClick={handleLogout} className="fixed-bottom-btn" style={{ position: 'fixed', left: 16, bottom: 16, background: 'rgba(108, 79, 161, 0.7)', color: '#fff', border: 'none', borderRadius: 16, padding: '8px 20px', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', zIndex: 10, display: (isMobile && !sidebarOpen) ? 'inline-flex' : 'none', backdropFilter: 'blur(10px)' }}>
+                  <span style={{ marginRight: 6, fontSize: '1em' }}>⎋</span> Cerrar sesión
                 </button>
                 <a
                   href="/acercade"

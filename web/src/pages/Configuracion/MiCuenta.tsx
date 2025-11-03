@@ -385,7 +385,7 @@ export default function MiCuenta() {
           alignItems: 'center',
           marginBottom: 20
         }}>
-          <h2 style={{ 
+          <h2 className="micuenta-title" style={{ 
             margin: 0, 
             fontSize: 20, 
             fontWeight: 600,
@@ -394,6 +394,7 @@ export default function MiCuenta() {
             Datos principales
           </h2>
           {React.createElement(FaShieldAlt as any, { 
+            className: 'micuenta-icon',
             style: { color: 'var(--success-color, #4caf50)', fontSize: 20 } 
           })}
         </div>
@@ -401,7 +402,7 @@ export default function MiCuenta() {
         <FormGrid columns={1}>
           {/* Email */}
           <div>
-            <label style={{ 
+            <label className="micuenta-label" style={{ 
               display: 'flex',
               alignItems: 'center',
               marginBottom: 8, 
@@ -410,6 +411,7 @@ export default function MiCuenta() {
               color: 'var(--text-primary, #222)'
             }}>
               {React.createElement(FaEnvelope as any, { 
+                className: 'micuenta-label-icon',
                 style: { marginRight: 8, color: 'var(--info-color, #2196f3)' } 
               })}
               Email
@@ -460,7 +462,7 @@ export default function MiCuenta() {
 
           {/* Teléfono */}
           <div>
-            <label style={{ 
+            <label className="micuenta-label" style={{ 
               display: 'flex',
               alignItems: 'center',
               marginBottom: 8, 
@@ -469,6 +471,7 @@ export default function MiCuenta() {
               color: 'var(--text-primary, #222)'
             }}>
               {React.createElement(FaPhone as any, { 
+                className: 'micuenta-label-icon',
                 style: { marginRight: 8, color: 'var(--success-color, #4caf50)' } 
               })}
               Teléfono
@@ -527,7 +530,7 @@ export default function MiCuenta() {
           alignItems: 'center',
           marginBottom: 20
         }}>
-          <h2 style={{ 
+          <h2 className="micuenta-title" style={{ 
             margin: 0, 
             fontSize: 20, 
             fontWeight: 600,
@@ -536,13 +539,14 @@ export default function MiCuenta() {
             Perfil
           </h2>
           {React.createElement(FaUser as any, { 
+            className: 'micuenta-icon',
             style: { color: 'var(--primary-color, #6c4fa1)', fontSize: 20 } 
           })}
         </div>
 
         <FormGrid columns={2}>
           <div>
-            <label style={{ 
+            <label className="micuenta-label" style={{ 
               display: 'block', 
               marginBottom: 8, 
               fontSize: 14, 
@@ -561,7 +565,7 @@ export default function MiCuenta() {
             />
           </div>
           <div>
-            <label style={{ 
+            <label className="micuenta-label" style={{ 
               display: 'block', 
               marginBottom: 8, 
               fontSize: 14, 

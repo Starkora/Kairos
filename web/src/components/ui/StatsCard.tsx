@@ -54,7 +54,9 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   };
 
   return (
-    <div style={{
+    <div 
+      className="stats-card"
+      style={{
       background: 'var(--card-bg, #fff)',
       borderRadius: 12,
       padding: '20px 24px',
@@ -75,7 +77,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
       e.currentTarget.style.boxShadow = 'var(--card-shadow, 0 2px 8px rgba(0,0,0,0.08))';
     }}>
       {icon && (
-        <div style={{
+        <div className="stats-card-icon" style={{
           width: 48,
           height: 48,
           borderRadius: 10,
@@ -92,7 +94,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
       )}
       
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
+        <div className="stats-card-title" style={{
           fontSize: 13,
           color: 'var(--text-secondary, #666)',
           marginBottom: 4,
@@ -104,6 +106,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
         </div>
         
         <div 
+          className="stats-card-value"
           style={{
             fontSize: typeof value === 'string' && value.length > 25 ? 20 : 28,
             fontWeight: 700,
@@ -120,7 +123,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
         </div>
         
         {subtitle && (
-          <div style={{
+          <div className="stats-card-subtitle" style={{
             fontSize: 12,
             color: 'var(--text-tertiary, #888)',
             marginTop: 4

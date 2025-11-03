@@ -710,6 +710,7 @@ export default function Cuentas() {
               placeholder="Buscar cuenta..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
+              className="search-input-cuentas"
               style={{
                 width: '100%',
                 padding: '10px 12px 10px 36px',
@@ -738,6 +739,7 @@ export default function Cuentas() {
             <select
               value={filtroTipo}
               onChange={(e) => setFiltroTipo(e.target.value)}
+              className="select-cuentas"
               style={{
                 width: '100%',
                 padding: '10px 12px 10px 36px',
@@ -771,6 +773,7 @@ export default function Cuentas() {
             <select
               value={ordenamiento}
               onChange={(e) => setOrdenamiento(e.target.value)}
+              className="select-cuentas"
               style={{
                 width: '100%',
                 padding: '10px 12px 10px 36px',
@@ -871,7 +874,7 @@ export default function Cuentas() {
                 <tr key={cuenta.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                   <td style={{ padding: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{
+                      <div className="cuenta-icon" style={{
                         width: 40,
                         height: 40,
                         borderRadius: 10,
@@ -946,7 +949,7 @@ export default function Cuentas() {
                     </div>
                   </td>
                   <td style={{ textAlign: 'center', padding: 12 }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <div className="cuenta-acciones" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                       {/* Botón Ver Movimientos */}
                       <button 
                         onClick={() => {
@@ -971,31 +974,56 @@ export default function Cuentas() {
                           cursor: 'pointer', 
                           color: '#1976d2',
                           display: 'flex',
-                          alignItems: 'center'
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: '44px',
+                          minHeight: '44px'
                         }}
                       >
-                        {React.createElement(FaEye as any, { style: { fontSize: 16 } })}
+                        {React.createElement(FaEye as any, { style: { fontSize: 22 } })}
                       </button>
                       
                       {/* Botón Editar */}
                       <button 
                         onClick={() => openEdit(cuenta)}
                         className="edit-btn"
-                        style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', color: '#6c4fa1' }}
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          padding: 6, 
+                          cursor: 'pointer', 
+                          color: '#6c4fa1',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: '44px',
+                          minHeight: '44px'
+                        }}
                         aria-label="Editar" 
                         title="Editar"
                       >
-                        {React.createElement(FaEdit as any, { style: { fontSize: 16 } })}
+                        {React.createElement(FaEdit as any, { style: { fontSize: 22 } })}
                       </button>
                       
                       {/* Botón Eliminar */}
                       <button 
                         onClick={() => handleDelete(cuenta.id)} 
-                        style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', color: '#d32f2f' }} 
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          padding: 6, 
+                          cursor: 'pointer', 
+                          color: '#d32f2f',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: '44px',
+                          minHeight: '44px'
+                        }} 
                         aria-label="Eliminar" 
                         title="Eliminar"
                       >
-                        {React.createElement(FaTrash as any, { style: { fontSize: 16 } })}
+                        {React.createElement(FaTrash as any, { style: { fontSize: 22 } })}
                       </button>
                     </div>
                   </td>
