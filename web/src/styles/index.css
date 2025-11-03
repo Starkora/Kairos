@@ -287,6 +287,29 @@ html.dark .swal2-select {
 
 /* ===== MEJORAS DE RESPONSIVE PARA MÓVIL ===== */
 
+/* Scrollbar personalizado para tablas horizontales */
+.tabla-categorias-wrapper::-webkit-scrollbar,
+.tabla-categorias-cuenta-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.tabla-categorias-wrapper::-webkit-scrollbar-track,
+.tabla-categorias-cuenta-wrapper::-webkit-scrollbar-track {
+  background: var(--table-row-hover);
+  border-radius: 4px;
+}
+
+.tabla-categorias-wrapper::-webkit-scrollbar-thumb,
+.tabla-categorias-cuenta-wrapper::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 4px;
+}
+
+.tabla-categorias-wrapper::-webkit-scrollbar-thumb:hover,
+.tabla-categorias-cuenta-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color);
+}
+
 /* Asegurar que los inputs en iOS no hagan zoom al enfocar */
 @media screen and (max-width: 768px) {
   input, select, textarea {

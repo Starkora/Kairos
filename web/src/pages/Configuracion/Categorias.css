@@ -7,8 +7,10 @@
 .tabla-categorias-wrapper,
 .tabla-categorias-cuenta-wrapper {
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
   box-shadow: var(--card-shadow);
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling en iOS */
 }
 
 .tabla-categorias,
@@ -16,6 +18,7 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
+  min-width: 600px; /* Ancho mínimo para forzar scroll horizontal en móvil */
 }
 
 .tabla-categorias thead th,
@@ -57,12 +60,74 @@
 
 /* Responsive design para tablas */
 @media (max-width: 768px) {
+  /* Mejorar scroll horizontal en móvil */
+  .tabla-categorias-wrapper,
+  .tabla-categorias-cuenta-wrapper {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+  }
+
+  /* Indicador visual de scroll */
+  .tabla-categorias-wrapper::after,
+  .tabla-categorias-cuenta-wrapper::after {
+    content: '→';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(to right, transparent, var(--card-bg) 50%);
+    padding: 8px 16px;
+    pointer-events: none;
+    font-size: 20px;
+    color: var(--color-primary);
+    opacity: 0.7;
+  }
+
+  .tabla-categorias,
+  .tabla-categorias-cuenta {
+    min-width: 650px; /* Asegurar scroll horizontal */
+  }
+
   .tabla-categorias thead th,
   .tabla-categorias-cuenta thead th,
   .tabla-categorias tbody td,
   .tabla-categorias-cuenta tbody td {
     padding: 14px 12px;
     font-size: 15px;
+    white-space: nowrap; /* Evitar que el texto se corte */
+  }
+
+  /* Columna de nombre con ancho mínimo */
+  .tabla-categorias tbody td:first-child,
+  .tabla-categorias-cuenta tbody td:first-child {
+    min-width: 180px;
+  }
+
+  /* Columna de tipo */
+  .tabla-categorias tbody td:nth-child(2) {
+    min-width: 120px;
+  }
+
+  /* Columna de acciones con ancho fijo */
+  .tabla-categorias tbody td:last-child,
+  .tabla-categorias-cuenta tbody td:last-child {
+    min-width: 120px;
+    width: 120px;
+    position: sticky;
+    right: 0;
+    background: var(--card-bg);
+    box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .tabla-categorias thead th:last-child,
+  .tabla-categorias-cuenta thead th:last-child {
+    position: sticky;
+    right: 0;
+    background: var(--table-header-bg);
+    box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
+    z-index: 1;
   }
 
   /* Hacer los botones de acción más grandes en móvil */
@@ -108,6 +173,12 @@
 }
 
 @media (max-width: 480px) {
+  /* Tablas más compactas en móviles pequeños */
+  .tabla-categorias,
+  .tabla-categorias-cuenta {
+    min-width: 550px;
+  }
+
   /* Inputs y selects más grandes en móviles pequeños */
   input, select {
     font-size: 16px !important;
@@ -146,9 +217,10 @@
     font-size: 15px;
   }
 
-  /* Reducir columna de acciones para dar más espacio al contenido */
+  /* Columna de acciones sticky más visible */
   .tabla-categorias tbody td:last-child,
   .tabla-categorias-cuenta tbody td:last-child {
+    min-width: 110px;
     width: 110px;
   }
 
@@ -177,5 +249,12 @@
   .filter-button {
     flex: 1 1 calc(50% - 8px);
     min-width: 140px;
+  }
+
+  /* Indicador de scroll más visible */
+  .tabla-categorias-wrapper::after,
+  .tabla-categorias-cuenta-wrapper::after {
+    font-size: 24px;
+    padding: 12px 20px;
   }
 }
