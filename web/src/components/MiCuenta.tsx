@@ -31,7 +31,7 @@ export default function MiCuenta() {
   const [editableInputs, setEditableInputs] = useState({ email: false, telefono: false });
   const [perfilEditMode, setPerfilEditMode] = useState(false);
   const [codigoVerificacion, setCodigoVerificacion] = useState(''); // Estado para el código de verificación
-  const [mostrarPopup, setMostrarPopup] = useState(false); // Estado para mostrar el popup
+  const [mostrarPopup, setMostrarPopup] = useState(false); // Estado para mostrar el popup 
 
   React.useEffect(() => {
     const token = getToken();
