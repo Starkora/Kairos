@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
 
-const categoriaController = require('../controllers/configuracion/categoriaController');
+const categoriaController = require('../controllers/configuracion/categoria.controller');
 const auth = require('../utils/auth/jwt');
 
 

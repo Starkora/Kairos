@@ -19,7 +19,7 @@ import {
   FaShieldAlt,
   FaGlobe
 } from 'react-icons/fa';
-import { Badge } from './shared/Badge';
+import { Badge } from './ui/Badge';
 import { FormButton } from './shared/FormComponents';
 
 export default function AcercaContent({ variant = 'public' }) {
