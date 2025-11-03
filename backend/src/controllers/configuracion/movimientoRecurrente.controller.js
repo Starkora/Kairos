@@ -215,7 +215,7 @@ exports.instanciasCalendario = async (req, res) => {
     const rangoFin = req.query.rangoFin;
 
     // Obtener un mapa de cuentas para adjuntar el nombre de la cuenta en cada instancia
-    const db = require('../../config/database');
+    const db = require('../../../config/database');
     let cuentasMap = {};
     try {
       const [cuentas] = await db.query('SELECT id, nombre FROM cuentas WHERE usuario_id = ?', [usuario_id]);

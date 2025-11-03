@@ -4,7 +4,7 @@ const sgMail = require('@sendgrid/mail');
 const mailer = require('../../utils/notifications/mailer');
 const sms = require('../../utils/notifications/sms');
 const auth = require('../../utils/auth/jwt');
-const db = require('../../config/database');
+const db = require('../../../config/database');
 const cron = require('node-cron');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 

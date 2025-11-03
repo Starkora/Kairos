@@ -1,6 +1,6 @@
 ﻿const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
-const db = require('../../config/database');
+const db = require('../../../config/database');
 
 // Permitir múltiples audiencias (client IDs) para validar idToken, separados por comas.
 // Preferimos el Client ID de tipo Web como fallback seguro.
