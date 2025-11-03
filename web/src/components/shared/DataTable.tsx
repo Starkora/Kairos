@@ -125,7 +125,15 @@ export function DataTable<T>({
       ) : (
         <>
           <div className={`table-responsive ${wrapperClassName}`}>
-            <table className={className} style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
+            <table className={className} style={{ 
+              width: '100%', 
+              borderCollapse: 'separate',
+              borderSpacing: 0,
+              marginTop: 12,
+              border: '1px solid var(--border-color, #e0e0e0)',
+              borderRadius: 8,
+              overflow: 'hidden'
+            }}>
               {/* Colgroup para anchos de columna */}
               {columns.some(col => col.width) && (
                 <colgroup>
@@ -136,13 +144,22 @@ export function DataTable<T>({
               )}
               
               <thead>
-                <tr style={{ background: 'var(--color-table-header-bg)' }}>
+                <tr style={{ 
+                  background: 'var(--table-header-bg, #f5f5f7)',
+                  borderBottom: '2px solid var(--border-color, #e0e0e0)'
+                }}>
                   {columns.map((col, idx) => (
                     <th 
                       key={idx} 
                       style={{ 
                         textAlign: col.align || 'left', 
-                        padding: 8 
+                        padding: '14px 16px',
+                        fontWeight: 600,
+                        fontSize: 13,
+                        color: 'var(--text-secondary, #666)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        borderRight: idx < columns.length - 1 ? '1px solid var(--border-color, #e0e0e0)' : 'none'
                       }}
                     >
                       {col.header}
@@ -152,18 +169,31 @@ export function DataTable<T>({
               </thead>
               
               <tbody>
-                {paginatedData.map((item) => (
+                {paginatedData.map((item, rowIdx) => (
                   <tr 
                     key={keyExtractor(item)} 
-                    style={{ borderBottom: '1px solid var(--color-input-border)' }}
+                    style={{ 
+                      borderBottom: rowIdx < paginatedData.length - 1 ? '1px solid var(--border-color, #e0e0e0)' : 'none',
+                      background: 'var(--card-bg, #fff)',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--table-row-hover, #f9f9fb)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'var(--card-bg, #fff)';
+                    }}
                   >
                     {columns.map((col, idx) => (
                       <td 
                         key={idx} 
                         style={{ 
                           textAlign: col.align || 'left', 
-                          padding: 8,
-                          fontWeight: idx === 0 ? 600 : 'normal'
+                          padding: '14px 16px',
+                          fontWeight: idx === 0 ? 600 : 'normal',
+                          color: 'var(--text-primary, #222)',
+                          fontSize: 14,
+                          borderRight: idx < columns.length - 1 ? '1px solid var(--border-color, #e0e0e0)' : 'none'
                         }}
                       >
                         {renderCellContent(item, col)}
@@ -181,9 +211,10 @@ export function DataTable<T>({
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center', 
-              marginTop: 12 
+              marginTop: 16,
+              padding: '12px 0'
             }}>
-              <span style={{ color: 'var(--color-muted)', fontSize: 13 }}>
+              <span style={{ color: 'var(--text-secondary, #666)', fontSize: 14, fontWeight: 500 }}>
                 {(() => {
                   const start = filteredData.length ? (currentPage - 1) * pageSize + 1 : 0;
                   const end = Math.min(currentPage * pageSize, filteredData.length);
@@ -196,12 +227,16 @@ export function DataTable<T>({
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage <= 1}
                   style={{ 
-                    padding: '6px 10px', 
+                    padding: '8px 16px', 
                     borderRadius: 6, 
-                    border: '1px solid var(--color-input-border)', 
-                    background: 'var(--color-card)', 
+                    border: '1px solid var(--border-color, #e0e0e0)', 
+                    background: currentPage <= 1 ? 'var(--card-bg, #fff)' : 'var(--primary-color, #6c4fa1)',
+                    color: currentPage <= 1 ? 'var(--text-tertiary, #aaa)' : '#fff',
                     cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
-                    opacity: currentPage <= 1 ? 0.5 : 1
+                    opacity: currentPage <= 1 ? 0.5 : 1,
+                    fontWeight: 500,
+                    fontSize: 13,
+                    transition: 'all 0.2s'
                   }}
                 >
                   Anterior
@@ -211,12 +246,16 @@ export function DataTable<T>({
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage >= totalPages}
                   style={{ 
-                    padding: '6px 10px', 
+                    padding: '8px 16px', 
                     borderRadius: 6, 
-                    border: '1px solid var(--color-input-border)', 
-                    background: 'var(--color-card)', 
+                    border: '1px solid var(--border-color, #e0e0e0)', 
+                    background: currentPage >= totalPages ? 'var(--card-bg, #fff)' : 'var(--primary-color, #6c4fa1)',
+                    color: currentPage >= totalPages ? 'var(--text-tertiary, #aaa)' : '#fff',
                     cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
-                    opacity: currentPage >= totalPages ? 0.5 : 1
+                    opacity: currentPage >= totalPages ? 0.5 : 1,
+                    fontWeight: 500,
+                    fontSize: 13,
+                    transition: 'all 0.2s'
                   }}
                 >
                   Siguiente

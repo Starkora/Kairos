@@ -24,6 +24,8 @@ import {
   SortableHeader,
   type ColumnConfig
 } from './shared';
+import { MdBarChart, MdTrendingUp, MdTrendingDown, MdAccountBalance } from 'react-icons/md';
+import './Categorias.css';
 
 export default function Categorias() {
   // Categorías de ingreso/egreso
@@ -513,28 +515,28 @@ export default function Categorias() {
           <StatsCard
             title="Total"
             value={totalCategorias}
-            icon="📊"
+            icon={React.createElement(MdBarChart as any)}
             color="primary"
             subtitle="Categorías registradas"
           />
           <StatsCard
             title="Ingresos"
             value={totalIngresos}
-            icon="💰"
+            icon={React.createElement(MdTrendingUp as any)}
             color="success"
             subtitle={`${totalCategorias > 0 ? Math.round((totalIngresos / totalCategorias) * 100) : 0}% del total`}
           />
           <StatsCard
             title="Egresos"
             value={totalEgresos}
-            icon="💸"
+            icon={React.createElement(MdTrendingDown as any)}
             color="danger"
             subtitle={`${totalCategorias > 0 ? Math.round((totalEgresos / totalCategorias) * 100) : 0}% del total`}
           />
           <StatsCard
             title="Ahorros"
             value={totalAhorros}
-            icon="🏦"
+            icon={React.createElement(MdAccountBalance as any)}
             color="info"
             subtitle={`${totalCategorias > 0 ? Math.round((totalAhorros / totalCategorias) * 100) : 0}% del total`}
           />

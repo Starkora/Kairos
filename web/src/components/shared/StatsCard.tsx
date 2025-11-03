@@ -36,38 +36,55 @@ export const StatsCard: React.FC<StatsCardProps> = ({
     info: '#e3f2fd'
   };
 
+  // Dark mode colors
+  const darkColorMap = {
+    primary: '#9575cd',
+    success: '#66bb6a',
+    warning: '#ffa726',
+    danger: '#ef5350',
+    info: '#42a5f5'
+  };
+
+  const darkBgColorMap = {
+    primary: 'rgba(149, 117, 205, 0.15)',
+    success: 'rgba(102, 187, 106, 0.15)',
+    warning: 'rgba(255, 167, 38, 0.15)',
+    danger: 'rgba(239, 83, 80, 0.15)',
+    info: 'rgba(66, 165, 245, 0.15)'
+  };
+
   return (
     <div style={{
-      background: '#fff',
+      background: 'var(--card-bg, #fff)',
       borderRadius: 12,
       padding: '20px 24px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+      boxShadow: 'var(--card-shadow, 0 2px 8px rgba(0,0,0,0.08))',
       display: 'flex',
       alignItems: 'center',
       gap: 16,
       transition: 'transform 0.2s, box-shadow 0.2s',
       cursor: 'default',
-      border: `1px solid ${bgColorMap[color]}`
+      border: `1px solid var(--border-color-${color}, ${bgColorMap[color]})`
     }}
     onMouseEnter={(e) => {
       e.currentTarget.style.transform = 'translateY(-2px)';
-      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+      e.currentTarget.style.boxShadow = 'var(--card-shadow-hover, 0 4px 12px rgba(0,0,0,0.12))';
     }}
     onMouseLeave={(e) => {
       e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+      e.currentTarget.style.boxShadow = 'var(--card-shadow, 0 2px 8px rgba(0,0,0,0.08))';
     }}>
       {icon && (
         <div style={{
           width: 48,
           height: 48,
           borderRadius: 10,
-          background: bgColorMap[color],
+          background: `var(--icon-bg-${color}, ${bgColorMap[color]})`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: colorMap[color],
-          fontSize: 24,
+          color: `var(--icon-color-${color}, ${colorMap[color]})`,
+          fontSize: 20,
           flexShrink: 0
         }}>
           {icon}
@@ -77,7 +94,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontSize: 13,
-          color: '#666',
+          color: 'var(--text-secondary, #666)',
           marginBottom: 4,
           fontWeight: 500,
           textTransform: 'uppercase',
@@ -89,7 +106,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
         <div style={{
           fontSize: 28,
           fontWeight: 700,
-          color: '#222',
+          color: 'var(--text-primary, #222)',
           lineHeight: 1,
           marginBottom: subtitle || trend ? 6 : 0
         }}>
@@ -99,7 +116,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
         {subtitle && (
           <div style={{
             fontSize: 12,
-            color: '#888',
+            color: 'var(--text-tertiary, #888)',
             marginTop: 4
           }}>
             {subtitle}
@@ -109,7 +126,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
         {trend && (
           <div style={{
             fontSize: 12,
-            color: trend.isPositive ? '#4caf50' : '#f44336',
+            color: trend.isPositive ? 'var(--success-color, #4caf50)' : 'var(--danger-color, #f44336)',
             marginTop: 4,
             display: 'flex',
             alignItems: 'center',

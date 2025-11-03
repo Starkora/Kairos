@@ -1,0 +1,67 @@
+/* Estilos para las tablas de categorías y categorías de cuenta */
+.categories-card {
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.tabla-categorias-wrapper,
+.tabla-categorias-cuenta-wrapper {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+}
+
+.tabla-categorias,
+.tabla-categorias-cuenta {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.tabla-categorias thead th,
+.tabla-categorias-cuenta thead th {
+  background: var(--table-header-bg);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 13px;
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.tabla-categorias tbody tr,
+.tabla-categorias-cuenta tbody tr {
+  background: var(--card-bg);
+  transition: background-color 0.2s ease;
+}
+
+.tabla-categorias tbody tr:hover,
+.tabla-categorias-cuenta tbody tr:hover {
+  background: var(--table-row-hover);
+}
+
+.tabla-categorias tbody td,
+.tabla-categorias-cuenta tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.tabla-categorias tbody tr:last-child td,
+.tabla-categorias-cuenta tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Responsive design para tablas */
+@media (max-width: 768px) {
+  .tabla-categorias thead th,
+  .tabla-categorias-cuenta thead th,
+  .tabla-categorias tbody td,
+  .tabla-categorias-cuenta tbody td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}

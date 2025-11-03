@@ -15,6 +15,7 @@ import {
   useSortableData,
   type ColumnConfig
 } from './shared';
+import { MdFolder, MdAccessTime } from 'react-icons/md';
 
 export default function CategoriasCuenta() {
   const [categorias, setCategorias] = React.useState([]);
@@ -180,9 +181,9 @@ export default function CategoriasCuenta() {
     <div style={{ 
       maxWidth: 600, 
       margin: '32px auto', 
-      background: '#fff', 
+      background: 'var(--card-bg, #fff)', 
       borderRadius: 12, 
-      boxShadow: '0 2px 8px #eee', 
+      boxShadow: 'var(--card-shadow, 0 2px 8px #eee)', 
       padding: 32 
     }}>
       <div style={{ 
@@ -191,7 +192,7 @@ export default function CategoriasCuenta() {
         alignItems: 'center', 
         marginBottom: 24 
       }}>
-        <h1 style={{ margin: 0 }}>Categorías de Tipo de Cuenta</h1>
+        <h1 style={{ margin: 0, color: 'var(--text-primary, #222)' }}>Categorías de Tipo de Cuenta</h1>
         {categorias.length > 0 && (
           <ExportGroup
             data={categorias}
@@ -208,14 +209,14 @@ export default function CategoriasCuenta() {
         <StatsCard
           title="Total"
           value={totalCategorias}
-          icon="📁"
+          icon={React.createElement(MdFolder as any)}
           color="primary"
           subtitle="Tipos de cuenta"
         />
         <StatsCard
           title="Última actualización"
           value="Hoy"
-          icon="🕒"
+          icon={React.createElement(MdAccessTime as any)}
           color="info"
           subtitle="Registros actualizados"
         />

@@ -56,6 +56,95 @@ html:not(.dark) .swal2-html-container input[type="checkbox"] {
 }
 @import "tailwindcss";
 
+/* --- Variables CSS para modo claro y oscuro --- */
+:root {
+  /* Colores principales */
+  --primary-color: #6c4fa1;
+  --success-color: #4caf50;
+  --warning-color: #ff9800;
+  --danger-color: #f44336;
+  --info-color: #2196f3;
+  
+  /* Fondos */
+  --card-bg: #ffffff;
+  --table-header-bg: #f5f5f7;
+  --table-row-hover: #f9f9fb;
+  --body-bg: #f8f9fa;
+  
+  /* Bordes */
+  --border-color: #e0e0e0;
+  --border-color-primary: #f3f0f7;
+  --border-color-success: #e8f5e9;
+  --border-color-warning: #fff3e0;
+  --border-color-danger: #ffebee;
+  --border-color-info: #e3f2fd;
+  
+  /* Iconos */
+  --icon-bg-primary: #f3f0f7;
+  --icon-bg-success: #e8f5e9;
+  --icon-bg-warning: #fff3e0;
+  --icon-bg-danger: #ffebee;
+  --icon-bg-info: #e3f2fd;
+  --icon-color-primary: #6c4fa1;
+  --icon-color-success: #4caf50;
+  --icon-color-warning: #ff9800;
+  --icon-color-danger: #f44336;
+  --icon-color-info: #2196f3;
+  
+  /* Texto */
+  --text-primary: #222222;
+  --text-secondary: #666666;
+  --text-tertiary: #aaaaaa;
+  
+  /* Sombras */
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+html.dark {
+  /* Colores principales en dark mode */
+  --primary-color: #9575cd;
+  --success-color: #66bb6a;
+  --warning-color: #ffa726;
+  --danger-color: #ef5350;
+  --info-color: #42a5f5;
+  
+  /* Fondos */
+  --card-bg: #1e1e1e;
+  --table-header-bg: #2a2a2a;
+  --table-row-hover: #252525;
+  --body-bg: #121212;
+  
+  /* Bordes */
+  --border-color: #3a3a3a;
+  --border-color-primary: rgba(149, 117, 205, 0.2);
+  --border-color-success: rgba(102, 187, 106, 0.2);
+  --border-color-warning: rgba(255, 167, 38, 0.2);
+  --border-color-danger: rgba(239, 83, 80, 0.2);
+  --border-color-info: rgba(66, 165, 245, 0.2);
+  
+  /* Iconos */
+  --icon-bg-primary: rgba(149, 117, 205, 0.15);
+  --icon-bg-success: rgba(102, 187, 106, 0.15);
+  --icon-bg-warning: rgba(255, 167, 38, 0.15);
+  --icon-bg-danger: rgba(239, 83, 80, 0.15);
+  --icon-bg-info: rgba(66, 165, 245, 0.15);
+  --icon-color-primary: #9575cd;
+  --icon-color-success: #66bb6a;
+  --icon-color-warning: #ffa726;
+  --icon-color-danger: #ef5350;
+  --icon-color-info: #42a5f5;
+  
+  /* Texto */
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #6a6a6a;
+  
+  /* Sombras */
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
 /* --- SweetAlert2 Modern Modal Redesign --- */
 .swal-wide.kr-modal-popup {
 	background: #18181b !important;
