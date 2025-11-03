@@ -19,20 +19,41 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = 'Buscar...', 
   onClear 
 }) => {
+  // Detectar móvil para ajustar padding del placeholder más a la derecha
+  const [isMobile, setIsMobile] = React.useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth <= 768;
+  });
+
+  React.useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   return (
     <div style={{ 
       position: 'relative', 
       width: '100%', 
       maxWidth: 400 
     }}>
+      {/** Cálculos para mantener un margen seguro entre el ícono y el placeholder */}
+      {(() => {
+        return null;
+      })()}
       <input
+        className="search-input"
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         style={{
           width: '100%',
-          padding: '10px 40px 10px 36px',
+          // Padding dinámico: dejamos un gap constante (12px móvil, 10px desktop)
+          paddingTop: 10,
+          paddingRight: 40,
+          paddingBottom: 10,
+          paddingLeft: `${(isMobile ? 14 : 12) + (isMobile ? 18 : 16) + (isMobile ? 12 : 10)}px`,
           borderRadius: 8,
           border: '1px solid var(--color-input-border)',
           background: 'var(--color-card)',
@@ -47,12 +68,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <svg
         style={{
           position: 'absolute',
-          left: 12,
+          left: isMobile ? 14 : 12,
           top: '50%',
           transform: 'translateY(-50%)',
-          width: 16,
-          height: 16,
-          opacity: 0.5
+          width: isMobile ? 18 : 16,
+          height: isMobile ? 18 : 16,
+          opacity: 0.5,
+          pointerEvents: 'none'
         }}
         fill="none"
         stroke="currentColor"

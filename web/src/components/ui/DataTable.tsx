@@ -52,6 +52,17 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [isMobile, setIsMobile] = React.useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth <= 768;
+  });
+
+  // Escucha de resize para alternar modo responsive
+  React.useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Filtrar datos por búsqueda
   const filteredData = React.useMemo(() => {
@@ -101,6 +112,10 @@ export function DataTable<T>({
     return (item[column.accessor] as React.ReactNode) || '';
   };
 
+  // Para tablas de categorías en móvil queremos SCROLL horizontal explícito
+  const isCategorias = /tabla-categorias/.test(wrapperClassName || '');
+  const isCategoriasMobile = isCategorias && isMobile;
+
   return (
     <>
       {/* Barra de búsqueda */}
@@ -124,10 +139,11 @@ export function DataTable<T>({
         />
       ) : (
         <>
-          <div className={`table-responsive ${wrapperClassName}`} style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div className={`table-responsive ${wrapperClassName}`} style={{ width: '100%', overflowX: isCategorias ? 'auto' : (isMobile ? 'hidden' : 'auto'), WebkitOverflowScrolling: 'touch' }}>
             <table className={className} style={{ 
-              minWidth: 800,
-              width: '100%', 
+              minWidth: isCategoriasMobile ? undefined : (isMobile ? '100%' : 800),
+              width: isCategoriasMobile ? ('max-content' as any) : '100%', 
+              tableLayout: isCategoriasMobile ? 'fixed' : 'auto',
               borderCollapse: 'separate',
               borderSpacing: 0,
               marginTop: 12,
@@ -160,7 +176,10 @@ export function DataTable<T>({
                         color: 'var(--text-secondary, #666)',
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px',
-                        whiteSpace: 'nowrap',
+                        whiteSpace: isCategoriasMobile ? 'nowrap' : (isMobile ? 'normal' : 'nowrap'),
+                        wordBreak: isCategoriasMobile ? 'normal' : (isMobile ? 'break-word' : 'normal'),
+                        overflow: isCategoriasMobile ? 'hidden' : undefined,
+                        textOverflow: isCategoriasMobile ? 'ellipsis' : undefined,
                         borderRight: idx < columns.length - 1 ? '1px solid var(--border-color, #e0e0e0)' : 'none'
                       }}
                     >
@@ -195,7 +214,10 @@ export function DataTable<T>({
                           fontWeight: idx === 0 ? 600 : 'normal',
                           color: 'var(--text-primary, #222)',
                           fontSize: 14,
-                          whiteSpace: 'nowrap',
+                          whiteSpace: isCategoriasMobile ? 'nowrap' : (isMobile ? 'normal' : 'nowrap'),
+                          wordBreak: isCategoriasMobile ? 'normal' : (isMobile ? 'break-word' : 'normal'),
+                          overflow: isCategoriasMobile ? 'hidden' : undefined,
+                          textOverflow: isCategoriasMobile ? 'ellipsis' : undefined,
                           borderRight: idx < columns.length - 1 ? '1px solid var(--border-color, #e0e0e0)' : 'none'
                         }}
                       >

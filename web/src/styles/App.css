@@ -549,6 +549,12 @@ input::-webkit-input-placeholder, textarea::-webkit-input-placeholder { color: v
 input:-ms-input-placeholder, textarea:-ms-input-placeholder { color: var(--color-placeholder); }
 input::-ms-input-placeholder, textarea::-ms-input-placeholder { color: var(--color-placeholder); }
 
+/* Separación extra del placeholder solo para la barra de búsqueda */
+.search-input::placeholder { text-indent: 8px; }
+@media (max-width: 768px) {
+  .search-input::placeholder { text-indent: 22px; }
+}
+
 /* Caret color theming */
 input, textarea { caret-color: var(--color-caret); }
 
@@ -582,36 +588,26 @@ input, textarea { caret-color: var(--color-caret); }
 }
 .hamburger { background: transparent; border: none; }
 
-/* Estilos para el icono importado de react-icons */
-.hamburger .menu-icon {
-  width: 40px;
-  height: 40px;
-  color: #fff;
-  display: inline-block;
+/* Icono de menú grande */
+.menu-icon-large {
+  width: 48px !important;
+  height: 48px !important;
+  font-size: 48px !important;
+  color: #fff !important;
+  display: inline-block !important;
 }
+
 .hamburger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   background: rgba(255,255,255,0.08);
   transition: background .12s ease, transform .12s ease;
 }
 .hamburger:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
-
-/* Aumentar tamaño en móvil */
-@media (max-width: 768px) {
-  .hamburger .menu-icon {
-    width: 44px;
-    height: 44px;
-  }
-  .hamburger {
-    width: 60px;
-    height: 60px;
-  }
-}
 
 /* Formularios específicos: cuentas, deudas y categorias usan .card, por lo que ya adaptan */
 
@@ -624,6 +620,27 @@ input, textarea { caret-color: var(--color-caret); }
   padding: 8px;
   margin-right: 12px;
   cursor: pointer;
+}
+
+/* -- OVERRIDE FINAL: tamaño consistente del icono de menú -- */
+.app-layout .hamburger {
+  width: 62px !important;
+  height: 62px !important;
+  /* Ajustes de posición solicitados */
+  margin-left: -12px;
+  margin-top: -10px;
+}
+.app-layout .hamburger .menu-icon-large {
+  width: 64px !important;
+  height: 64px !important;
+  font-size: 64px !important;
+  color: #fff !important;
+  display: inline-block !important;
+}
+
+/* Mantener efecto hover desplazando 1px adicional hacia arriba */
+.app-layout .hamburger:hover {
+  transform: translateY(-2px);
 }
 .hamburger .bar {
   display: block;

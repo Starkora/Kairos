@@ -170,8 +170,8 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                 }}>
                   {/* Botón hamburguesa en móvil */}
                   <button className="hamburger" aria-label="Abrir menú" title="Abrir menú" onClick={() => setSidebarOpen(v => !v)}>
-                    {/* Usar react-icons para el icono de lista/bullets */}
-                    {MdFormatListBulleted({ className: 'menu-icon', 'aria-hidden': true })}
+                    {/* Icono de lista (react-icons) con clase consistente */}
+                    {React.createElement(MdFormatListBulleted as any, { className: 'menu-icon-large', 'aria-hidden': 'true' })}
                   </button>
                   {(name || email) && (
                     <div className="user-header-block">

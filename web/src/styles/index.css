@@ -331,11 +331,41 @@ html.dark .swal2-select {
   }
 }
 
+/* Override para Categorías: usar scroll horizontal controlado */
+@media (max-width: 768px) {
+  .categories-card .tabla-categorias-wrapper,
+  .categories-card .tabla-categorias-cuenta-wrapper,
+  .categories-card .table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .categories-card .tabla-categorias,
+  .categories-card .tabla-categorias-cuenta,
+  .categories-card .table-responsive table {
+    width: max-content !important;
+    min-width: 0 !important;
+  }
+}
+
 /* Asegurar que los inputs en iOS no hagan zoom al enfocar */
 @media screen and (max-width: 768px) {
   input, select, textarea {
     font-size: 16px !important;
   }
+}
+
+/* SweetAlert2: inputs y selects más altos para mejor legibilidad */
+.swal2-popup .swal2-input,
+.swal2-popup select.swal2-input {
+  height: 52px !important;
+  min-height: 52px !important;
+  line-height: 26px !important;
+  font-size: 16px !important;
+  padding: 12px 16px !important;
+  border-radius: 10px !important;
+  width: 50% !important;
+  box-sizing: border-box !important;
+  margin: 10px 0 !important; /* Espaciado vertical entre campos */
 }
 
 /* Mejorar área de toque para botones y elementos interactivos */

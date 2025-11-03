@@ -62,32 +62,43 @@
 
 /* Responsive design para tablas */
 @media (max-width: 768px) {
-  /* Asegurar scroll horizontal en móvil */
+  /* Contenedor con scroll horizontal dentro de la card */
   .tabla-categorias-wrapper,
   .tabla-categorias-cuenta-wrapper,
   .table-responsive {
     width: 100%;
-    overflow-x: auto;
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Aumentar min-width para forzar scroll */
+  /* Ajuste: dejar que el ancho total sea la suma de columnas (scroll si excede) */
   .tabla-categorias,
   .tabla-categorias-cuenta,
   .table-responsive table {
-    min-width: 700px;
+    width: max-content !important;
+    min-width: 0 !important;
+    table-layout: auto;
   }
 
-  /* Hacer que las celdas no se envuelvan */
+  /* Mantener columnas en una sola línea para desplazamiento horizontal */
   .tabla-categorias thead th,
   .tabla-categorias-cuenta thead th,
   .table-responsive table thead th,
   .tabla-categorias tbody td,
   .tabla-categorias-cuenta tbody td,
   .table-responsive table tbody td {
-    white-space: nowrap;
-    padding: 14px 12px;
-    font-size: 15px;
+    white-space: nowrap !important;
+  }
+
+  /* Full-bleed: ampliar visualmente el área de la tabla dentro de la card */
+  /* Full-bleed suave manteniendo scroll */
+  .categories-card .tabla-categorias-wrapper,
+  .categories-card .tabla-categorias-cuenta-wrapper,
+  .categories-card .table-responsive {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 10px;
   }
 
   /* Hacer los botones de acción más grandes en móvil */
@@ -128,11 +139,11 @@
 }
 
 @media (max-width: 480px) {
-  /* Tablas más anchas para forzar scroll en móviles pequeños */
+  /* Mantener tablas a ancho completo incluso en móviles pequeños */
   .tabla-categorias,
   .tabla-categorias-cuenta,
   .table-responsive table {
-    min-width: 600px;
+    min-width: 100% !important;
   }
 
   /* Inputs y selects más grandes en móviles pequeños */
@@ -197,4 +208,14 @@
     flex: 1 1 calc(50% - 8px);
     min-width: 140px;
   }
+}
+
+/* Compactación de la tabla de Categorías: menos padding y tipografía ligeramente menor */
+.tabla-categorias thead th {
+  padding: 8px 10px !important;
+  font-size: 11.5px !important;
+}
+.tabla-categorias tbody td {
+  padding: 8px 10px !important;
+  font-size: 12.5px !important;
 }

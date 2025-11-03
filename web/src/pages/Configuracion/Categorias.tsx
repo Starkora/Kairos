@@ -445,11 +445,12 @@ export default function Categorias() {
 
   // Configuración de columnas para categorías con badges
   const categoriasColumns: ColumnConfig<any>[] = [
-    { header: 'Nombre', accessor: 'nombre', align: 'left' },
+    { header: 'Nombre', accessor: 'nombre', align: 'left', width: '140px' },
     { 
       header: 'Tipo', 
       accessor: (cat) => <CategoryBadge tipo={cat.tipo} />, 
-      align: 'left' 
+      align: 'left',
+      width: '110px'
     },
     { 
       header: 'Acciones', 
@@ -459,18 +460,19 @@ export default function Categorias() {
           onDelete={() => handleDelete(cat.id)}
         />
       ),
-      align: 'center' 
+      align: 'center',
+      width: '110px'
     }
   ];
 
   // Configuración de columnas para categorías de cuenta
   const categoriasCuentaColumns: ColumnConfig<any>[] = [
-    { header: 'Nombre', accessor: 'nombre', align: 'left', width: '45%' },
+    { header: 'Nombre', accessor: 'nombre', align: 'left' },
     { 
       header: 'Fecha de creación', 
       accessor: (cat) => cat.created_at ? cat.created_at.substring(0, 10) : '', 
-      align: 'left', 
-      width: '35%' 
+      align: 'left',
+      width: '120px'
     },
     { 
       header: 'Acciones', 
@@ -481,7 +483,7 @@ export default function Categorias() {
         />
       ),
       align: 'center',
-      width: '20%'
+      width: '110px'
     }
   ];
 
