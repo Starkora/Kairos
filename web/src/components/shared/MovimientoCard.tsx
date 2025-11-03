@@ -1,4 +1,5 @@
 import React from 'react';
+import { FaTrash } from 'react-icons/fa';
 import { IconRenderer, getGradientPorTipo, getColorPorTipo } from './IconRenderer';
 
 interface Movimiento {
@@ -115,7 +116,7 @@ export const MovimientoCard: React.FC<MovimientoCardProps> = ({
                     fontWeight: 700
                   }}
                 >
-                  🗑️
+                  {React.createElement(FaTrash as any, { style: { fontSize: 13 } })}
                 </button>
               )}
             </>

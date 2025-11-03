@@ -965,7 +965,7 @@ export default function DeudasMetas() {
               borderRadius: 12,
               border: '2px dashed var(--color-input-border)'
             }}>
-              <FaBullseye style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }} />
+              {React.createElement(FaBullseye as any, { style: { fontSize: 48, marginBottom: 16, opacity: 0.3 } })}
               <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>
                 {busqueda || filtroEstado !== 'todas' ? 'No se encontraron metas' : 'No tienes metas registradas'}
               </p>
@@ -1011,7 +1011,7 @@ export default function DeudasMetas() {
                       gap: 10
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <FaBullseye style={{ color: '#4caf50', fontSize: 20 }} />
+                        {React.createElement(FaBullseye as any, { style: { color: '#4caf50', fontSize: 20 } })}
                         <span style={{ fontWeight: 700, fontSize: 18 }}>{m.descripcion}</span>
                         {completada && (
                           <span style={{ 
