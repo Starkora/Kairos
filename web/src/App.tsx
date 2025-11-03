@@ -229,7 +229,26 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
                 <button onClick={handleLogout} className="fixed-bottom-btn" style={{ position: 'fixed', left: 16, bottom: 16, background: '#6C4AB6', color: '#fff', border: 'none', borderRadius: 20, padding: '10px 28px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', zIndex: 10, display: (isMobile && !sidebarOpen) ? 'inline-flex' : 'none' }}>
                   <span style={{ marginRight: 8, fontSize: '1.1em' }}>⎋</span> Cerrar sesión
                 </button>
-                <a href="/acercade" className="fixed-bottom-btn" style={{ position: 'fixed', right: 16, bottom: 16, color: '#6C4AB6', textDecoration: 'underline', fontWeight: 600, background: '#fff', padding: '8px 12px', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex' }}>Acerca de</a>
+                <a
+                  href="/acercade"
+                  className="fixed-bottom-btn"
+                  style={{
+                    position: 'fixed',
+                    right: 16,
+                    bottom: 16,
+                    color: darkMode ? '#e5e7eb' : '#6C4AB6',
+                    textDecoration: 'underline',
+                    fontWeight: 600,
+                    background: darkMode ? 'rgba(255,255,255,0.06)' : '#fff',
+                    padding: '8px 12px',
+                    borderRadius: 16,
+                    boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.30)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    border: darkMode ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(0,0,0,0.06)',
+                    display: (isMobile && sidebarOpen) ? 'none' : 'inline-flex'
+                  }}
+                >
+                  Acerca de
+                </a>
               </div>
             </div>
           ) : (

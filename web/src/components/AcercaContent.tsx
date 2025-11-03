@@ -11,7 +11,6 @@ import {
   FaUserCircle,
   FaLaptop,
   FaMobileAlt,
-  FaDesktop,
   FaChevronDown,
   FaChevronUp,
   FaCheckCircle,
@@ -39,8 +38,7 @@ export default function AcercaContent({ variant = 'public' }) {
 
   const platforms = [
     { icon: FaGlobe, label: 'Web', color: 'primary' },
-    { icon: FaMobileAlt, label: 'Mobile', color: 'success' },
-    { icon: FaDesktop, label: 'Desktop', color: 'info' }
+    { icon: FaMobileAlt, label: 'Mobile', color: 'success' }
   ];
 
   const faqs = [
@@ -99,7 +97,7 @@ export default function AcercaContent({ variant = 'public' }) {
           marginRight: 'auto'
         }}>
           Kairos es una aplicación de finanzas personales que te ayuda a organizar tus cuentas, registrar tus movimientos,
-          planificar metas y deudas y recibir recordatorios. Funciona en web, móvil y escritorio.
+          planificar metas y deudas y recibir recordatorios. Funciona en web y móvil.
         </p>
 
         {/* Platform Badges */}
@@ -110,7 +108,7 @@ export default function AcercaContent({ variant = 'public' }) {
               alignItems: 'center',
               gap: 8,
               padding: '8px 16px',
-              background: 'var(--background, #f5f5f5)',
+              background: 'var(--table-header-bg, #f5f5f7)',
               borderRadius: 20,
               border: '1px solid var(--border-color, #e0e0e0)'
             }}>
@@ -259,7 +257,7 @@ export default function AcercaContent({ variant = 'public' }) {
                 color: 'var(--text-secondary, #666)',
                 lineHeight: 1.5
               }}>
-                Accede desde cualquier dispositivo: web, móvil o escritorio
+                Accede desde cualquier dispositivo: web o móvil
               </p>
             </div>
           </div>
@@ -352,7 +350,7 @@ export default function AcercaContent({ variant = 'public' }) {
                 style={{
                   width: '100%',
                   padding: '16px 20px',
-                  background: openFaq === index ? 'var(--background, #f5f5f5)' : 'var(--card-bg, #fff)',
+                  background: openFaq === index ? 'var(--table-header-bg, #f5f5f7)' : 'var(--card-bg, #fff)',
                   border: 'none',
                   cursor: 'pointer',
                   display: 'flex',
@@ -377,7 +375,7 @@ export default function AcercaContent({ variant = 'public' }) {
               {openFaq === index && (
                 <div style={{
                   padding: '16px 20px',
-                  background: 'var(--background, #f5f5f5)',
+                  background: 'var(--table-row-hover, #f9f9fb)',
                   color: 'var(--text-secondary, #666)',
                   fontSize: 14,
                   lineHeight: 1.6,
