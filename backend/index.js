@@ -1,5 +1,5 @@
-// Sincronizar modelos Sequelize
-const sequelize = require('./sequelize');
+﻿// Sincronizar modelos Sequelize
+const sequelize = require('./config/sequelize');
 sequelize.sync().then(() => {
   console.log('[Sequelize] Modelos sincronizados');
 }).catch(err => {
@@ -22,11 +22,11 @@ if (process.env.NODE_ENV !== 'production') {
 
 const express = require('express');
 const http = require('http');
-const db = require('./db');
+const db = require('./config/database');
 const app = express();
 let PORT = Number(process.env.PORT) || 3001;
 
-const adminRoutes = require('./routes/admin');
+const adminRoutes = require('./src/routes/admin');
 app.set('trust proxy', 1);
 
 // Advertencia: JWT_SECRET por defecto en producción
@@ -232,20 +232,20 @@ app.use((req, res, next) => {
 });
 
 // Rutas
-const transaccionesRouter = require('./routes/transacciones');
-const categoriasRouter = require('./routes/categorias');
-const cuentasRouter = require('./routes/cuentas');
-const categoriasCuentaRouter = require('./routes/categoriasCuenta');
+const transaccionesRouter = require('./src/routes/transacciones');
+const categoriasRouter = require('./src/routes/categorias');
+const cuentasRouter = require('./src/routes/cuentas');
+const categoriasCuentaRouter = require('./src/routes/categoriasCuenta');
 
 
-const usuariosRouter = require('./routes/usuarios');
-const googleAuthRouter = require('./routes/googleAuth');
-const deudasRouter = require('./routes/deudas');
-const metasRouter = require('./routes/metas');
+const usuariosRouter = require('./src/routes/usuarios');
+const googleAuthRouter = require('./src/routes/googleAuth');
+const deudasRouter = require('./src/routes/deudas');
+const metasRouter = require('./src/routes/metas');
 const notificacionesController = require('./controllers/notificacionesController');
-const presupuestosRouter = require('./routes/presupuestos');
-const preferenciasRouter = require('./routes/preferencias');
-const insightsRouter = require('./routes/insights');
+const presupuestosRouter = require('./src/routes/presupuestos');
+const preferenciasRouter = require('./src/routes/preferencias');
+const insightsRouter = require('./src/routes/insights');
 // Limpieza de usuarios_pendientes expirados (usa evento MySQL si existe; si no, fallback en Node)
 let cleanupInterval = null;
 const cleanupExpiredPendings = async () => {
@@ -416,7 +416,7 @@ app.use('/api/metas', metasRouter);
 app.use('/api/presupuestos', presupuestosRouter);
 app.use('/api/preferencias', preferenciasRouter);
 app.use('/api/insights', insightsRouter);
-const movimientosRecurrentesRouter = require('./routes/movimientosRecurrentes');
+const movimientosRecurrentesRouter = require('./src/routes/movimientosRecurrentes');
 app.use('/api/movimientos-recurrentes', movimientosRecurrentesRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api', notificacionesController);
@@ -539,3 +539,4 @@ if (process.env.NODE_ENV === 'production') {
     console.warn('[SECURITY] Falta configuración de email (SENDGRID_API_KEY o MAIL_FROM).');
   }
 }
+

@@ -1,28 +1,28 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { FaMoon, FaSun } from 'react-icons/fa';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import Registro from './components/Registro';
-import Cuentas from './components/Cuentas';
-import Calendario from './components/Calendario';
-import Notificaciones from './components/Notificaciones';
-import AcercaDe from './components/AcercaDe';
-import AcercaPublic from './components/AcercaPublic';
-import DeudasMetas from './components/DeudasMetas';
-import Categorias from './components/Categorias';
-import CategoriasCuenta from './components/CategoriasCuenta';
-import Login from './components/Login';
-import RecuperarPasswordPage from './pages/RecuperarPasswordPage';
-import LogoutButton from './components/LogoutButton';
+import Sidebar from './components/layout/Sidebar';
+import Dashboard from './pages/Dashboard/Dashboard';
+import Registro from './pages/Transacciones/Registro';
+import Cuentas from './pages/Finanzas/Cuentas';
+import Calendario from './pages/Transacciones/Calendario';
+import Notificaciones from './pages/Configuracion/Notificaciones';
+import AcercaDe from './pages/AcercaDe/AcercaDe';
+import AcercaPublic from './pages/AcercaDe/AcercaPublic';
+import DeudasMetas from './pages/Finanzas/DeudasMetas';
+import Categorias from './pages/Configuracion/Categorias';
+import CategoriasCuenta from './pages/Configuracion/CategoriasCuenta';
+import Login from './pages/Auth/Login';
+import RecuperarPasswordPage from './pages/Auth/RecuperarPasswordPage';
+import LogoutButton from './components/features/auth/LogoutButton';
 import { isLoggedIn, getToken, getTokenExpiration, scheduleAutoLogout, forceLogout } from './utils/auth';
-import MiCuenta from './components/MiCuenta';
-import ApiEndpointBadge from './components/ApiEndpointBadge';
-import AdminUsuariosPendientes from './components/AdminUsuariosPendientes';
+import MiCuenta from './pages/Configuracion/MiCuenta';
+import ApiEndpointBadge from './components/features/admin/ApiEndpointBadge';
+import AdminUsuariosPendientes from './pages/Admin/UsuariosPendientes';
 import API_BASE from './utils/apiBase';
-import MovimientosRecurrentes from './pages/MovimientosRecurrentes';
-import Presupuestos from './pages/Presupuestos';
-import Asesor from 'pages/Asesor';
+import MovimientosRecurrentes from './pages/Configuracion/MovimientosRecurrentes';
+import Presupuestos from './pages/Finanzas/Presupuestos';
+import Asesor from './pages/Asesor/Asesor';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import './App.css';
 import { MdFormatListBulleted } from 'react-icons/md';
@@ -275,4 +275,5 @@ function AdminOnly({ children }) {
   }
   return allowed ? children : null;
 }
+
 
