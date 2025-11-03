@@ -281,8 +281,8 @@ setupCleanupJob();
 // Job para aplicar movimientos pendientes cuya fecha haya llegado
 async function applyPendingJob() {
   try {
-    const Transaccion = require('./models/transaccion');
-    const MovimientoRecurrente = require('./models/movimientoRecurrente');
+    const Transaccion = require('./src/models/transaccion');
+    const MovimientoRecurrente = require('./src/models/movimientoRecurrente');
     // Primero materializamos las ocurrencias recurrentes de HOY
     try {
       const mat = await (MovimientoRecurrente.materializeDueForToday && MovimientoRecurrente.materializeDueForToday());

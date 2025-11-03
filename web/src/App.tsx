@@ -24,7 +24,7 @@ import MovimientosRecurrentes from './pages/Configuracion/MovimientosRecurrentes
 import Presupuestos from './pages/Finanzas/Presupuestos';
 import Asesor from './pages/Asesor/Asesor';
 import { SpeedInsights } from "@vercel/speed-insights/react";
-import './App.css';
+import './styles/App.css';
 import { MdFormatListBulleted } from 'react-icons/md';
 
 function getUserInfoFromToken() {

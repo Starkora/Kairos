@@ -1,6 +1,6 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../sequelize');
-const db = require('../db');
+﻿const { DataTypes } = require('sequelize');
+const sequelize = require('../../config/sequelize');
+const db = require('../../config/database');
 const Transaccion = require('./transaccion');
 const MovimientoRecurrenteExcepcion = require('./movimientoRecurrenteExcepcion');
 

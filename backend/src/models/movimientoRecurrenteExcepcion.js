@@ -1,5 +1,5 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../sequelize');
+﻿const { DataTypes } = require('sequelize');
+const sequelize = require('../../config/sequelize');
 
 // Excepciones por serie recurrente: saltar una fecha o posponerla a otra
 const MovimientoRecurrenteExcepcion = sequelize.define('MovimientoRecurrenteExcepcion', {
