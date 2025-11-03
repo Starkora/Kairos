@@ -1,5 +1,5 @@
 import React from 'react';
-import RecuperarPassword from '../../components/RecuperarPassword';
+import RecuperarPassword from './RecuperarPassword';
 import { useNavigate } from 'react-router-dom';
 
 export default function RecuperarPasswordPage() {

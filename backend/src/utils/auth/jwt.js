@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'kairos_secret';
-const Usuario = require('../../../models/usuario');
+const Usuario = require('../../models/usuario');
 
 module.exports = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
