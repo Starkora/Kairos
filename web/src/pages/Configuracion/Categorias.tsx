@@ -30,7 +30,7 @@ import './Categorias.css';
 export default function Categorias() {
   // Categorías predefinidas
   const opcionesCategoriasIngreso = [
-    'Salario', 'Freelance', 'Inversiones', 'Regalos', 'Ventas', 'Bonos', 'Intereses', 'Otros ingresos'
+    'Sueldo', 'Freelance', 'Inversiones', 'Regalos', 'Ventas', 'Bonos', 'Otros ingresos'
   ];
   const opcionesCategoriasEgreso = [
     'Alimentación', 'Transporte', 'Servicios', 'Entretenimiento', 'Salud', 'Educación', 
