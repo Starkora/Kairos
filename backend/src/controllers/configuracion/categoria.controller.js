@@ -1,5 +1,5 @@
 ﻿const Categoria = require('../../models/categoria');
-const db = require('../../config/database'); // Asegúrate de requerir tu conexión a la base de datos
+const db = require('../../../config/database'); // Asegúrate de requerir tu conexión a la base de datos
 
 exports.getAll = async (req, res) => {
   const usuario_id = req.user && req.user.id;
