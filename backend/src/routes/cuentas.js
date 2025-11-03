@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
 
-const cuentaController = require('../controllers/finanzas/cuentaController');
+const cuentaController = require('../controllers/finanzas/cuenta.controller');
 const auth = require('../utils/auth/jwt');
 
 
