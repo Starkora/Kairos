@@ -1,4 +1,4 @@
-const CategoriaCuenta = require('../models/categoriaCuenta');
+﻿const CategoriaCuenta = require('../../../models/categoriaCuenta');
 
 
 exports.getAll = async (req, res) => {

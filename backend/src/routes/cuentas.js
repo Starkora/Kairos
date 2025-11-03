@@ -2,7 +2,7 @@
 const router = express.Router();
 
 const cuentaController = require('../controllers/finanzas/cuentaController');
-const auth = require('../utils/auth');
+const auth = require('../utils/auth/jwt');
 
 
 router.get('/', auth, cuentaController.getAll);

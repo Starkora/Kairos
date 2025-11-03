@@ -1,8 +1,8 @@
 ﻿const express = require('express');
 const router = express.Router();
 const usuariosController = require('../controllers/admin/usuariosController'); // Corrección de la importación
-const auth = require('../utils/auth');
-const { rateLimit, rateLimitByKey } = require('../utils/rateLimiter');
+const auth = require('../utils/auth/jwt');
+const { rateLimit, rateLimitByKey } = require('../utils/security/rateLimiter');
 const { captchaMiddleware } = require('../utils/captcha');
 
 // Limites: 10 req/min por IP para login y register; 5/min para resend/verify

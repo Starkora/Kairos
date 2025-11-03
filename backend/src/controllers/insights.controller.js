@@ -1,4 +1,4 @@
-const db = require('../db');
+﻿const db = require('../../config/database');
 
 // Cache en memoria por usuario y parámetro includeFuture para acelerar respuestas repetidas
 // TTL corto para mantener datos frescos y no bloquear UX (p. ej., 30s)

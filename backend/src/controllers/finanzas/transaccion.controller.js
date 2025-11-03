@@ -1,4 +1,4 @@
-const Transaccion = require('../models/transaccion');
+﻿const Transaccion = require('../../../models/transaccion');
 const XLSX = require('xlsx');
 const ExcelJS = require('exceljs');
 
@@ -44,7 +44,7 @@ exports.create = async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos requeridos', missing, receivedKeys: Object.keys(req.body || {}) });
   }
 
-  const db = require('../db');
+  const db = require('../../config/database');
   try {
     // Obtener la plataforma del usuario
     const [usuarios] = await db.query('SELECT plataforma FROM usuarios WHERE id = ?', [usuario_id]);
@@ -80,7 +80,7 @@ exports.transferir = async (req, res) => {
   if (Number(origen_id) === Number(destino_id)) {
     return res.status(400).json({ error: 'La cuenta origen y destino deben ser diferentes' });
   }
-  const db = require('../db');
+  const db = require('../../config/database');
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
@@ -142,7 +142,7 @@ exports.deleteById = async (req, res) => {
   const id = req.params.id;
   const usuario_id = req.user && req.user.id;
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
-  const db = require('../db');
+  const db = require('../../config/database');
   try {
     // Obtener info del movimiento para poder revertir pagos/aportes de deudas/metas si corresponde
     const [rows] = await db.query('SELECT id, usuario_id, descripcion, monto FROM movimientos WHERE id = ?', [id]);
@@ -150,7 +150,7 @@ exports.deleteById = async (req, res) => {
     const mov = rows[0];
     if (mov.usuario_id !== usuario_id) return res.status(403).json({ error: 'No autorizado' });
 
-    const Transaccion = require('../models/transaccion');
+    const Transaccion = require('../../../models/transaccion');
     await Transaccion.deleteById(id);
 
     // Detectar marcadores ocultos en la descripción para revertir progreso de deuda/meta
@@ -194,7 +194,7 @@ exports.update = async (req, res) => {
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   if (!cuenta_id || !tipo || !monto || !fecha) return res.status(400).json({ error: 'Faltan campos requeridos' });
   try {
-    const Transaccion = require('../models/transaccion');
+    const Transaccion = require('../../../models/transaccion');
     await Transaccion.update({ id, usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, icon, color });
     res.json({ success: true });
   } catch (err) {
@@ -207,7 +207,7 @@ exports.descargarPlantilla = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   try {
-    const db = require('../db');
+    const db = require('../../config/database');
     // Obtener listas del usuario
     const [cuentas] = await db.query('SELECT id, nombre FROM cuentas WHERE usuario_id = ? ORDER BY nombre ASC', [usuario_id]);
     const [categorias] = await db.query('SELECT id, nombre FROM categorias WHERE usuario_id = ? ORDER BY nombre ASC', [usuario_id]);
@@ -386,7 +386,7 @@ exports.importarExcel = async (req, res) => {
     }
 
     // Obtener la plataforma del usuario una vez
-    const db = require('../db');
+    const db = require('../../config/database');
     const [usuarios] = await db.query('SELECT plataforma FROM usuarios WHERE id = ?', [usuario_id]);
     if (!usuarios || usuarios.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
     const plataforma = usuarios[0].plataforma;
@@ -598,7 +598,7 @@ exports.exportarExcel = async (req, res) => {
   const { start, end } = req.query;
   if (!start || !end) return res.status(400).json({ error: 'Parámetros start y end requeridos (YYYY-MM-DD)' });
   try {
-    const db = require('../db');
+    const db = require('../../config/database');
     // Obtener plataforma del usuario
     const [usuarios] = await db.query('SELECT plataforma FROM usuarios WHERE id = ?', [usuario_id]);
     if (!usuarios || usuarios.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });

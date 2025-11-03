@@ -1,6 +1,6 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const auth = require('../utils/auth');
+const auth = require('../utils/auth/jwt');
 const preferencias = require('../controllers/preferenciasController');
 
 router.get('/', auth, preferencias.getPreferencias);

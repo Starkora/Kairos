@@ -1,6 +1,6 @@
 ﻿const express = require('express');
 const router = express.Router();
-const auth = require('../utils/auth');
+const auth = require('../utils/auth/jwt');
 const ctrl = require('../controllers/finanzas/presupuestoController');
 
 router.use(auth);

@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
 const categoriaCuentaController = require('../controllers/finanzas/categoriaCuentaController');
-const auth = require('../utils/auth');
+const auth = require('../utils/auth/jwt');
 
 router.get('/', auth, categoriaCuentaController.getAll);
 router.post('/', auth, categoriaCuentaController.create);

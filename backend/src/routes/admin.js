@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
-const db = require('../db');
-const auth = require('../utils/auth');
+const db = require('../../config/database');
+const auth = require('../utils/auth/jwt');
 const { requireAdmin } = require('../middlewares/admin.middleware');
 
 // GET /api/admin/users/pending - lista usuarios no aprobados

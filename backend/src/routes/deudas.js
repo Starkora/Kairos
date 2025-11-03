@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
 const deudaController = require('../controllers/finanzas/deudaController');
-const auth = require('../utils/auth');
+const auth = require('../utils/auth/jwt');
 
 router.use(auth); // Proteger todas las rutas de deudas
 

@@ -1,8 +1,8 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import LogoutButton from './LogoutButton';
-import { isLoggedIn, getToken } from '../utils/auth';
-import API_BASE from '../utils/apiBase';
+import LogoutButton from '../features/auth/LogoutButton';
+import { isLoggedIn, getToken } from '../../utils/auth';
+import API_BASE from '../../utils/apiBase';
 
 
 function getUserInfoFromToken() {

@@ -2,7 +2,7 @@
 const router = express.Router();
 
 const categoriaController = require('../controllers/configuracion/categoriaController');
-const auth = require('../utils/auth');
+const auth = require('../utils/auth/jwt');
 
 
 router.get('/', auth, categoriaController.getAll);

@@ -1,4 +1,4 @@
-const db = require('../db');
+﻿const db = require('../../config/database');
 
 // GET /api/preferencias -> devuelve objeto { data: {...} }
 async function getPreferencias(req, res) {

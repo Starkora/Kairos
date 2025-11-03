@@ -1,4 +1,4 @@
-const Deuda = require('../models/deuda');
+﻿const Deuda = require('../../../models/deuda');
 
 exports.crearDeuda = async (req, res) => {
   const usuario_id = req.user && req.user.id;

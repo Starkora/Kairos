@@ -1,4 +1,4 @@
-// --- Recuperación de contraseña ---
+﻿// --- Recuperación de contraseña ---
 const codigosRecuperacion = {};
 
 exports.enviarCodigoRecuperacion = async (req, res) => {
@@ -66,12 +66,12 @@ exports.confirmarRecuperacion = async (req, res) => {
   }
 };
 
-const Usuario = require('../models/usuario');
-const UsuarioPendiente = require('../models/usuarioPendiente');
+const Usuario = require('../../../models/usuario');
+const UsuarioPendiente = require('../../../models/usuarioPendiente');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { sendMail } = require('../utils/mailer');
-const { send } = require('../utils/sms');
+const { sendMail } = require('../../utils/notifications/mailer');
+const { send } = require('../../utils/notifications/sms');
 const JWT_SECRET = process.env.JWT_SECRET || 'kairos_secret';
 
 
