@@ -190,14 +190,14 @@ export default function Registro() {
         setErroresValidacion(prev => ({ ...prev, monto: '' }));
       }
       
-      // Evaluar si es una expresión matemática simple
-      if (/^[\d\s+\-*/().]+$/.test(normalized)) {
+      // Evaluar si es una expresión matemática simple (ahora incluye decimales)
+      if (/^[\d\s+\-*/.()]+$/.test(normalized)) {
         try {
           // Intentar evaluar la expresión
           const resultado = Function('"use strict"; return (' + normalized + ')')();
           if (!isNaN(resultado) && isFinite(resultado) && resultado >= 0) {
-            // Si es válido, guardar el resultado
-            setForm((prev) => ({ ...prev, [name]: resultado.toString() }));
+            // Si es válido, guardar el resultado con hasta 2 decimales
+            setForm((prev) => ({ ...prev, [name]: resultado.toFixed(2) }));
             return;
           }
         } catch (e) {
@@ -699,7 +699,7 @@ export default function Registro() {
                 name="monto"
                 value={form.monto}
                 onChange={handleChange}
-                placeholder="Ej: 50+20+30"
+                placeholder="Ej: 39.50 o 50+20.5"
                 style={{ 
                   padding: 6, 
                   paddingRight: 32,
@@ -730,7 +730,7 @@ export default function Registro() {
             )}
             <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', alignSelf: 'flex-start', paddingLeft: 26, display: 'flex', alignItems: 'center', gap: 4 }}>
               {React.createElement(FaLightbulb as any, { style: { fontSize: 12 } })}
-              Puedes escribir operaciones: 50+20, 100-15, 25*4
+              Puedes usar decimales y operaciones: 39.50, 50+20.5, 100-15.75
             </div>
           </div>
         </div>
