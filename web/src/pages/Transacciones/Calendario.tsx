@@ -16,7 +16,8 @@ import {
   FaCalendarAlt, FaChartBar, FaArrowUp, FaArrowDown, FaCoins, 
   FaTrash, FaTag, FaClock, FaChartLine, FaInfoCircle, FaExchangeAlt,
   FaUniversity, FaPiggyBank, FaList, FaBan, FaEye, FaSave, FaCalendarDay, FaFolder,
-  FaStepBackward, FaEdit
+  FaStepBackward, FaEdit, FaMoneyBillWave, FaWallet, FaAppleAlt, FaCar, 
+  FaCreditCard, FaBolt as FaLightning, FaGift, FaShoppingCart, FaHospital
 } from 'react-icons/fa';
 
 type Value = Date | [Date, Date];
@@ -26,9 +27,43 @@ type Value = Date | [Date, Date];
 
 
 export default function Calendario() {
+  // Helper para renderizar iconos desde nombres de string
+  const renderIcon = (iconName: string, style?: any) => {
+    const iconMap: Record<string, any> = {
+      'FaMoneyBillWave': FaMoneyBillWave,
+      'FaWallet': FaWallet,
+      'FaUniversity': FaUniversity,
+      'FaAppleAlt': FaAppleAlt,
+      'FaCar': FaCar,
+      'FaCreditCard': FaCreditCard,
+      'FaLightning': FaLightning,
+      'FaGift': FaGift,
+      'FaShoppingCart': FaShoppingCart,
+      'FaHospital': FaHospital,
+      'FaExchangeAlt': FaExchangeAlt,
+      '💸': FaMoneyBillWave,
+      '💰': FaWallet,
+      '🏦': FaUniversity,
+      '🍎': FaAppleAlt,
+      '🚗': FaCar,
+      '💳': FaCreditCard,
+      '🔌': FaLightning,
+      '🎁': FaGift,
+      '🛒': FaShoppingCart,
+      '🏥': FaHospital,
+      '🔁': FaExchangeAlt
+    };
+    const IconComponent = iconMap[iconName] || FaMoneyBillWave;
+    return React.createElement(IconComponent as any, { style });
+  };
+
   // Helper para renderizar iconos según tipo de movimiento
-  const getIconForTipo = (tipo: string, customIcon?: any) => {
-    if (customIcon) return customIcon;
+  const getIconForTipo = (tipo: string, customIcon?: string) => {
+    // Si hay un icono personalizado (string como "FaMoneyBillWave"), renderizarlo
+    if (customIcon && typeof customIcon === 'string') {
+      return renderIcon(customIcon);
+    }
+    // Sino, usar iconos por defecto según el tipo
     const tipoLower = (tipo || '').toLowerCase();
     if (tipoLower === 'egreso') return React.createElement(FaArrowDown as any, { style: { color: '#f44336' } });
     if (tipoLower === 'transferencia') return React.createElement(FaExchangeAlt as any, { style: { color: '#2196f3' } });
