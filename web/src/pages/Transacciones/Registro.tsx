@@ -191,13 +191,13 @@ export default function Registro() {
       }
       
       // Evaluar si es una expresión matemática simple (ahora incluye decimales)
-      if (/^[\d\s+\-*/.()]+$/.test(normalized)) {
+      if (/^[\d\s+\-*/.()]+$/.test(normalized) && /[+\-*/]/.test(normalized)) {
         try {
-          // Intentar evaluar la expresión
+          // Intentar evaluar la expresión solo si contiene operadores
           const resultado = Function('"use strict"; return (' + normalized + ')')();
           if (!isNaN(resultado) && isFinite(resultado) && resultado >= 0) {
-            // Si es válido, guardar el resultado con hasta 2 decimales
-            setForm((prev) => ({ ...prev, [name]: resultado.toFixed(2) }));
+            // Guardar el resultado sin formatear, tal como queda
+            setForm((prev) => ({ ...prev, [name]: resultado.toString() }));
             return;
           }
         } catch (e) {
