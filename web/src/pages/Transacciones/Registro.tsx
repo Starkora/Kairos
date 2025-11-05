@@ -262,7 +262,7 @@ export default function Registro() {
       return null;
     }
     
-    const saldoActual = parseFloat(cuentaSeleccionada.saldo || 0);
+    const saldoActual = parseFloat(cuentaSeleccionada.saldo_actual || 0);
     const monto = parseFloat(form.monto);
     let nuevoSaldo = saldoActual;
 
