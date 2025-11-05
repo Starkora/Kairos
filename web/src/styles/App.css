@@ -860,3 +860,51 @@ input, textarea { caret-color: var(--color-caret); }
     transform: translateX(-50%) translateY(0);
   }
 }
+
+/* Responsive para Transacciones Recientes */
+@media (max-width: 768px) {
+  .transaccion-reciente-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .transaccion-reciente-item > div:first-child {
+    width: 100%;
+  }
+
+  .transaccion-reciente-item > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Ocultar texto "Copiar" en móvil, solo mostrar icono */
+  .btn-copiar-text {
+    display: none;
+  }
+
+  .btn-copiar-transaccion {
+    padding: 8px !important;
+  }
+
+  /* Header del formulario de registro en columna en móvil */
+  .registro-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .btn-duplicar-ultima {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Ajustar placeholder del input de búsqueda para que no choque con el icono */
+  .input-buscar-transaccion::placeholder {
+    padding-left: 8px;
+  }
+}
+
+/* Placeholder para inputs con iconos - ajuste general */
+.input-buscar-transaccion::placeholder {
+  padding-left: 4px;
+}

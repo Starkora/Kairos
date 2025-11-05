@@ -607,12 +607,13 @@ export default function Registro() {
 
       {/* Formulario Principal */}
       <div style={{ background: 'var(--color-card)', borderRadius: 12, boxShadow: '0 2px 8px var(--card-shadow)', padding: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div className="registro-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
           <h1 style={{ margin: 0 }}>Registro de Movimientos</h1>
           {transaccionesRecientes.length > 0 && (
             <button
               type="button"
               onClick={duplicarUltimaTransaccion}
+              className="btn-duplicar-ultima"
               style={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: '#fff',
@@ -962,6 +963,7 @@ export default function Registro() {
                 placeholder="Buscar transacción..."
                 value={busquedaRecientes}
                 onChange={(e) => setBusquedaRecientes(e.target.value)}
+                className="input-buscar-transaccion"
                 style={{
                   width: '100%',
                   padding: '10px 12px 10px 36px',
@@ -1056,6 +1058,7 @@ export default function Registro() {
               return (
                 <div
                   key={tr.id}
+                  className="transaccion-reciente-item"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -1064,10 +1067,12 @@ export default function Registro() {
                     background: 'var(--color-bg)',
                     borderRadius: 10,
                     border: '1px solid var(--color-border)',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    flexWrap: 'wrap',
+                    gap: 12
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
                     <div
                       style={{
                         width: 44,
@@ -1078,12 +1083,13 @@ export default function Registro() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: 22,
-                        border: `2px solid ${tr.color || '#6c4fa1'}40`
+                        border: `2px solid ${tr.color || '#6c4fa1'}40`,
+                        flexShrink: 0
                       }}
                     >
                       {renderIcon(tr.icon || 'FaMoneyBillWave', { fontSize: 22, color: tr.color || '#6c4fa1' })}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                       <div style={{ 
                         fontWeight: 600, 
                         fontSize: 14, 
@@ -1094,7 +1100,14 @@ export default function Registro() {
                       }}>
                         {tr.descripcion || 'Sin descripción'}
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                      <div style={{ 
+                        fontSize: 12, 
+                        color: 'var(--color-text-secondary)', 
+                        marginTop: 2,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
                         {new Date(tr.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                         {esTransferencia && ' • Transferencia'}
                       </div>
@@ -1102,7 +1115,7 @@ export default function Registro() {
                   </div>
                   
                   {/* Monto y botón copiar */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
                     <div
                       style={{
                         fontSize: 16,
@@ -1117,6 +1130,7 @@ export default function Registro() {
                     {/* Botón copiar */}
                     <button
                       onClick={() => copiarTransaccion(tr)}
+                      className="btn-copiar-transaccion"
                       style={{
                         background: 'transparent',
                         border: '1px solid var(--color-border)',
@@ -1144,7 +1158,7 @@ export default function Registro() {
                       title="Copiar transacción"
                     >
                       {React.createElement(FaCopy as any, { style: { fontSize: 12 } })}
-                      Copiar
+                      <span className="btn-copiar-text">Copiar</span>
                     </button>
                   </div>
                 </div>
