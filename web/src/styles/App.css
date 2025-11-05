@@ -878,6 +878,12 @@ input, textarea { caret-color: var(--color-caret); }
     justify-content: space-between;
   }
 
+  /* Permitir que las descripciones largas se muestren completas en móvil */
+  .transaccion-descripcion {
+    -webkit-line-clamp: 3 !important; /* Mostrar hasta 3 líneas en móvil */
+    max-height: none !important;
+  }
+
   /* Ocultar texto "Copiar" en móvil, solo mostrar icono */
   .btn-copiar-text {
     display: none;

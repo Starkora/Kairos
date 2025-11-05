@@ -1090,13 +1090,16 @@ export default function Registro() {
                       {renderIcon(tr.icon || 'FaMoneyBillWave', { fontSize: 22, color: tr.color || '#6c4fa1' })}
                     </div>
                     <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                      <div style={{ 
+                      <div className="transaccion-descripcion" style={{ 
                         fontWeight: 600, 
                         fontSize: 14, 
                         color: 'var(--color-text)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
+                        lineHeight: 1.4,
+                        wordBreak: 'break-word',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
                       }}>
                         {tr.descripcion || 'Sin descripción'}
                       </div>
@@ -1104,9 +1107,9 @@ export default function Registro() {
                         fontSize: 12, 
                         color: 'var(--color-text-secondary)', 
                         marginTop: 2,
+                        whiteSpace: 'nowrap',
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
+                        textOverflow: 'ellipsis'
                       }}>
                         {new Date(tr.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                         {esTransferencia && ' • Transferencia'}

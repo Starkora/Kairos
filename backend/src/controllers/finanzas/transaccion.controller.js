@@ -108,7 +108,7 @@ exports.transferir = async (req, res) => {
     const code = 'T' + Date.now();
 
     // Insert egreso en origen
-    const descEgreso = `Transferencia a ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''} [TRANSFER#${code}]`;
+    const descEgreso = `Transferencia a ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''}`;
     const [resEgreso] = await conn.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [usuario_id, origen_id, 'egreso', monto, descEgreso, fechaStr, null, plataforma || 'web', icon, color, applied]
@@ -118,7 +118,7 @@ exports.transferir = async (req, res) => {
     }
 
     // Insert ingreso en destino
-    const descIngreso = `Transferencia desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''} [TRANSFER#${code}]`;
+    const descIngreso = `Transferencia desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''}`;
     const [resIngreso] = await conn.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [usuario_id, destino_id, 'ingreso', monto, descIngreso, fechaStr, null, plataforma || 'web', icon, color, applied]
@@ -547,8 +547,8 @@ exports.importarExcel = async (req, res) => {
           const icon = defaultIconByTipo.transferencia;
           const color = defaultColorByTipo.transferencia;
           const code = 'T' + Date.now() + '_' + i;
-          const descEgreso = `Transferencia a ${cuentaDDef.nombre}${descripcion ? ' - ' + descripcion : ''} [TRANSFER#${code}]`;
-          const descIngreso = `Transferencia desde ${cuentaODef.nombre}${descripcion ? ' - ' + descripcion : ''} [TRANSFER#${code}]`;
+          const descEgreso = `Transferencia a ${cuentaDDef.nombre}${descripcion ? ' - ' + descripcion : ''}`;
+          const descIngreso = `Transferencia desde ${cuentaODef.nombre}${descripcion ? ' - ' + descripcion : ''}`;
           // Usar transacción por fila
           const conn = await db.getConnection();
           try {
