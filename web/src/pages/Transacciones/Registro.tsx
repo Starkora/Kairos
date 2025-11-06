@@ -344,7 +344,7 @@ export default function Registro() {
     }
 
     // Filtrar por tipo
-    if (filtroTipoRecientes !== 'all') {
+    if (filtroTipoRecientes !== 'all' && filtroTipoRecientes !== 'todos') {
       filtradas = filtradas.filter(tr => tr.tipo === filtroTipoRecientes);
     }
 
