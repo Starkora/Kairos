@@ -539,100 +539,197 @@ export default function Calendario() {
       const cuentasList = resCuentas.ok ? await resCuentas.json() : [];
       const categoriasList = resCategorias.ok ? await resCategorias.json() : [];
 
-      const cuentasOptions = (cuentasList || []).map(c => `<option value="${c.id}" ${c.id === mov.cuenta_id ? 'selected' : ''}>${c.nombre}</option>`).join('');
-      const categoriasOptions = (categoriasList || []).map(c => `<option value="${c.id}" ${c.id === mov.categoria_id ? 'selected' : ''}>${c.nombre}</option>`).join('');
+      // Estado del formulario
+      let formState = {
+        cuenta_id: mov.cuenta_id,
+        monto: mov.monto,
+        descripcion: mov.descripcion || '',
+        fecha: (mov.fecha || '').slice(0, 10),
+        categoria_id: mov.categoria_id || '',
+        icon: mov.icon || 'FaMoneyBillWave',
+        color: mov.color || '#6c4fa1'
+      };
 
-      const defaultIcon = mov.icon || (((mov.tipo || '').toLowerCase() === 'egreso') ? '💸' : ((mov.tipo || '').toLowerCase() === 'ahorro' ? '💰' : '🏦'));
-      const defaultColor = mov.color || '';
-      const { value: formValues } = await Swal.fire({
+      const tipoNorm = (mov.tipo || '').toLowerCase();
+      const updatePreview = () => {
+        const preview = document.getElementById('edit-mov-preview');
+        const iconWrapper = document.getElementById('edit-mov-icon');
+        const badge = document.getElementById('edit-mov-badge');
+        const cuenta = document.getElementById('edit-mov-cuenta');
+        const amount = document.getElementById('edit-mov-amount');
+        const desc = document.getElementById('edit-mov-desc');
+        
+        if (preview) preview.style.background = formState.color || '#6c4fa1';
+        
+        // Renderizar icono usando ReactDOM
+        if (iconWrapper) {
+          iconWrapper.innerHTML = '';
+          const iconElement = renderIcon(formState.icon, { fontSize: 28, color: '#fff' });
+          import('react-dom').then((ReactDOM) => {
+            if ('render' in ReactDOM) {
+              (ReactDOM as any).render(iconElement, iconWrapper);
+            }
+          });
+        }
+        
+        if (badge) { 
+          badge.textContent = mov.tipo; 
+          badge.style.background = tipoNorm === 'ingreso' ? '#1de9b6' : (tipoNorm === 'ahorro' ? '#4fc3f7' : '#ff8a80'); 
+        }
+        if (cuenta) cuenta.textContent = (cuentasList.find((c: any) => c.id === Number(formState.cuenta_id))?.nombre || mov.cuenta);
+        if (amount) amount.textContent = `${tipoNorm === 'ingreso' || tipoNorm === 'ahorro' ? '+' : '-'}S/ ${Number(formState.monto || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        if (desc) desc.textContent = formState.descripcion;
+        
+        // Actualizar el preview del icono en el selector
+        const iconPreview = document.getElementById('edit-mov-icon-preview');
+        if (iconPreview) {
+          iconPreview.innerHTML = '';
+          iconPreview.style.background = `${formState.color}20`;
+          iconPreview.style.border = `2px solid ${formState.color}40`;
+          const previewIconElement = renderIcon(formState.icon, { fontSize: 24, color: formState.color });
+          import('react-dom').then((ReactDOM) => {
+            if ('render' in ReactDOM) {
+              (ReactDOM as any).render(previewIconElement, iconPreview);
+            }
+          });
+        }
+      };
+
+      const { value: confirmed } = await Swal.fire({
         title: 'Editar movimiento',
-        html:
-          `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:720px">` +
-          // Preview en vivo
-          `<div id=\"swal-preview\" style=\"grid-column:1/3; display:flex; align-items:center; gap:14px; padding:14px; border-radius:12px; background:${defaultColor || ((mov.tipo||'').toLowerCase()==='ingreso' || (mov.tipo||'').toLowerCase()==='ahorro' ? 'linear-gradient(90deg,#1de9b6 0%, #43a047 100%)' : 'linear-gradient(90deg,#ff7043 0%, #c62828 100%)')}; color:#fff; box-shadow:0 2px 8px #0002; margin-bottom:6px;\">`+
-          `<span id=\"swal-prev-icon\" style=\"font-size:28px\">${defaultIcon}</span>`+
-          `<div style=\"display:flex; flex-direction:column; gap:4px\">`+
-          `<div id=\"swal-prev-desc\" style=\"font-weight:700\">${mov.descripcion || ''}</div>`+
-          `<div id=\"swal-prev-amount\" style=\"font-weight:800\">${((mov.tipo||'').toLowerCase()==='ingreso' || (mov.tipo||'').toLowerCase()==='ahorro'?'+':'-')}S/ ${Number(mov.monto||0).toLocaleString(undefined,{minimumFractionDigits:2})}</div>`+
-          `<div style=\"display:flex; align-items:center; gap:8px\">`+
-          `<span id=\"swal-prev-badge\" style=\"font-size:12px; padding:4px 8px; border-radius:12px; font-weight:800; text-transform:capitalize\">${mov.tipo}</span>`+
-          `<span id=\"swal-prev-cuenta\" style=\"font-size:12px; opacity:0.9\">${mov.cuenta || ''}</span>`+
-          `</div>`+
-          `</div>`+
-          `</div>`+
-          `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Cuenta</label><select id="swal-cuenta" class="swal2-select">${cuentasOptions}</select></div>` +
-          `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Tipo</label><input id="swal-tipo" class="swal2-input" value="${mov.tipo}" disabled></div>` +
-          `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Monto</label><input id="swal-monto" class="swal2-input" placeholder="Monto" value="${mov.monto}" type="number" step="0.01"></div>` +
-          `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Fecha</label><input id="swal-fecha" class="swal2-input" placeholder="Fecha" value="${(mov.fecha || '').slice(0, 10)}" type="date"></div>` +
-          `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Icono</label><input id="swal-icon" class="swal2-input" placeholder="Emoji o icono" value="${defaultIcon}"></div>` +
-          `<div style="display:flex;flex-direction:column"><label style="font-weight:700;margin-bottom:6px">Color</label><input id="swal-color" class="swal2-input" type="color" value="${defaultColor || '#6c4fa1'}"></div>` +
-          `<div style="display:flex;flex-direction:column;grid-column:1/3"><label style="font-weight:700;margin-bottom:6px">Descripción</label><input id="swal-descripcion" class="swal2-input" placeholder="Descripción" value="${mov.descripcion || ''}"></div>` +
-          `<div style="display:flex;flex-direction:column;grid-column:1/3"><label style="font-weight:700;margin-bottom:6px">Categoría (opcional)</label><select id="swal-categoria" class="swal2-select"><option value="">- Ninguna -</option>${categoriasOptions}</select></div>` +
-          `</div>`,
-        width: 760,
+        html: `
+          <div id="edit-mov-container" style="display: flex; flex-direction: column; gap: 12px; max-width: 600px; margin: 0 auto;">
+            <div id="edit-mov-preview" style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 12px; background: ${formState.color}; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <div id="edit-mov-icon" style="font-size: 28px; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;"></div>
+              <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+                <div id="edit-mov-desc" style="font-weight: 700;">${formState.descripcion}</div>
+                <div id="edit-mov-amount" style="font-weight: 800;">${tipoNorm === 'ingreso' || tipoNorm === 'ahorro' ? '+' : '-'}S/ ${Number(formState.monto).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span id="edit-mov-badge" style="font-size: 12px; padding: 4px 8px; border-radius: 12px; font-weight: 800; text-transform: capitalize;">${mov.tipo}</span>
+                  <span id="edit-mov-cuenta" style="font-size: 12px; opacity: 0.9;">${mov.cuenta || ''}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div style="display: flex; flex-direction: column; align-items: center;">
+                <label style="font-weight: 700; margin-bottom: 6px;">Cuenta</label>
+                <select id="edit-mov-cuenta-select" class="swal2-select" style="margin: 0; width: 100%; box-sizing: border-box; margin-top: 12px;">
+                  ${cuentasList.map((c: any) => `<option value="${c.id}" ${c.id === formState.cuenta_id ? 'selected' : ''}>${c.nombre}</option>`).join('')}
+                </select>
+              </div>
+              
+              <div style="display: flex; flex-direction: column; align-items: center;">
+                <label style="font-weight: 700; margin-bottom: 6px;">Tipo</label>
+                <input class="swal2-input" value="${mov.tipo}" disabled style="margin: 0; text-align: center; text-transform: capitalize; width: 100%; box-sizing: border-box;">
+              </div>
+              
+              <div style="display: flex; flex-direction: column; align-items: center;">
+                <label style="font-weight: 700; margin-bottom: 6px;">Monto</label>
+                <input id="edit-mov-monto" type="number" step="0.01" class="swal2-input" value="${formState.monto}" style="margin: 0; width: 100%; box-sizing: border-box;">
+              </div>
+              
+              <div style="display: flex; flex-direction: column; align-items: center;">
+                <label style="font-weight: 700; margin-bottom: 6px;">Fecha</label>
+                <input id="edit-mov-fecha" type="date" class="swal2-input" value="${formState.fecha}" style="margin: 0; width: 100%; box-sizing: border-box;">
+              </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <label style="font-weight: 700; margin-bottom: 6px;">Icono</label>
+              <div style="display: flex; gap: 8px; align-items: center; justify-content: center; width: 100%;">
+                <div id="edit-mov-icon-preview" style="padding: 8px; background: ${formState.color}20; border: 2px solid ${formState.color}40; border-radius: 8px; display: flex; align-items: center; justify-content: center; min-width: 48px; height: 48px;"></div>
+                <select id="edit-mov-icon-select" class="swal2-select" style="margin: 0; flex: 1; max-width: 200px;">
+                  <option value="FaMoneyBillWave" ${formState.icon === 'FaMoneyBillWave' ? 'selected' : ''}>Dinero</option>
+                  <option value="FaWallet" ${formState.icon === 'FaWallet' ? 'selected' : ''}>Billetera</option>
+                  <option value="FaUniversity" ${formState.icon === 'FaUniversity' ? 'selected' : ''}>Banco</option>
+                  <option value="FaAppleAlt" ${formState.icon === 'FaAppleAlt' ? 'selected' : ''}>Comida</option>
+                  <option value="FaCar" ${formState.icon === 'FaCar' ? 'selected' : ''}>Transporte</option>
+                  <option value="FaCreditCard" ${formState.icon === 'FaCreditCard' ? 'selected' : ''}>Tarjeta</option>
+                  <option value="FaLightning" ${formState.icon === 'FaLightning' ? 'selected' : ''}>Servicios</option>
+                  <option value="FaGift" ${formState.icon === 'FaGift' ? 'selected' : ''}>Regalo</option>
+                  <option value="FaShoppingCart" ${formState.icon === 'FaShoppingCart' ? 'selected' : ''}>Compras</option>
+                  <option value="FaHospital" ${formState.icon === 'FaHospital' ? 'selected' : ''}>Salud</option>
+                </select>
+                <input id="edit-mov-color" type="color" value="${formState.color}" style="width: 48px; height: 48px; padding: 0; border: 2px solid #ddd; border-radius: 8px; cursor: pointer;">
+              </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <label style="font-weight: 700; margin-bottom: 6px;">Descripción</label>
+              <input id="edit-mov-descripcion" type="text" class="swal2-input" value="${formState.descripcion}" placeholder="Descripción" style="margin: 0; width: 100%;">
+            </div>
+            
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <label style="font-weight: 700; margin-bottom: 6px;">Categoría (opcional)</label>
+              <select id="edit-mov-categoria" class="swal2-select" style="margin: 0; width: 100%;">
+                <option value="">- Ninguna -</option>
+                ${categoriasList.map((c: any) => `<option value="${c.id}" ${c.id === formState.categoria_id ? 'selected' : ''}>${c.nombre}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+        `,
+        width: 700,
         focusConfirm: false,
         showCancelButton: true,
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         didOpen: () => {
-          const $ = (sel) => document.querySelector(sel);
-          const prev = $('#swal-preview') as HTMLElement;
-          const $icon = $('#swal-icon') as HTMLInputElement;
-          const $color = $('#swal-color') as HTMLInputElement;
-          const $monto = $('#swal-monto') as HTMLInputElement;
-          const $desc = $('#swal-descripcion') as HTMLInputElement;
-          const $cuenta = $('#swal-cuenta') as HTMLSelectElement;
-          const tipoNorm = (mov.tipo || '').toLowerCase();
-          const fallbackBg = (tipoNorm === 'ingreso' || tipoNorm === 'ahorro') ? 'linear-gradient(90deg,#1de9b6 0%, #43a047 100%)' : 'linear-gradient(90deg,#ff7043 0%, #c62828 100%)';
-          const render = () => {
-            const ic = ($icon && $icon.value) || defaultIcon;
-            const col = ($color && $color.value) || '';
-            const monto = parseFloat(($monto && $monto.value) || String(mov.monto||0));
-            const desc = ($desc && $desc.value) || '';
-            const cuentaText = $cuenta && $cuenta.options && $cuenta.selectedIndex >= 0 ? $cuenta.options[$cuenta.selectedIndex].text : (mov.cuenta || '');
-            const sign = (tipoNorm === 'ingreso' || tipoNorm === 'ahorro') ? '+' : '-';
-            const iconEl = $('#swal-prev-icon') as HTMLElement;
-            const amtEl = $('#swal-prev-amount') as HTMLElement;
-            const descEl = $('#swal-prev-desc') as HTMLElement;
-            const cuentaEl = $('#swal-prev-cuenta') as HTMLElement;
-            const badgeEl = $('#swal-prev-badge') as HTMLElement;
-            if (iconEl) iconEl.textContent = ic;
-            if (amtEl) amtEl.textContent = `${sign}S/ ${Number(monto||0).toLocaleString(undefined,{minimumFractionDigits:2})}`;
-            if (descEl) descEl.textContent = desc;
-            if (cuentaEl) cuentaEl.textContent = cuentaText;
-            if (badgeEl) {
-              badgeEl.textContent = mov.tipo;
-              const bg = tipoNorm === 'ingreso' ? '#1de9b6' : (tipoNorm === 'ahorro' ? '#4fc3f7' : '#ff8a80');
-              const fg = tipoNorm === 'ingreso' || tipoNorm === 'ahorro' ? '#222' : '#222';
-              (badgeEl as HTMLElement).style.background = bg;
-              (badgeEl as HTMLElement).style.color = fg;
-            }
-            if (prev) prev.style.background = col ? col : fallbackBg;
+          const cuentaSelect = document.getElementById('edit-mov-cuenta-select') as HTMLSelectElement;
+          const montoInput = document.getElementById('edit-mov-monto') as HTMLInputElement;
+          const fechaInput = document.getElementById('edit-mov-fecha') as HTMLInputElement;
+          const iconSelect = document.getElementById('edit-mov-icon-select') as HTMLSelectElement;
+          const colorInput = document.getElementById('edit-mov-color') as HTMLInputElement;
+          const descripcionInput = document.getElementById('edit-mov-descripcion') as HTMLInputElement;
+          const categoriaSelect = document.getElementById('edit-mov-categoria') as HTMLSelectElement;
+
+          const onChange = () => {
+            formState = {
+              cuenta_id: Number(cuentaSelect?.value || formState.cuenta_id),
+              monto: parseFloat(montoInput?.value || String(formState.monto)),
+              descripcion: descripcionInput?.value || formState.descripcion,
+              fecha: fechaInput?.value || formState.fecha,
+              categoria_id: categoriaSelect?.value || formState.categoria_id,
+              icon: iconSelect?.value || formState.icon,
+              color: colorInput?.value || formState.color
+            };
+            updatePreview();
           };
-          ['input','change'].forEach(ev => {
-            $icon && $icon.addEventListener(ev, render);
-            $color && $color.addEventListener(ev, render);
-            $monto && $monto.addEventListener(ev, render);
-            $desc && $desc.addEventListener(ev, render);
-            $cuenta && $cuenta.addEventListener(ev, render);
+
+          [cuentaSelect, montoInput, fechaInput, iconSelect, colorInput, descripcionInput, categoriaSelect].forEach(el => {
+            el?.addEventListener('change', onChange);
+            el?.addEventListener('input', onChange);
           });
-          render();
+
+          updatePreview();
         },
         preConfirm: () => {
-          const cuenta_id = (document.getElementById('swal-cuenta') as HTMLSelectElement).value;
-          const monto = parseFloat((document.getElementById('swal-monto') as HTMLInputElement).value || '0');
-          const descripcion = (document.getElementById('swal-descripcion') as HTMLInputElement).value || '';
-          const fecha = (document.getElementById('swal-fecha') as HTMLInputElement).value || '';
-          const icon = (document.getElementById('swal-icon') as HTMLInputElement).value || '';
-          const color = (document.getElementById('swal-color') as HTMLInputElement).value || '';
-          const categoria_id = (document.getElementById('swal-categoria') as HTMLSelectElement).value || null;
-          if (!cuenta_id) { Swal.showValidationMessage('Cuenta requerida'); return false; }
-          if (!monto || isNaN(monto) || monto <= 0) { Swal.showValidationMessage('Monto inválido'); return false; }
-          if (!fecha) { Swal.showValidationMessage('Fecha requerida'); return false; }
-          return { cuenta_id: Number(cuenta_id), monto, descripcion, fecha, categoria_id: categoria_id ? Number(categoria_id) : null, icon, color };
+          if (!formState.cuenta_id) { Swal.showValidationMessage('Cuenta requerida'); return false; }
+          if (!formState.monto || isNaN(formState.monto) || formState.monto <= 0) { Swal.showValidationMessage('Monto inválido'); return false; }
+          if (!formState.fecha) { Swal.showValidationMessage('Fecha requerida'); return false; }
+          return formState;
         }
       });
-      if (!formValues) return;
-      const body = { cuenta_id: formValues.cuenta_id, tipo: mov.tipo, monto: formValues.monto, descripcion: formValues.descripcion, fecha: formValues.fecha, categoria_id: formValues.categoria_id, icon: formValues.icon, color: formValues.color };
-      const res = await apiFetch(`${API_BASE}/api/transacciones/${mov.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+      if (!confirmed) return;
+
+      const body = { 
+        cuenta_id: Number(confirmed.cuenta_id), 
+        tipo: mov.tipo, 
+        monto: Number(confirmed.monto), 
+        descripcion: confirmed.descripcion, 
+        fecha: confirmed.fecha, 
+        categoria_id: confirmed.categoria_id ? Number(confirmed.categoria_id) : null, 
+        icon: confirmed.icon, 
+        color: confirmed.color 
+      };
+      
+      const res = await apiFetch(`${API_BASE}/api/transacciones/${mov.id}`, { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(body) 
+      });
+      
       if (res.ok) {
         Swal.fire({ icon: 'success', title: 'Movimiento actualizado', timer: 1200, showConfirmButton: false });
         await refreshMovimientos();
