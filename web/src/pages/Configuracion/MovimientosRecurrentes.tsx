@@ -13,6 +13,7 @@ interface Movimiento {
     tipo: string;
     cuenta_id: number;
     monto: number;
+    descripcion?: string;
     frecuencia: string;
     inicio: string;
     fin?: string;
@@ -326,6 +327,7 @@ const MovimientosRecurrentes = () => {
                             <th style={{ padding: '14px 18px', textAlign: 'center', fontWeight: 900, color: '#fff', fontSize: 17, whiteSpace: 'nowrap' }}>Tipo</th>
                             <th style={{ padding: '14px 18px', textAlign: 'center', fontWeight: 900, color: '#fff', fontSize: 17, whiteSpace: 'nowrap' }}>Cuenta</th>
                             <th style={{ padding: '14px 18px', textAlign: 'center', fontWeight: 900, color: '#fff', fontSize: 17, whiteSpace: 'nowrap' }}>Monto</th>
+                            <th style={{ padding: '14px 18px', textAlign: 'center', fontWeight: 900, color: '#fff', fontSize: 17, whiteSpace: 'nowrap' }}>Descripción</th>
                             <th style={{ padding: '14px 18px', textAlign: 'center', fontWeight: 900, color: '#fff', fontSize: 17, whiteSpace: 'nowrap' }}>Frecuencia</th>
                             <th style={{ padding: '14px 18px', textAlign: 'center', fontWeight: 900, color: '#fff', fontSize: 17, whiteSpace: 'nowrap' }}>Inicio</th>
                             <th style={{ padding: '14px 18px', textAlign: 'center', fontWeight: 900, color: '#fff', fontSize: 17, whiteSpace: 'nowrap' }}>Fin</th>
@@ -370,6 +372,7 @@ const MovimientosRecurrentes = () => {
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#e0f2fe', fontWeight: 600 }}>{mov.tipo}</td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#bae6fd' }}>{cuentasMap[mov.cuenta_id] ?? mov.cuenta_id}</td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#67e8f9', fontWeight: 700 }}>S/. {mov.monto}</td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#a5f3fc', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={mov.descripcion || '-'}>{mov.descripcion || '-'}</td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#e0f2fe' }}>{mov.frecuencia}</td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#e0f2fe' }}>{mov.inicio}</td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#e0f2fe' }}>{mov.fin || '-'}</td>

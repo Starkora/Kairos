@@ -6,6 +6,7 @@ import Swal from 'sweetalert2';
 import { loadPreferences, savePreferences } from '../../utils/preferences';
 
 type Presupuesto = { id?: number; categoria_id: number; categoria?: string; anio: number; mes: number; monto: number; gastado?: number };
+type MovimientoDetalle = { descripcion: string; monto: number; fecha: string };
 
 export default function Presupuestos() {
   const hoy = new Date();
@@ -14,6 +15,7 @@ export default function Presupuestos() {
   const [items, setItems] = useState<Presupuesto[]>([]);
   const [categorias, setCategorias] = useState<{id:number,nombre:string}[]>([]);
   const [loading, setLoading] = useState(true);
+  const [movimientosPorCategoria, setMovimientosPorCategoria] = useState<Record<number, MovimientoDetalle[]>>({});
   // Umbrales configurables
   const [thresholdWarn, setThresholdWarn] = useState<number>(() => {
     try { const v = localStorage.getItem('kairos-budget-threshold-warn'); return v ? Number(v) : 80; } catch { return 80; }
@@ -63,6 +65,41 @@ export default function Presupuestos() {
       const dataBudgets = await parseJson(resBudgets);
       const dataCats = await parseJson(resCats);
       setCategorias(Array.isArray(dataCats) ? dataCats : []);
+      
+      // Cargar movimientos del mes para obtener detalle de gastos
+      try {
+        const resMovimientos = await fetch(`${API_BASE}/api/transacciones?plataforma=web`, { 
+          headers: { 'Authorization': 'Bearer ' + getToken() } 
+        });
+        const dataMovimientos = await parseJson(resMovimientos);
+        
+        // Filtrar movimientos del mes y año seleccionados y agrupar por categoría
+        const movimientosDelMes = (Array.isArray(dataMovimientos) ? dataMovimientos : []).filter((mov: any) => {
+          if (!mov.fecha) return false;
+          const fecha = new Date(mov.fecha);
+          return fecha.getFullYear() === a && fecha.getMonth() + 1 === m && (mov.tipo === 'egreso' || mov.tipo === 'ahorro');
+        });
+        
+        const movimientosMap: Record<number, MovimientoDetalle[]> = {};
+        movimientosDelMes.forEach((mov: any) => {
+          if (mov.categoria_id) {
+            if (!movimientosMap[mov.categoria_id]) {
+              movimientosMap[mov.categoria_id] = [];
+            }
+            movimientosMap[mov.categoria_id].push({
+              descripcion: mov.descripcion || 'Sin descripción',
+              monto: Number(mov.monto || 0),
+              fecha: mov.fecha
+            });
+          }
+        });
+        
+        setMovimientosPorCategoria(movimientosMap);
+      } catch (err) {
+        console.error('Error cargando movimientos:', err);
+        setMovimientosPorCategoria({});
+      }
+      
       // Unir: todas las categorías con presupuesto (o 0)
       const mapByCat = new Map<number, Presupuesto>();
       (Array.isArray(dataBudgets) ? dataBudgets : []).forEach((b: any) => mapByCat.set(Number(b.categoria_id), {
@@ -380,7 +417,15 @@ export default function Presupuestos() {
                         style={{ width: 120 }}
                       />
                     </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'right' }}>S/ {Number(it.gastado||0).toFixed(2)}</td>
+                    <td 
+                      style={{ padding: '10px 14px', textAlign: 'right', cursor: 'pointer', position: 'relative' }}
+                      title={movimientosPorCategoria[it.categoria_id]?.length > 0 
+                        ? `Detalle de gastos:\n${movimientosPorCategoria[it.categoria_id].map(m => `• ${m.descripcion}: S/ ${m.monto.toFixed(2)} (${new Date(m.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })})`).join('\n')}`
+                        : 'Sin movimientos registrados'
+                      }
+                    >
+                      S/ {Number(it.gastado||0).toFixed(2)}
+                    </td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ background: '#374151', height: 12, borderRadius: 8, overflow: 'hidden' }}>
                         <div style={{ width: `${pct}%`, background: warn, height: 12 }} />
