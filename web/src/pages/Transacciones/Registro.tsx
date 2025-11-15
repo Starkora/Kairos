@@ -72,27 +72,8 @@ export default function Registro() {
       .catch(() => setCuentas([]));
   }, []);
 
-  // Cargar transacciones recientes (últimas 5)
-  React.useEffect(() => {
-    fetch(`${API_BASE}/api/transacciones?plataforma=web`, {
-      headers: {
-        'Authorization': 'Bearer ' + getToken()
-      }
-    })
-      .then(res => res.ok ? res.json() : [])
-      .then(data => {
-        if (Array.isArray(data)) {
-          const sorted = data.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-          setTransaccionesRecientes(sorted.slice(0, 5));
-          // Generar plantillas basadas en los movimientos más frecuentes
-          generarPlantillas(data);
-        }
-      })
-      .catch(() => setTransaccionesRecientes([]));
-  }, []);
-
   // Generar plantillas rápidas basadas en historial
-  const generarPlantillas = (movimientos: any[]) => {
+  const generarPlantillas = React.useCallback((movimientos: any[]) => {
     const frecuencia: Record<string, any> = {};
     movimientos.forEach(mov => {
       if (mov.tipo === 'transferencia') return;
@@ -121,7 +102,35 @@ export default function Registro() {
       }));
     
     setPlantillas(topPlantillas);
-  };
+  }, []);
+
+  // Función para cargar transacciones recientes
+  const cargarTransaccionesRecientes = React.useCallback(async () => {
+    try {
+      const apiFetch = (await import('../../utils/apiFetch')).default;
+      const res = await apiFetch(`${API_BASE}/api/transacciones?plataforma=web`);
+      const data = res.ok ? await res.json() : [];
+      if (Array.isArray(data)) {
+        const sorted = data.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+        setTransaccionesRecientes(sorted.slice(0, 5));
+        // Generar plantillas basadas en los movimientos más frecuentes
+        generarPlantillas(data);
+      }
+    } catch (err) {
+      setTransaccionesRecientes([]);
+    }
+  }, [generarPlantillas]);
+
+  // Cargar transacciones recientes (últimas 5)
+  React.useEffect(() => {
+    cargarTransaccionesRecientes();
+    
+    // Escuchar evento de refresco desde otros componentes (ej. Calendario)
+    const handleRefresh = () => cargarTransaccionesRecientes();
+    window.addEventListener('movimientos:refresh', handleRefresh);
+    
+    return () => window.removeEventListener('movimientos:refresh', handleRefresh);
+  }, [cargarTransaccionesRecientes]);
 
   // Helper para renderizar iconos
   const renderIcon = (iconName: string, style?: any) => {
@@ -520,16 +529,7 @@ export default function Registro() {
             .then(data => setCuentas(Array.isArray(data) ? data : []))
             .catch(() => setCuentas([]));
           // Refrescar transacciones recientes
-          (await import('../../utils/apiFetch')).default(`${API_BASE}/api/transacciones?plataforma=web`)
-            .then(res => res.ok ? res.json() : [])
-            .then(data => {
-              if (Array.isArray(data)) {
-                const sorted = data.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-                setTransaccionesRecientes(sorted.slice(0, 5));
-                generarPlantillas(data);
-              }
-            })
-            .catch(() => {});
+          cargarTransaccionesRecientes();
           // Emitir evento para que otros componentes (ej. Cuentas, Calendario) puedan refrescarse
           try {
             window.dispatchEvent(new Event('cuentas:refresh'));
