@@ -15,19 +15,16 @@ export default function NoCategoriasAlert() {
   useEffect(() => {
     // Resetear dismissed al cambiar de ruta
     setDismissed(false);
-    console.log('🔔 NoCategoriasAlert - Ruta cambiada, reseteando dismissed');
 
     // Verificar si hay categorías
     const checkCategories = async () => {
       try {
         const token = getToken();
         if (!token) {
-          console.log('🔔 NoCategoriasAlert - No hay token');
           setHasCategories(true); // Si no hay token, no mostrar alerta
           return;
         }
 
-        console.log('🔔 NoCategoriasAlert - Verificando categorías...');
         const [categoriasRes, categoriasCuentaRes] = await Promise.all([
           fetch(`${API_BASE}/api/categorias?plataforma=web`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -37,19 +34,12 @@ export default function NoCategoriasAlert() {
           })
         ]);
 
-        console.log('🔔 NoCategoriasAlert - Response status:', categoriasRes.ok, categoriasCuentaRes.ok);
-
         if (categoriasRes.ok && categoriasCuentaRes.ok) {
           const categorias = await categoriasRes.json();
           const categoriasCuenta = await categoriasCuentaRes.json();
           
-          console.log('🔔 NoCategoriasAlert - Categorías:', categorias);
-          console.log('🔔 NoCategoriasAlert - Categorías cuenta:', categoriasCuenta);
-          
           const hasCat = Array.isArray(categorias) && categorias.length > 0;
           const hasCatCuenta = Array.isArray(categoriasCuenta) && categoriasCuenta.length > 0;
-          
-          console.log('🔔 NoCategoriasAlert - hasCat:', hasCat, 'hasCatCuenta:', hasCatCuenta);
           
           // Guardar estados individuales
           setHasCategorias(hasCat);
@@ -58,22 +48,18 @@ export default function NoCategoriasAlert() {
           // Mostrar alerta si falta alguna de las dos
           const hasAllCategories = hasCat && hasCatCuenta;
           setHasCategories(hasAllCategories);
-          console.log('🔔 NoCategoriasAlert - setHasCategories:', hasAllCategories);
 
           // Si no tiene todas las categorías, ocultar automáticamente después de 10 segundos
           if (!hasAllCategories) {
             const timer = setTimeout(() => {
-              console.log('🔔 NoCategoriasAlert - Auto-descartando después de 10 segundos');
               setDismissed(true);
             }, 10000);
             return () => clearTimeout(timer);
           }
         } else {
-          console.log('🔔 NoCategoriasAlert - Error en respuestas');
           setHasCategories(true); // Si hay error, no mostrar
         }
       } catch (error) {
-        console.error('🔔 NoCategoriasAlert - Error verificando categorías:', error);
         setHasCategories(true); // Si hay error, no mostrar
       }
     };
@@ -83,7 +69,6 @@ export default function NoCategoriasAlert() {
 
   const handleDismiss = () => {
     setDismissed(true);
-    console.log('🔔 NoCategoriasAlert - Alerta descartada (solo para esta vista)');
   };
 
   const handleGoToCategories = () => {
@@ -93,11 +78,8 @@ export default function NoCategoriasAlert() {
 
   // No mostrar si: está cargando (null), tiene categorías (true), fue descartada, o está en la página de categorías
   if (hasCategories === null || hasCategories === true || dismissed || location.pathname === '/categorias') {
-    console.log('🔔 NoCategoriasAlert - NO SE MUESTRA. hasCategories:', hasCategories, 'dismissed:', dismissed, 'pathname:', location.pathname);
     return null;
   }
-
-  console.log('🔔 NoCategoriasAlert - SE MUESTRA LA ALERTA');
 
   // Determinar el mensaje según qué categorías faltan
   const faltanCategorias = !hasCategorias;
