@@ -16,6 +16,8 @@ export default function Presupuestos() {
   const [categorias, setCategorias] = useState<{id:number,nombre:string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [movimientosPorCategoria, setMovimientosPorCategoria] = useState<Record<number, MovimientoDetalle[]>>({});
+  const [tooltipCategoria, setTooltipCategoria] = useState<number | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   // Umbrales configurables
   const [thresholdWarn, setThresholdWarn] = useState<number>(() => {
     try { const v = localStorage.getItem('kairos-budget-threshold-warn'); return v ? Number(v) : 80; } catch { return 80; }
@@ -419,10 +421,14 @@ export default function Presupuestos() {
                     </td>
                     <td 
                       style={{ padding: '10px 14px', textAlign: 'right', cursor: 'pointer', position: 'relative' }}
-                      title={movimientosPorCategoria[it.categoria_id]?.length > 0 
-                        ? `Detalle de gastos:\n${movimientosPorCategoria[it.categoria_id].map(m => `• ${m.descripcion}: S/ ${m.monto.toFixed(2)} (${new Date(m.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })})`).join('\n')}`
-                        : 'Sin movimientos registrados'
-                      }
+                      onMouseEnter={(e) => {
+                        if (movimientosPorCategoria[it.categoria_id]?.length > 0) {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setTooltipPosition({ x: rect.left, y: rect.bottom + window.scrollY });
+                          setTooltipCategoria(it.categoria_id);
+                        }
+                      }}
+                      onMouseLeave={() => setTooltipCategoria(null)}
                     >
                       S/ {Number(it.gastado||0).toFixed(2)}
                     </td>
@@ -444,6 +450,95 @@ export default function Presupuestos() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Tooltip personalizado */}
+      {tooltipCategoria !== null && movimientosPorCategoria[tooltipCategoria]?.length > 0 && (
+        <div
+          style={{
+            position: 'fixed',
+            left: tooltipPosition.x,
+            top: tooltipPosition.y + 5,
+            background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+            border: '2px solid #3b82f6',
+            borderRadius: 12,
+            padding: 16,
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+            zIndex: 10000,
+            minWidth: 300,
+            maxWidth: 400,
+            maxHeight: 300,
+            overflowY: 'auto',
+            pointerEvents: 'none'
+          }}
+        >
+          <div style={{ 
+            fontSize: 14, 
+            fontWeight: 700, 
+            color: '#fff', 
+            marginBottom: 12,
+            borderBottom: '1px solid #374151',
+            paddingBottom: 8
+          }}>
+            Últimos gastos ({movimientosPorCategoria[tooltipCategoria].length > 2 ? '2' : movimientosPorCategoria[tooltipCategoria].length}):
+          </div>
+          {movimientosPorCategoria[tooltipCategoria].slice(0, 2).map((m, idx) => {
+            const fecha = new Date(m.fecha);
+            const dia = fecha.getDate();
+            const mes = fecha.toLocaleDateString('es-ES', { month: 'short' });
+            
+            return (
+              <div
+                key={idx}
+                style={{
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: 8,
+                  padding: 12,
+                  marginBottom: 8,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6
+                }}
+              >
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'flex-start',
+                  gap: 8
+                }}>
+                  <div style={{ 
+                    fontSize: 13, 
+                    color: '#e5e7eb',
+                    fontWeight: 600,
+                    flex: 1,
+                    wordBreak: 'break-word'
+                  }}>
+                    {m.descripcion}
+                  </div>
+                  <div style={{ 
+                    fontSize: 14, 
+                    fontWeight: 700, 
+                    color: '#ef4444',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    S/ {m.monto.toFixed(2)}
+                  </div>
+                </div>
+                <div style={{ 
+                  fontSize: 11, 
+                  color: '#9ca3af',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4
+                }}>
+                  <span>📅</span>
+                  <span>{dia}-{mes}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
