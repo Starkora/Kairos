@@ -2,7 +2,7 @@ import React from 'react';
 import API_BASE from '../../utils/apiBase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { getToken } from '../../utils/auth';
-import { FaWallet, FaArrowDown, FaArrowUp, FaUniversity, FaMoneyBillWave, FaPiggyBank, FaCalendarAlt, FaPlus, FaChartLine, FaBullseye, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
+import { FaWallet, FaArrowDown, FaArrowUp, FaUniversity, FaMoneyBillWave, FaPiggyBank, FaCalendarAlt, FaPlus, FaChartLine, FaBullseye, FaExclamationTriangle, FaCheckCircle, FaInfoCircle, FaMousePointer } from 'react-icons/fa';
 import type { IconType } from 'react-icons';
 import { useNavigate } from 'react-router-dom';
 
@@ -51,6 +51,7 @@ export default function Dashboard() {
   const [month, setMonth] = React.useState<number | 'all'>('all');
   // Permitir selección múltiple de segmentos
   const [segmentos, setSegmentos] = React.useState({ Ahorro: true, Gasto: true, Ingreso: true });
+  const [categoriaModal, setCategoriaModal] = React.useState<any>(null);
 
   const handleSegmentoChange = (e) => {
     const { name, checked } = e.target;
@@ -1014,11 +1015,23 @@ export default function Dashboard() {
 
       {/* Gráfico de Distribución por Categorías */}
       <div className="card" style={{ marginTop: 24 }}>
-        <h3 style={{ marginBottom: 16, color: 'var(--color-text)' }}>Distribución de Gastos por Categoría</h3>
+        <div style={{ marginBottom: 20 }}>
+          <h3 style={{ marginBottom: 8, color: 'var(--color-text)' }}>Distribución de Gastos por Categoría</h3>
+          <div style={{
+            fontSize: 13,
+            color: 'var(--color-text-secondary)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6
+          }}>
+            {React.createElement(FaMousePointer as any, { size: 13 })}
+            <span>Haz clic en una categoría para ver sus detalles</span>
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Gráfico de Pie */}
           <div style={{ flex: 1, minWidth: 300, display: 'flex', justifyContent: 'center' }}>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={450}>
               <PieChart>
                 <Pie
                   data={pieData}
@@ -1026,152 +1039,39 @@ export default function Dashboard() {
                   cy="50%"
                   labelLine={false}
                   label={(entry: any) => `${entry.name}: ${(entry.percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
+                  outerRadius={150}
                   fill="#8884d8"
                   dataKey="value"
+                  isAnimationActive={false}
+                  onClick={(data) => {
+                    if (data && data.name) {
+                      const gastosCategoria = filteredMovs
+                        .filter(m => m.tipo === 'egreso' && (m.categoria || 'Sin categoría') === data.name)
+                        .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+                      
+                      setCategoriaModal({
+                        nombre: data.name,
+                        monto: data.value,
+                        color: data.fill,
+                        gastos: gastosCategoria
+                      });
+                    }
+                  }}
+                  style={{ cursor: 'pointer' }}
                 >
                   {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={COLORS[index % COLORS.length]}
+                      style={{ 
+                        transition: 'opacity 0.2s',
+                        cursor: 'pointer'
+                      }}
+                    />
                   ))}
                 </Pie>
                 <Tooltip 
-                  content={(props: any) => {
-                    if (!props.active || !props.payload || !props.payload[0]) return null;
-                    const data = props.payload[0];
-                    const categoria = data.name;
-                    const monto = data.value;
-                    
-                    // Obtener gastos de esta categoría
-                    const gastosCategoria = filteredMovs
-                      .filter(m => m.tipo === 'egreso' && (m.categoria || 'Sin categoría') === categoria)
-                      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-                      .slice(0, 10); // Máximo 10 para no hacer el tooltip muy grande
-
-                    return (
-                      <div style={{
-                        background: 'var(--color-card)',
-                        border: `2px solid ${data.payload.fill}`,
-                        borderRadius: 8,
-                        padding: '12px 16px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                        maxWidth: 350,
-                        maxHeight: 400,
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
-                        pointerEvents: 'auto',
-                        cursor: 'default'
-                      }}>
-                        <div style={{ 
-                          fontWeight: 700, 
-                          fontSize: 15, 
-                          marginBottom: 8,
-                          color: 'var(--color-text)',
-                          borderBottom: `2px solid ${data.payload.fill}`,
-                          paddingBottom: 8,
-                          position: 'sticky',
-                          top: 0,
-                          background: 'var(--color-card)',
-                          zIndex: 1
-                        }}>
-                          {categoria}
-                        </div>
-                        <div style={{ 
-                          fontSize: 18, 
-                          fontWeight: 700, 
-                          color: data.payload.fill,
-                          marginBottom: 12,
-                          position: 'sticky',
-                          top: 39,
-                          background: 'var(--color-card)',
-                          zIndex: 1
-                        }}>
-                          S/ {Number(monto).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        </div>
-                        
-                        {gastosCategoria.length > 0 && (
-                          <>
-                            <div style={{ 
-                              fontSize: 12, 
-                              color: 'var(--color-text-secondary)', 
-                              marginBottom: 8,
-                              fontWeight: 600,
-                              position: 'sticky',
-                              top: 75,
-                              background: 'var(--color-card)',
-                              zIndex: 1,
-                              paddingBottom: 4
-                            }}>
-                              Últimos gastos ({gastosCategoria.length}):
-                            </div>
-                            <div style={{ 
-                              display: 'flex', 
-                              flexDirection: 'column', 
-                              gap: 6,
-                              paddingRight: 4
-                            }}>
-                              {gastosCategoria.map((gasto, idx) => (
-                                <div key={gasto.id || idx} style={{
-                                  background: 'var(--color-card-alt)',
-                                  padding: '6px 8px',
-                                  borderRadius: 4,
-                                  borderLeft: `3px solid ${data.payload.fill}`,
-                                  fontSize: 12
-                                }}>
-                                  <div style={{ 
-                                    display: 'flex', 
-                                    justifyContent: 'space-between',
-                                    alignItems: 'flex-start',
-                                    gap: 8
-                                  }}>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div style={{ 
-                                        fontWeight: 600, 
-                                        color: 'var(--color-text)',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis'
-                                      }}>
-                                        {gasto.descripcion || 'Sin descripción'}
-                                      </div>
-                                      <div style={{ 
-                                        fontSize: 10, 
-                                        color: 'var(--color-text-secondary)',
-                                        marginTop: 2
-                                      }}>
-                                        {gasto.fecha ? new Date(gasto.fecha).toLocaleDateString('es-PE', { 
-                                          day: '2-digit', 
-                                          month: 'short'
-                                        }) : 'Sin fecha'}
-                                      </div>
-                                    </div>
-                                    <div style={{ 
-                                      fontWeight: 700, 
-                                      color: data.payload.fill,
-                                      whiteSpace: 'nowrap',
-                                      fontSize: 12
-                                    }}>
-                                      S/ {Number(gasto.monto || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                            {filteredMovs.filter(m => m.tipo === 'egreso' && (m.categoria || 'Sin categoría') === categoria).length > 10 && (
-                              <div style={{ 
-                                fontSize: 11, 
-                                color: 'var(--color-text-secondary)', 
-                                marginTop: 8,
-                                textAlign: 'center',
-                                fontStyle: 'italic'
-                              }}>
-                                ... y {filteredMovs.filter(m => m.tipo === 'egreso' && (m.categoria || 'Sin categoría') === categoria).length - 10} más
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    );
-                  }}
+                  formatter={(value) => `S/ ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -1423,6 +1323,181 @@ export default function Dashboard() {
           );
         })()}
       </div>
+
+      {/* Modal de detalles de categoría */}
+      {categoriaModal && (
+        <div 
+          onClick={() => setCategoriaModal(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: 20
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--color-card)',
+              borderRadius: 16,
+              padding: 32,
+              maxWidth: 600,
+              width: '100%',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              border: `3px solid ${categoriaModal.color}`
+            }}
+          >
+            {/* Header */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'flex-start',
+              marginBottom: 24,
+              paddingBottom: 16,
+              borderBottom: `2px solid ${categoriaModal.color}`
+            }}>
+              <div>
+                <h2 style={{ 
+                  margin: 0, 
+                  marginBottom: 8,
+                  color: 'var(--color-text)',
+                  fontSize: 24
+                }}>
+                  {categoriaModal.nombre}
+                </h2>
+                <div style={{ 
+                  fontSize: 28, 
+                  fontWeight: 700, 
+                  color: categoriaModal.color
+                }}>
+                  S/ {Number(categoriaModal.monto).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+              <button
+                onClick={() => setCategoriaModal(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: 28,
+                  cursor: 'pointer',
+                  color: 'var(--color-text-secondary)',
+                  padding: 0,
+                  width: 32,
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 8,
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--color-card-alt)';
+                  e.currentTarget.style.color = 'var(--color-text)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = 'var(--color-text-secondary)';
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Lista de gastos */}
+            {categoriaModal.gastos.length > 0 ? (
+              <>
+                <div style={{ 
+                  fontSize: 14, 
+                  color: 'var(--color-text-secondary)', 
+                  marginBottom: 16,
+                  fontWeight: 600
+                }}>
+                  Movimientos ({categoriaModal.gastos.length}):
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {categoriaModal.gastos.map((gasto, idx) => (
+                    <div key={gasto.id || idx} style={{
+                      background: 'var(--color-card-alt)',
+                      padding: 16,
+                      borderRadius: 10,
+                      borderLeft: `4px solid ${categoriaModal.color}`,
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      cursor: 'default'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateX(4px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateX(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                    >
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        gap: 16
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ 
+                            fontWeight: 600, 
+                            color: 'var(--color-text)',
+                            fontSize: 15,
+                            marginBottom: 6
+                          }}>
+                            {gasto.descripcion || 'Sin descripción'}
+                          </div>
+                          <div style={{ 
+                            fontSize: 13, 
+                            color: 'var(--color-text-secondary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8
+                          }}>
+                            {React.createElement(FaCalendarAlt as any, { size: 12 })}
+                            {gasto.fecha ? new Date(gasto.fecha).toLocaleDateString('es-PE', { 
+                              day: '2-digit', 
+                              month: 'long',
+                              year: 'numeric'
+                            }) : 'Sin fecha'}
+                          </div>
+                        </div>
+                        <div style={{ 
+                          fontWeight: 700, 
+                          color: categoriaModal.color,
+                          fontSize: 16,
+                          whiteSpace: 'nowrap'
+                        }}>
+                          S/ {Number(gasto.monto || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                padding: 40,
+                color: 'var(--color-text-secondary)',
+                fontSize: 14
+              }}>
+                No hay gastos en esta categoría
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
