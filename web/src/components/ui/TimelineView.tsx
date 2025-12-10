@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconRenderer, getColorPorTipo } from './IconRenderer';
+import * as Icons from 'react-icons/fa';
 
 interface TimelineMovimiento {
   id: number;
@@ -136,8 +137,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ movimientos, onMovim
                   position: 'relative'
                 }}>
                   <div style={{ fontSize: tamanio * 0.35, marginBottom: 4 }}>
-                    {mov.icon ? (
-                      <span>{mov.icon}</span>
+                    {mov.icon && (Icons as any)[mov.icon] ? (
+                      React.createElement((Icons as any)[mov.icon], { size: tamanio * 0.35, color: '#fff' })
                     ) : (
                       <IconRenderer tipo={mov.tipo} size={tamanio * 0.35} color="#fff" />
                     )}

@@ -4,6 +4,7 @@ import { TipoSelect, FrecuenciaSelect, ColorInput } from '../../components/Share
 import apiFetch from '../../utils/apiFetch';
 // Importación asegurada de react-icons
 import { FaEdit, FaTrash } from 'react-icons/fa';
+import * as Icons from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import { ActionButton } from '../../components/ActionButton';
 
@@ -169,7 +170,18 @@ const MovimientosRecurrentes = () => {
                     </div>
                     <div class="kr-modal-field">
                         <label>Icono</label>
-                        <input id="swal-icon" class="kr-modal-input" value="${mov.icon || ''}" />
+                        <select id="swal-icon" class="kr-modal-input">
+                            <option value="FaMoneyBillWave" ${mov.icon === 'FaMoneyBillWave' ? 'selected' : ''}>Dinero</option>
+                            <option value="FaWallet" ${mov.icon === 'FaWallet' ? 'selected' : ''}>Billetera</option>
+                            <option value="FaUniversity" ${mov.icon === 'FaUniversity' ? 'selected' : ''}>Banco</option>
+                            <option value="FaAppleAlt" ${mov.icon === 'FaAppleAlt' ? 'selected' : ''}>Comida</option>
+                            <option value="FaCar" ${mov.icon === 'FaCar' ? 'selected' : ''}>Transporte</option>
+                            <option value="FaCreditCard" ${mov.icon === 'FaCreditCard' ? 'selected' : ''}>Tarjeta</option>
+                            <option value="FaLightning" ${mov.icon === 'FaLightning' ? 'selected' : ''}>Servicios</option>
+                            <option value="FaGift" ${mov.icon === 'FaGift' ? 'selected' : ''}>Regalo</option>
+                            <option value="FaShoppingCart" ${mov.icon === 'FaShoppingCart' ? 'selected' : ''}>Compras</option>
+                            <option value="FaHospital" ${mov.icon === 'FaHospital' ? 'selected' : ''}>Salud</option>
+                        </select>
                     </div>
                     <div class="kr-modal-field kr-modal-field-full">
                         <label>Categoría</label>
@@ -379,7 +391,7 @@ const MovimientosRecurrentes = () => {
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#e0f2fe' }}>{mov.indefinido ? 'Sí' : 'No'}</td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#fbbf24' }}>{mov.categoria_id ? (categoriasMap[mov.categoria_id] ?? mov.categoria_id) : '-'}</td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#fbbf24' }}>
-                                            <span className="rec-icon">{mov.icon || '-'}</span>
+                                            {mov.icon && (Icons as any)[mov.icon] ? React.createElement((Icons as any)[mov.icon], { size: 20, style: { color: mov.color || '#fbbf24' } }) : (mov.icon || '-')}
                                         </td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px' }}>
                                             <span

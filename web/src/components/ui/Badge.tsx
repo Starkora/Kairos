@@ -1,4 +1,5 @@
 import React from 'react';
+import { MdTrendingUp, MdTrendingDown, MdSavings } from 'react-icons/md';
 
 export interface BadgeProps {
   children: React.ReactNode;
@@ -76,22 +77,34 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({ tipo, size = 'md' 
     ahorro: 'info' as const
   };
 
-  const iconMap = {
-    ingreso: '💰',
-    egreso: '💸',
-    ahorro: '🏦'
-  };
-
   const labelMap = {
     ingreso: 'Ingreso',
     egreso: 'Egreso',
     ahorro: 'Ahorro'
   };
 
+  const iconMap = {
+    ingreso: MdTrendingUp,
+    egreso: MdTrendingDown,
+    ahorro: MdSavings
+  };
+
+  const IconComponent = iconMap[tipo];
+
   return (
     <Badge variant={variantMap[tipo]} size={size} rounded>
-      <span style={{ marginRight: 4 }}>{iconMap[tipo]}</span>
-      {labelMap[tipo]}
+      <>
+        {React.createElement(IconComponent as any, { 
+          size: 16,
+          style: { 
+            marginRight: 6,
+            verticalAlign: 'middle',
+            minWidth: '16px',
+            minHeight: '16px'
+          } 
+        })}
+        {labelMap[tipo]}
+      </>
     </Badge>
   );
 };

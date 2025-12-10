@@ -662,36 +662,138 @@ export default function DeudasMetas() {
         padding: 20,
         background: 'var(--color-card)',
         borderRadius: 12,
-        border: '2px dashed var(--color-input-border)'
+        border: '2px dashed var(--color-input-border)',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
-        <h3 style={{ marginBottom: 16, fontSize: 16, fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          {React.createElement(FaPlus as any, { style: { fontSize: 14 } })}
-          Agregar Nueva {nueva.tipo === 'deuda' ? 'Deuda' : 'Meta'}
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-          <input type="text" placeholder="Descripción" value={nueva.descripcion} onChange={e => setNueva({ ...nueva, descripcion: e.target.value })} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14 }} />
-          <input type="number" placeholder="Monto" value={nueva.monto} onChange={e => setNueva({ ...nueva, monto: e.target.value })} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14 }} />
-        <div>
-          <label htmlFor="fecha_inicio" style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 4, display: 'block' }}>Fecha inicio</label>
-          <input id="fecha_inicio" type="date" value={nueva.fecha_inicio} onChange={e => setNueva({ ...nueva, fecha_inicio: e.target.value })} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14 }} />
+        <div style={{ width: '100%', marginBottom: 16 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {React.createElement(FaPlus as any, { style: { fontSize: 14 } })}
+            Agregar Nueva {nueva.tipo === 'deuda' ? 'Deuda' : 'Meta'}
+          </h3>
         </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '5fr 3fr 1fr 1fr 100px auto', gap: 12, alignItems: 'center', width: '100%' }}>
+          <input 
+            type="text" 
+            placeholder="Descripción" 
+            value={nueva.descripcion} 
+            onChange={e => setNueva({ ...nueva, descripcion: e.target.value })} 
+            style={{ 
+              width: '100%',
+              padding: '12px 14px', 
+              borderRadius: 8, 
+              border: '1px solid var(--color-input-border)', 
+              background: 'var(--color-input-bg)', 
+              color: 'var(--color-text)', 
+              fontSize: 14 
+            }} 
+          />
+          <input 
+            type="number" 
+            placeholder="Monto" 
+            value={nueva.monto} 
+            onChange={e => setNueva({ ...nueva, monto: e.target.value })} 
+            style={{ 
+              width: '100%',
+              padding: '12px 14px', 
+              borderRadius: 8, 
+              border: '1px solid var(--color-input-border)', 
+              background: 'var(--color-input-bg)', 
+              color: 'var(--color-text)', 
+              fontSize: 14 
+            }} 
+          />
+          <input 
+            type="date" 
+            placeholder="Fecha inicio"
+            title="Fecha inicio"
+            value={nueva.fecha_inicio} 
+            onChange={e => setNueva({ ...nueva, fecha_inicio: e.target.value })} 
+            style={{ 
+              width: '100%',
+              padding: '10px 12px', 
+              borderRadius: 8, 
+              border: '1px solid var(--color-input-border)', 
+              background: 'var(--color-input-bg)', 
+              color: 'var(--color-text)', 
+              fontSize: 14 
+            }} 
+          />
         {nueva.tipo === 'meta' && (
-          <div>
-            <label htmlFor="fecha_objetivo" style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 4, display: 'block' }}>Fecha objetivo</label>
-            <input id="fecha_objetivo" type="date" value={nueva.fecha_vencimiento} onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14 }} />
-          </div>
+          <input 
+            type="date" 
+            placeholder="Fecha objetivo"
+            title="Fecha objetivo"
+            value={nueva.fecha_vencimiento} 
+            onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} 
+            style={{ 
+              width: '100%',
+              padding: '10px 12px', 
+              borderRadius: 8, 
+              border: '1px solid var(--color-input-border)', 
+              background: 'var(--color-input-bg)', 
+              color: 'var(--color-text)', 
+              fontSize: 14 
+            }} 
+          />
         )}
         {nueva.tipo === 'deuda' && (
-          <div>
-            <label htmlFor="fecha_vencimiento" style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 4, display: 'block' }}>Fecha vencimiento</label>
-            <input id="fecha_vencimiento" type="date" value={nueva.fecha_vencimiento} onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14 }} />
-          </div>
+          <input 
+            type="date" 
+            placeholder="Fecha vencimiento"
+            title="Fecha vencimiento"
+            value={nueva.fecha_vencimiento} 
+            onChange={e => setNueva({ ...nueva, fecha_vencimiento: e.target.value })} 
+            style={{ 
+              width: '100%',
+              padding: '10px 12px', 
+              borderRadius: 8, 
+              border: '1px solid var(--color-input-border)', 
+              background: 'var(--color-input-bg)', 
+              color: 'var(--color-text)', 
+              fontSize: 14 
+            }} 
+          />
         )}
-        <select value={nueva.tipo} onChange={e => setNueva({ ...nueva, tipo: e.target.value })} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-input-border)', backgroundColor: 'var(--color-input-bg)', color: 'var(--color-text)', fontWeight: 600, fontSize: 14 }}>
-          <option value="deuda">Deuda</option>
-          <option value="meta">Meta</option>
-        </select>
-        <button onClick={handleAdd} style={{ backgroundColor: 'var(--color-success)', color: 'white', padding: '10px 20px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'transform 0.2s ease', boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+          <select 
+            value={nueva.tipo} 
+            onChange={e => setNueva({ ...nueva, tipo: e.target.value })} 
+            style={{ 
+              width: '100%',
+              padding: '10px 12px', 
+              borderRadius: 8, 
+              border: '1px solid var(--color-input-border)', 
+              backgroundColor: 'var(--color-input-bg)', 
+              color: 'var(--color-text)', 
+              fontWeight: 600, 
+              fontSize: 14 
+            }}
+          >
+            <option value="deuda">Deuda</option>
+            <option value="meta">Meta</option>
+          </select>
+        <button 
+          onClick={handleAdd} 
+          style={{ 
+            whiteSpace: 'nowrap',
+            backgroundColor: 'var(--color-success)', 
+            color: 'white', 
+            padding: '10px 16px', 
+            borderRadius: 8, 
+            border: 'none', 
+            fontWeight: 700, 
+            fontSize: 14, 
+            cursor: 'pointer', 
+            transition: 'transform 0.2s ease', 
+            boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 8, 
+            justifyContent: 'center' 
+          }} 
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        >
           {React.createElement(FaStar as any, { style: { fontSize: 14 } })}
           Agregar
         </button>

@@ -95,10 +95,10 @@ export default function Calendario() {
   const presetsMenuRef = React.useRef<HTMLDivElement|null>(null);
   
   // Nuevos estados para mejoras
-  const [vistaCompacta, setVistaCompacta] = React.useState(false);
+  const [vistaCompacta, setVistaCompacta] = React.useState(true);
   const [cuentaFiltro, setCuentaFiltro] = React.useState<number | 'all'>('all');
   const [cuentas, setCuentas] = React.useState<any[]>([]);
-  const [agruparPorCategoria, setAgruparPorCategoria] = React.useState(false);
+  const [agruparPorCategoria, setAgruparPorCategoria] = React.useState(true);
   const [vistaTimeline, setVistaTimeline] = React.useState(false);
   const [draggedItem, setDraggedItem] = React.useState<any>(null);
 
@@ -363,7 +363,7 @@ export default function Calendario() {
     if (!agruparPorCategoria) return null;
     const grupos = new Map<string, typeof movimientosDelDia>();
     movimientosDelDia.forEach(m => {
-      const catNombre = m.categoria_nombre || 'Sin categoría';
+      const catNombre = m.categoria || m.categoria_nombre || 'Sin categoría';
       if (!grupos.has(catNombre)) grupos.set(catNombre, []);
       grupos.get(catNombre)!.push(m);
     });

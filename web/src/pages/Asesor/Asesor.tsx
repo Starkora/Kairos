@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { getToken } from '../../utils/auth';
 import API_BASE from '../../utils/apiBase';
 import { loadPreferences, savePreferences } from '../../utils/preferences';
+import { MdBarChart, MdLightbulb, MdTrendingUp, MdAttachMoney, MdWarning, MdInfo, MdError, MdCalendarToday, MdPushPin } from 'react-icons/md';
 
 type KPIs = {
   ingresosMes: number;
@@ -249,7 +250,9 @@ export default function Asesor() {
       </div>
       {/* Explicación breve de la pantalla */}
       <div style={{ marginBottom: 16, padding: 12, background: 'var(--color-card, #fff)', borderRadius: 10, fontSize: 14, border: '1px solid var(--color-input-border, #e5e7eb)' }}>
-        <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--color-text)' }}>📊 ¿Qué hace el Asesor Financiero?</div>
+        <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {React.createElement(MdBarChart as any, { size: 18 })} ¿Qué hace el Asesor Financiero?
+        </div>
         <div style={{ opacity: 0.9, color: 'var(--color-text)' }}>
           Te muestra <b>indicadores clave</b> (KPIs) del mes seleccionado: cuánto ingresaste, gastaste y ahorraste. 
           Abajo verás <b>recomendaciones inteligentes</b> (insights) si detectamos riesgos o áreas de mejora, y una <b>proyección de cashflow a 30 días</b> para que sepas cómo estará tu saldo.
@@ -313,9 +316,12 @@ export default function Asesor() {
                   {loading ? 'Calculando…' : 'Calcular ahora'}
                 </button>
               </div>
-              <div style={{ opacity: 0.8 }}>
-                💡 <b>¿Qué es esto?</b> Para reducir carga en servidores gratuitos, el forecast detallado se calcula bajo demanda. 
-                Pulsa <b>"Calcular ahora"</b> para ver cómo evolucionará tu saldo en los próximos 30 días considerando tus gastos recurrentes, movimientos futuros y deudas.
+              <div style={{ opacity: 0.8, display: 'flex', gap: 6 }}>
+                {React.createElement(MdLightbulb as any, { size: 18, style: { flexShrink: 0, marginTop: 2 } })}
+                <span>
+                  <b>¿Qué es esto?</b> Para reducir carga en servidores gratuitos, el forecast detallado se calcula bajo demanda. 
+                  Pulsa <b>"Calcular ahora"</b> para ver cómo evolucionará tu saldo en los próximos 30 días considerando tus gastos recurrentes, movimientos futuros y deudas.
+                </span>
               </div>
             </div>
           )}
@@ -351,14 +357,19 @@ export default function Asesor() {
           {Array.isArray(meta?.forecast) && meta.forecast.length > 0 && (
             <div className="card" style={{ padding: 16, marginBottom: 12 }}>
               <div style={{ fontWeight: 800, marginBottom: 8 }}>Proyección de cashflow</div>
-              <div style={{ opacity: 0.8, marginBottom: 12, fontSize: 14 }}>
-                📈 <b>¿Cómo leer esta tabla?</b> Muestra cuánto dinero ingresará y saldrá en los próximos 30/60/90 días 
-                (según recurrentes, movimientos futuros y deudas a vencer). El <b>"Saldo proyectado"</b> es lo que tendrías al final del horizonte.
+              <div style={{ opacity: 0.8, marginBottom: 12, fontSize: 14, display: 'flex', gap: 6 }}>
+                {React.createElement(MdTrendingUp as any, { size: 18, style: { flexShrink: 0, marginTop: 2 } })}
+                <span>
+                  <b>¿Cómo leer esta tabla?</b> Muestra cuánto dinero ingresará y saldrá en los próximos 30/60/90 días 
+                  (según recurrentes, movimientos futuros y deudas a vencer). El <b>"Saldo proyectado"</b> es lo que tendrías al final del horizonte.
+                </span>
               </div>
               {/* Alertas de datos faltantes */}
               {Array.isArray(meta?.forecastWarnings) && meta.forecastWarnings.length > 0 && (
                 <div style={{ marginBottom: 12, padding: 12, background: 'rgba(251, 146, 60, 0.15)', borderRadius: 10, borderLeft: '4px solid #f59e0b', border: '1px solid rgba(251, 146, 60, 0.3)' }}>
-                  <div style={{ fontWeight: 700, marginBottom: 6, color: '#ea580c' }}>⚠️ Advertencias del cálculo</div>
+                  <div style={{ fontWeight: 700, marginBottom: 6, color: '#ea580c', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {React.createElement(MdWarning as any, { size: 18 })} Advertencias del cálculo
+                  </div>
                   <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--color-text)' }}>
                     {meta.forecastWarnings.map((w: string, i: number) => <li key={i}>{w}</li>)}
                   </ul>
@@ -488,8 +499,8 @@ export default function Asesor() {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                   {/* Ingresos Detail */}
                                   <div>
-                                    <div style={{ fontWeight: 700, marginBottom: 8, color: '#22c55e' }}>
-                                      💰 Ingresos Detallados (S/ {Number(f.projectedIngresos||0).toFixed(2)})
+                                    <div style={{ fontWeight: 700, marginBottom: 8, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      {React.createElement(MdAttachMoney as any, { size: 18 })} Ingresos Detallados (S/ {Number(f.projectedIngresos||0).toFixed(2)})
                                     </div>
                                     {Array.isArray(f.ingresosDetail) && f.ingresosDetail.length > 0 ? (
                                       <div style={{ fontSize: 13, opacity: 0.9 }}>
@@ -497,8 +508,12 @@ export default function Asesor() {
                                           <div key={i} style={{ marginBottom: 6, padding: '6px 8px', background: 'rgba(34,197,94,0.15)', borderRadius: 6, border: '1px solid rgba(34,197,94,0.2)' }}>
                                             <div style={{ fontWeight: 600 }}>{item.descripcion}</div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.8 }}>
-                                              <span>
-                                                {item.tipo === 'recurrente' ? `📅 ${item.frecuencia}` : '📌 Futuro'} 
+                                              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                {item.tipo === 'recurrente' ? (
+                                                  <>{React.createElement(MdCalendarToday as any, { size: 12 })} {item.frecuencia}</>
+                                                ) : (
+                                                  <>{React.createElement(MdPushPin as any, { size: 12 })} Futuro</>
+                                                )}
                                                 {' • '}{item.fecha}
                                               </span>
                                               <span style={{ fontWeight: 700 }}>S/ {Number(item.monto||0).toFixed(2)}</span>
@@ -514,8 +529,8 @@ export default function Asesor() {
                                   </div>
                                   {/* Egresos Detail */}
                                   <div>
-                                    <div style={{ fontWeight: 700, marginBottom: 8, color: '#ef4444' }}>
-                                      💸 Egresos Detallados (S/ {Number(f.projectedEgresos||0).toFixed(2)})
+                                    <div style={{ fontWeight: 700, marginBottom: 8, color: '#ef4444', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      {React.createElement(MdTrendingUp as any, { size: 18, style: { transform: 'scaleY(-1)' } })} Egresos Detallados (S/ {Number(f.projectedEgresos||0).toFixed(2)})
                                     </div>
                                     {Array.isArray(f.egresosDetail) && f.egresosDetail.length > 0 ? (
                                       <div style={{ fontSize: 13, opacity: 0.9 }}>
@@ -523,8 +538,14 @@ export default function Asesor() {
                                           <div key={i} style={{ marginBottom: 6, padding: '6px 8px', background: 'rgba(239,68,68,0.15)', borderRadius: 6, border: '1px solid rgba(239,68,68,0.2)' }}>
                                             <div style={{ fontWeight: 600 }}>{item.descripcion}</div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.8 }}>
-                                              <span>
-                                                {item.tipo === 'recurrente' ? `📅 ${item.frecuencia}` : item.tipo === 'deuda' ? '⚠️ Deuda' : '📌 Futuro'} 
+                                              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                {item.tipo === 'recurrente' ? (
+                                                  <>{React.createElement(MdCalendarToday as any, { size: 12 })} {item.frecuencia}</>
+                                                ) : item.tipo === 'deuda' ? (
+                                                  <>{React.createElement(MdWarning as any, { size: 12 })} Deuda</>
+                                                ) : (
+                                                  <>{React.createElement(MdPushPin as any, { size: 12 })} Futuro</>
+                                                )}
                                                 {' • '}{item.fecha}
                                               </span>
                                               <span style={{ fontWeight: 700 }}>S/ {Number(item.monto||0).toFixed(2)}</span>
@@ -550,7 +571,7 @@ export default function Asesor() {
               </div>
             </div>
           )}
-          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>💡 Recomendaciones inteligentes</div>
+          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>{React.createElement(MdLightbulb as any, { size: 18 })} Recomendaciones inteligentes</div>
           <div style={{ opacity: 0.8, marginBottom: 12, fontSize: 14 }}>
             Estas recomendaciones aparecen <b>automáticamente</b> cuando detectamos situaciones que requieren tu atención:
             <ul style={{ marginTop: 6, paddingLeft: 20 }}>
@@ -575,8 +596,14 @@ export default function Asesor() {
               <div key={item.id} className="card" style={{ padding: 16, borderLeft: `4px solid ${colorFor(item.severity)}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontWeight: 800, fontSize: 16 }}>{item.title}</div>
-                  <span style={{ fontSize: 12, color: colorFor(item.severity), fontWeight: 800 }}>
-                    {item.severity === 'danger' ? '🔴 URGENTE' : item.severity === 'warning' ? '⚠️ ALERTA' : 'ℹ️ INFO'}
+                  <span style={{ fontSize: 12, color: colorFor(item.severity), fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {item.severity === 'danger' ? (
+                      <>{React.createElement(MdError as any, { size: 12 })} URGENTE</>
+                    ) : item.severity === 'warning' ? (
+                      <>{React.createElement(MdWarning as any, { size: 12 })} ALERTA</>
+                    ) : (
+                      <>{React.createElement(MdInfo as any, { size: 12 })} INFO</>
+                    )}
                   </span>
                 </div>
                 <pre style={{ whiteSpace: 'pre-wrap', margin: '8px 0 12px 0', fontFamily: 'inherit' }}>{item.body}</pre>

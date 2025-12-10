@@ -4,6 +4,7 @@ import API_BASE from '../../utils/apiBase';
 import { getToken } from '../../utils/auth';
 import Swal from 'sweetalert2';
 import { loadPreferences, savePreferences } from '../../utils/preferences';
+import { MdWarning, MdHourglassEmpty, MdSave } from 'react-icons/md';
 
 type Presupuesto = { id?: number; categoria_id: number; categoria?: string; anio: number; mes: number; monto: number; gastado?: number };
 type MovimientoDetalle = { descripcion: string; monto: number; fecha: string };
@@ -16,8 +17,6 @@ export default function Presupuestos() {
   const [categorias, setCategorias] = useState<{id:number,nombre:string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [movimientosPorCategoria, setMovimientosPorCategoria] = useState<Record<number, MovimientoDetalle[]>>({});
-  const [tooltipCategoria, setTooltipCategoria] = useState<number | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   // Umbrales configurables
   const [thresholdWarn, setThresholdWarn] = useState<number>(() => {
     try { const v = localStorage.getItem('kairos-budget-threshold-warn'); return v ? Number(v) : 80; } catch { return 80; }
@@ -221,6 +220,45 @@ export default function Presupuestos() {
     Swal.fire({ icon: 'success', title: 'Presupuesto armado', showConfirmButton: false, timer: 1400 });
   };
 
+  // Mostrar modal con detalles de gastos
+  const mostrarDetalleGastos = (categoriaId: number, categoriaNombre: string) => {
+    const gastos = movimientosPorCategoria[categoriaId] || [];
+    if (gastos.length === 0) {
+      Swal.fire({ icon: 'info', title: 'Sin gastos', text: 'No hay gastos registrados en esta categoría para este período.' });
+      return;
+    }
+
+    const html = `
+      <div style="text-align: left; max-height: 400px; overflow-y: auto;">
+        <h3 style="margin: 0 0 16px 0; color: #3b82f6;">${categoriaNombre}</h3>
+        ${gastos.map(g => {
+          const fecha = new Date(g.fecha);
+          const dia = fecha.getDate();
+          const mesNombre = fecha.toLocaleDateString('es-ES', { month: 'short' });
+          return `
+            <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-weight: 600; margin-bottom: 4px;">${g.descripcion || 'Sin descripción'}</div>
+                  <div style="font-size: 12px; color: #94a3b8;">${dia} ${mesNombre}</div>
+                </div>
+                <div style="font-weight: 700; color: #ef4444; font-size: 16px;">S/ ${Number(g.monto).toFixed(2)}</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    Swal.fire({
+      title: 'Gastos de la categoría',
+      html,
+      width: 600,
+      confirmButtonText: 'Cerrar',
+      confirmButtonColor: '#3b82f6'
+    });
+  };
+
   // Exportar a CSV (lado cliente)
   const exportarCSV = () => {
     const header = ['Categoria','Presupuesto','Gastado','%Uso','Mes','Año'];
@@ -380,9 +418,19 @@ export default function Presupuestos() {
         </div>
       </div>
       {(stats.warn80 > 0 || stats.warn100 > 0) && (
-        <div style={{ background: stats.warn100 > 0 ? '#7f1d1d' : '#78350f', color: '#fff', borderRadius: 10, padding: '10px 12px', marginBottom: 12 }}>
-          {stats.warn100 > 0 && <span style={{ marginRight: 12 }}>⚠️ {stats.warn100} categoría(s) superaron el {thresholdDanger}%.</span>}
-          {stats.warn80 > 0 && <span>⏳ {stats.warn80} categoría(s) están sobre el {thresholdWarn}%.</span>}
+        <div style={{ background: stats.warn100 > 0 ? '#7f1d1d' : '#78350f', color: '#fff', borderRadius: 10, padding: '10px 12px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {stats.warn100 > 0 && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, marginRight: 12 }}>
+              {React.createElement(MdWarning as any, { size: 18 })}
+              {stats.warn100} categoría(s) superaron el {thresholdDanger}%.
+            </span>
+          )}
+          {stats.warn80 > 0 && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {React.createElement(MdHourglassEmpty as any, { size: 18 })}
+              {stats.warn80} categoría(s) están sobre el {thresholdWarn}%.
+            </span>
+          )}
         </div>
       )}
       {loading ? (
@@ -421,14 +469,13 @@ export default function Presupuestos() {
                     </td>
                     <td 
                       style={{ padding: '10px 14px', textAlign: 'right', cursor: 'pointer', position: 'relative' }}
-                      onMouseEnter={(e) => {
+                      onClick={() => {
                         if (movimientosPorCategoria[it.categoria_id]?.length > 0) {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          setTooltipPosition({ x: rect.left, y: rect.bottom + window.scrollY });
-                          setTooltipCategoria(it.categoria_id);
+                          const categoriaNombre = it.categoria || categorias.find(c => c.id===it.categoria_id)?.nombre || `Categoría ${it.categoria_id}`;
+                          mostrarDetalleGastos(it.categoria_id, categoriaNombre);
                         }
                       }}
-                      onMouseLeave={() => setTooltipCategoria(null)}
+                      title="Click para ver detalles"
                     >
                       S/ {Number(it.gastado||0).toFixed(2)}
                     </td>
@@ -443,102 +490,34 @@ export default function Presupuestos() {
                       )}
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                      <button onClick={() => guardar(it.categoria_id, it.monto)} style={{ padding: '6px 10px', borderRadius: 8 }}>Guardar</button>
+                      <button 
+                        onClick={() => guardar(it.categoria_id, it.monto)} 
+                        style={{ 
+                          padding: '8px 12px', 
+                          borderRadius: 8, 
+                          background: '#3b82f6',
+                          color: '#fff',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          margin: '0 auto',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#2563eb'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#3b82f6'}
+                        title="Guardar presupuesto"
+                      >
+                        {React.createElement(MdSave as any, { size: 18 })}
+                      </button>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* Tooltip personalizado */}
-      {tooltipCategoria !== null && movimientosPorCategoria[tooltipCategoria]?.length > 0 && (
-        <div
-          style={{
-            position: 'fixed',
-            left: tooltipPosition.x,
-            top: tooltipPosition.y + 5,
-            background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
-            border: '2px solid #3b82f6',
-            borderRadius: 12,
-            padding: 16,
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
-            zIndex: 10000,
-            minWidth: 300,
-            maxWidth: 400,
-            maxHeight: 300,
-            overflowY: 'auto',
-            pointerEvents: 'none'
-          }}
-        >
-          <div style={{ 
-            fontSize: 14, 
-            fontWeight: 700, 
-            color: '#fff', 
-            marginBottom: 12,
-            borderBottom: '1px solid #374151',
-            paddingBottom: 8
-          }}>
-            Últimos gastos ({movimientosPorCategoria[tooltipCategoria].length > 2 ? '2' : movimientosPorCategoria[tooltipCategoria].length}):
-          </div>
-          {movimientosPorCategoria[tooltipCategoria].slice(0, 2).map((m, idx) => {
-            const fecha = new Date(m.fecha);
-            const dia = fecha.getDate();
-            const mes = fecha.toLocaleDateString('es-ES', { month: 'short' });
-            
-            return (
-              <div
-                key={idx}
-                style={{
-                  background: 'rgba(59, 130, 246, 0.1)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                  borderRadius: 8,
-                  padding: 12,
-                  marginBottom: 8,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 6
-                }}
-              >
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'flex-start',
-                  gap: 8
-                }}>
-                  <div style={{ 
-                    fontSize: 13, 
-                    color: '#e5e7eb',
-                    fontWeight: 600,
-                    flex: 1,
-                    wordBreak: 'break-word'
-                  }}>
-                    {m.descripcion}
-                  </div>
-                  <div style={{ 
-                    fontSize: 14, 
-                    fontWeight: 700, 
-                    color: '#ef4444',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    S/ {m.monto.toFixed(2)}
-                  </div>
-                </div>
-                <div style={{ 
-                  fontSize: 11, 
-                  color: '#9ca3af',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4
-                }}>
-                  <span>📅</span>
-                  <span>{dia}-{mes}</span>
-                </div>
-              </div>
-            );
-          })}
         </div>
       )}
     </div>
