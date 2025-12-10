@@ -25,6 +25,7 @@ import Presupuestos from './pages/Finanzas/Presupuestos';
 import Asesor from './pages/Asesor/Asesor';
 import NoCategoriasAlert from './components/alerts/NoCategoriasAlert';
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import './styles/App.css';
 import { MdFormatListBulleted } from 'react-icons/md';
 
@@ -125,6 +126,15 @@ export default function App() {
 
 function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMobile, darkMode, setDarkMode }) {
   const navigate = useNavigate();
+  
+  // Hook de inactividad: 15 minutos de inactividad antes de cerrar sesión
+  useInactivityTimeout({ 
+    timeoutMinutes: 15,
+    onTimeout: () => {
+      console.log('Sesión cerrada por inactividad');
+    }
+  });
+  
   // Función para redirigir tras login
   const handleLogin = () => {
     refreshUser();
