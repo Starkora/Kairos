@@ -1056,7 +1056,10 @@ export default function Dashboard() {
                         boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                         maxWidth: 350,
                         maxHeight: 400,
-                        overflowY: 'auto'
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        pointerEvents: 'auto',
+                        cursor: 'default'
                       }}>
                         <div style={{ 
                           fontWeight: 700, 
@@ -1064,7 +1067,11 @@ export default function Dashboard() {
                           marginBottom: 8,
                           color: 'var(--color-text)',
                           borderBottom: `2px solid ${data.payload.fill}`,
-                          paddingBottom: 8
+                          paddingBottom: 8,
+                          position: 'sticky',
+                          top: 0,
+                          background: 'var(--color-card)',
+                          zIndex: 1
                         }}>
                           {categoria}
                         </div>
@@ -1072,7 +1079,11 @@ export default function Dashboard() {
                           fontSize: 18, 
                           fontWeight: 700, 
                           color: data.payload.fill,
-                          marginBottom: 12
+                          marginBottom: 12,
+                          position: 'sticky',
+                          top: 39,
+                          background: 'var(--color-card)',
+                          zIndex: 1
                         }}>
                           S/ {Number(monto).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </div>
@@ -1083,11 +1094,21 @@ export default function Dashboard() {
                               fontSize: 12, 
                               color: 'var(--color-text-secondary)', 
                               marginBottom: 8,
-                              fontWeight: 600
+                              fontWeight: 600,
+                              position: 'sticky',
+                              top: 75,
+                              background: 'var(--color-card)',
+                              zIndex: 1,
+                              paddingBottom: 4
                             }}>
                               Últimos gastos ({gastosCategoria.length}):
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div style={{ 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              gap: 6,
+                              paddingRight: 4
+                            }}>
                               {gastosCategoria.map((gasto, idx) => (
                                 <div key={gasto.id || idx} style={{
                                   background: 'var(--color-card-alt)',
