@@ -204,10 +204,11 @@ export default function Dashboard() {
     });
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto || 0), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto || 0), 0);
-    return { ingreso, gasto };
+    const ahorro = movs.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + Number(m.monto || 0), 0);
+    return { ingreso, gasto, ahorro };
   }, [filteredMovs, year]);
   const curr = monthTotals(currentMonthIdx);
-  const prev = prevMonthIdx !== null ? monthTotals(prevMonthIdx) : { ingreso: 0, gasto: 0 };
+  const prev = prevMonthIdx !== null ? monthTotals(prevMonthIdx) : { ingreso: 0, gasto: 0, ahorro: 0 };
   const trend = React.useMemo(() => {
     const calc = (a, b) => {
       const delta = a - b;
@@ -218,7 +219,7 @@ export default function Dashboard() {
       const percText = perc === null ? '' : ` (${perc.toFixed(1)}%)`;
       return { text: `${sign}S/ ${abs.toLocaleString(undefined, { minimumFractionDigits: 2 })}${percText}`, color };
     };
-    return { ingreso: calc(curr.ingreso, prev.ingreso), gasto: calc(curr.gasto, prev.gasto) };
+    return { ingreso: calc(curr.ingreso, prev.ingreso), gasto: calc(curr.gasto, prev.gasto), ahorro: calc(curr.ahorro, prev.ahorro) };
   }, [curr, prev]);
 
   const indicadores = [
@@ -268,6 +269,8 @@ export default function Dashboard() {
       color: '#6c4fa1',
       titulo: 'Ahorro',
       valor: `S/ ${totalAhorro.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      subtitle3: trend.ahorro.text,
+      subtitle3Color: trend.ahorro.color,
       isAmount: true,
     },
   ];

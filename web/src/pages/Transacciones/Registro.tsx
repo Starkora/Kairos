@@ -378,16 +378,19 @@ export default function Registro() {
       Swal.fire({ icon: 'warning', title: 'Cuenta requerida', text: 'Selecciona una cuenta.' });
       return;
     }
-    if (form.tipo !== 'transferencia' && form.tipo !== 'ahorro') {
-      if (!form.categoria) {
+    if (form.tipo !== 'transferencia') {
+      // Para ahorros en la misma cuenta, la categoría es obligatoria
+      if (form.tipo === 'ahorro' && String(form.cuenta) === String(form.cuentaDestino)) {
+        if (!form.categoria) {
+          Swal.fire({ icon: 'warning', title: 'Categoría requerida', text: 'Debes seleccionar una categoría para el ahorro.' });
+          return;
+        }
+      }
+      // Para otros tipos (ingreso/egreso), la categoría es obligatoria
+      if (form.tipo !== 'ahorro' && !form.categoria) {
         Swal.fire({ icon: 'warning', title: 'Categoría requerida', text: 'Selecciona una categoría.' });
         return;
       }
-    }
-    // Para ahorros, la categoría es opcional si se especifica cuenta destino
-    if (form.tipo === 'ahorro' && !form.categoria && String(form.cuenta) === String(form.cuentaDestino)) {
-      Swal.fire({ icon: 'warning', title: 'Categoría requerida', text: 'Debes seleccionar una categoría para el ahorro.' });
-      return;
     }
   if (!form.monto || isNaN(Number(form.monto)) || Number(form.monto) <= 0) {
       Swal.fire({ icon: 'error', title: 'Monto inválido', text: 'El monto debe ser mayor a 0.' });
@@ -443,7 +446,10 @@ export default function Registro() {
               monto: Number(form.monto),
               fecha: form.fecha,
               descripcion: form.descripcion || 'Ahorro',
-              tipo_especial: 'ahorro' // Para identificar que es un ahorro
+              tipo_especial: 'ahorro', // Para identificar que es un ahorro
+              categoria_id: form.categoria || null, // Categoría de ahorro si fue seleccionada
+              icon: form.icon,
+              color: form.color
             })
           });
         } else if (repetir) {

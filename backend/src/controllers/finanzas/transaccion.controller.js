@@ -72,7 +72,7 @@ exports.create = async (req, res) => {
 exports.transferir = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
-  let { origen_id, destino_id, monto, fecha, descripcion, tipo_especial } = req.body || {};
+  let { origen_id, destino_id, monto, fecha, descripcion, tipo_especial, categoria_id, icon, color } = req.body || {};
   monto = Number(monto);
   if (!origen_id || !destino_id || !monto || isNaN(monto) || monto <= 0 || !fecha) {
     return res.status(400).json({ error: 'Campos requeridos: origen_id, destino_id, monto>0, fecha' });
@@ -103,10 +103,10 @@ exports.transferir = async (req, res) => {
       return res.status(409).json({ code: 'INSUFFICIENT_FUNDS', error: 'Saldo insuficiente en la cuenta origen' });
     }
 
-    // Determinar icono y descripción según el tipo
+    // Determinar icono, color y descripción según el tipo
     const esAhorro = tipo_especial === 'ahorro';
-    const icon = esAhorro ? 'FaWallet' : 'FaExchangeAlt';
-    const color = esAhorro ? '#4caf50' : '#1976d2';
+    const iconFinal = esAhorro ? (icon || 'FaWallet') : (icon || 'FaExchangeAlt');
+    const colorFinal = esAhorro ? (color || '#4caf50') : (color || '#1976d2');
     const code = (esAhorro ? 'A' : 'T') + Date.now();
 
     // Insert egreso en origen
@@ -115,7 +115,7 @@ exports.transferir = async (req, res) => {
       : `Transferencia a ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''}`;
     const [resEgreso] = await conn.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [usuario_id, origen_id, esAhorro ? 'ahorro' : 'egreso', monto, descEgreso, fechaStr, null, plataforma || 'web', icon, color, applied]
+      [usuario_id, origen_id, esAhorro ? 'ahorro' : 'egreso', monto, descEgreso, fechaStr, categoria_id || null, plataforma || 'web', iconFinal, colorFinal, applied]
     );
     if (applied) {
       await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, origen_id]);
@@ -127,7 +127,7 @@ exports.transferir = async (req, res) => {
       : `Transferencia desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''}`;
     const [resIngreso] = await conn.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [usuario_id, destino_id, 'ingreso', monto, descIngreso, fechaStr, null, plataforma || 'web', icon, color, applied]
+      [usuario_id, destino_id, 'ingreso', monto, descIngreso, fechaStr, categoria_id || null, plataforma || 'web', iconFinal, colorFinal, applied]
     );
     if (applied) {
       await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, destino_id]);
