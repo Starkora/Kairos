@@ -378,11 +378,16 @@ export default function Registro() {
       Swal.fire({ icon: 'warning', title: 'Cuenta requerida', text: 'Selecciona una cuenta.' });
       return;
     }
-    if (form.tipo !== 'transferencia') {
+    if (form.tipo !== 'transferencia' && form.tipo !== 'ahorro') {
       if (!form.categoria) {
         Swal.fire({ icon: 'warning', title: 'Categoría requerida', text: 'Selecciona una categoría.' });
         return;
       }
+    }
+    // Para ahorros, la categoría es opcional si se especifica cuenta destino
+    if (form.tipo === 'ahorro' && !form.categoria && String(form.cuenta) === String(form.cuentaDestino)) {
+      Swal.fire({ icon: 'warning', title: 'Categoría requerida', text: 'Debes seleccionar una categoría para el ahorro.' });
+      return;
     }
   if (!form.monto || isNaN(Number(form.monto)) || Number(form.monto) <= 0) {
       Swal.fire({ icon: 'error', title: 'Monto inválido', text: 'El monto debe ser mayor a 0.' });
@@ -397,8 +402,13 @@ export default function Registro() {
       if (!form.cuentaDestino) { Swal.fire({ icon: 'warning', title: 'Cuenta destino requerida', text: 'Selecciona la cuenta destino.' }); return; }
       if (String(form.cuenta) === String(form.cuentaDestino)) { Swal.fire({ icon: 'warning', title: 'Cuentas inválidas', text: 'La cuenta origen y destino deben ser diferentes.' }); return; }
     }
+    // Validaciones para ahorro
+    if (form.tipo === 'ahorro' && form.cuentaDestino && String(form.cuenta) !== String(form.cuentaDestino)) {
+      // Es un ahorro hacia otra cuenta (como transferencia)
+      if (!hasTwoAccounts) { Swal.fire({ icon: 'info', title: 'Se requiere otra cuenta', text: 'Necesitas al menos dos cuentas para ahorrar en otra cuenta.' }); return; }
+    }
     const result = await Swal.fire({
-      title: form.tipo === 'transferencia' ? '¿Confirmar transferencia?' : '¿Seguro que quieres agregar este movimiento?',
+      title: form.tipo === 'transferencia' ? '¿Confirmar transferencia?' : form.tipo === 'ahorro' && String(form.cuenta) !== String(form.cuentaDestino) ? '¿Confirmar ahorro entre cuentas?' : '¿Seguro que quieres agregar este movimiento?',
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, guardar',
@@ -420,6 +430,20 @@ export default function Registro() {
               monto: Number(form.monto),
               fecha: form.fecha,
               descripcion: form.descripcion
+            })
+          });
+        } else if (form.tipo === 'ahorro' && form.cuentaDestino && String(form.cuenta) !== String(form.cuentaDestino)) {
+          // Ahorro hacia otra cuenta (transferencia con tipo especial)
+          res = await apiFetch(`${API_BASE}/api/transacciones/transferir`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              origen_id: form.cuenta,
+              destino_id: form.cuentaDestino,
+              monto: Number(form.monto),
+              fecha: form.fecha,
+              descripcion: form.descripcion || 'Ahorro',
+              tipo_especial: 'ahorro' // Para identificar que es un ahorro
             })
           });
         } else if (repetir) {
@@ -462,7 +486,10 @@ export default function Registro() {
           });
         }
         if (res && res.ok) {
-          Swal.fire({ icon: 'success', title: form.tipo === 'transferencia' ? 'Transferencia registrada' : 'Movimiento registrado', showConfirmButton: false, timer: 1200 });
+          const successTitle = form.tipo === 'transferencia' ? 'Transferencia registrada' : 
+                               form.tipo === 'ahorro' && String(form.cuenta) !== String(form.cuentaDestino) ? 'Ahorro transferido' : 
+                               'Movimiento registrado';
+          Swal.fire({ icon: 'success', title: successTitle, showConfirmButton: false, timer: 1200 });
           setForm({ tipo: 'ingreso', monto: '', categoria: '', fecha: getToday(), descripcion: '', cuenta: cuentas[0]?.id || '', cuentaDestino: cuentas[1]?.id || cuentas[0]?.id || '', icon: 'FaMoneyBillWave', color: '#c62828' });
           setRepetir(false);
           setRepeticion({ frecuencia: 'mensual', inicio: '', fin: '', indefinido: true });
@@ -582,11 +609,12 @@ export default function Registro() {
             ))}
           </select>
         </div>
-        {form.tipo === 'transferencia' && (
+        {(form.tipo === 'transferencia' || form.tipo === 'ahorro') && (
           <div>
-            <label>Cuenta destino:&nbsp;</label>
+            <label>{form.tipo === 'ahorro' ? 'Ahorrar para (cuenta destino):' : 'Cuenta destino:'}&nbsp;</label>
             <select name="cuentaDestino" value={form.cuentaDestino} onChange={handleChange} style={{ padding: 6, borderRadius: 6, width: '100%' }} required disabled={!hasTwoAccounts}>
               {!hasTwoAccounts && <option value="">— Necesitas otra cuenta —</option>}
+              {form.tipo === 'ahorro' && <option value={form.cuenta}>Misma cuenta</option>}
               {cuentas.map((cuenta) => (
                 <option key={cuenta.id} value={cuenta.id}>{cuenta.nombre}</option>
               ))}
@@ -603,6 +631,18 @@ export default function Registro() {
             padding: '8px 12px'
           }}>
             Necesitas al menos dos cuentas para realizar transferencias.
+          </div>
+        )}
+        {form.tipo === 'ahorro' && !hasTwoAccounts && (
+          <div style={{
+            marginTop: 8,
+            background: '#e3f2fd',
+            color: '#1565c0',
+            border: '1px solid #90caf9',
+            borderRadius: 8,
+            padding: '8px 12px'
+          }}>
+            Puedes ahorrar en la misma cuenta o crear otra cuenta para separar tus ahorros.
           </div>
         )}
         <div>

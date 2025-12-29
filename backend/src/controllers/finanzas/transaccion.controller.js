@@ -72,7 +72,7 @@ exports.create = async (req, res) => {
 exports.transferir = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
-  let { origen_id, destino_id, monto, fecha, descripcion } = req.body || {};
+  let { origen_id, destino_id, monto, fecha, descripcion, tipo_especial } = req.body || {};
   monto = Number(monto);
   if (!origen_id || !destino_id || !monto || isNaN(monto) || monto <= 0 || !fecha) {
     return res.status(400).json({ error: 'Campos requeridos: origen_id, destino_id, monto>0, fecha' });
@@ -103,22 +103,28 @@ exports.transferir = async (req, res) => {
       return res.status(409).json({ code: 'INSUFFICIENT_FUNDS', error: 'Saldo insuficiente en la cuenta origen' });
     }
 
-    const icon = '🔁';
-    const color = '#1976d2';
-    const code = 'T' + Date.now();
+    // Determinar icono y descripción según el tipo
+    const esAhorro = tipo_especial === 'ahorro';
+    const icon = esAhorro ? 'FaWallet' : 'FaExchangeAlt';
+    const color = esAhorro ? '#4caf50' : '#1976d2';
+    const code = (esAhorro ? 'A' : 'T') + Date.now();
 
     // Insert egreso en origen
-    const descEgreso = `Transferencia a ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''}`;
+    const descEgreso = esAhorro 
+      ? `Ahorro para ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''}`
+      : `Transferencia a ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''}`;
     const [resEgreso] = await conn.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [usuario_id, origen_id, 'egreso', monto, descEgreso, fechaStr, null, plataforma || 'web', icon, color, applied]
+      [usuario_id, origen_id, esAhorro ? 'ahorro' : 'egreso', monto, descEgreso, fechaStr, null, plataforma || 'web', icon, color, applied]
     );
     if (applied) {
       await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, origen_id]);
     }
 
     // Insert ingreso en destino
-    const descIngreso = `Transferencia desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''}`;
+    const descIngreso = esAhorro
+      ? `Ahorro desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''}`
+      : `Transferencia desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''}`;
     const [resIngreso] = await conn.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [usuario_id, destino_id, 'ingreso', monto, descIngreso, fechaStr, null, plataforma || 'web', icon, color, applied]
