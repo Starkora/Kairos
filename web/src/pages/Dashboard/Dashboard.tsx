@@ -325,9 +325,26 @@ export default function Dashboard() {
   const currentMonthNow = currentDate.getMonth();
   const currentYearNow = currentDate.getFullYear();
   
-  // Si hay filtro de mes, usar ese mes, si no, usar el mes actual
-  const comparisonMonth = month !== 'all' ? month : currentMonthNow;
-  const comparisonYear = year;
+  // Si hay filtro de mes, usar ese mes. Si es 'all' y el año seleccionado es el actual, usar el mes actual.
+  // Si es 'all' y el año seleccionado es pasado, usar diciembre de ese año
+  let comparisonMonth: number;
+  let comparisonYear: number;
+  
+  if (month !== 'all') {
+    comparisonMonth = month;
+    comparisonYear = year;
+  } else {
+    // Si estamos viendo el año actual, comparar el mes actual
+    if (year === currentYearNow) {
+      comparisonMonth = currentMonthNow;
+      comparisonYear = year;
+    } else {
+      // Si es un año pasado o futuro, usar diciembre de ese año
+      comparisonMonth = 11; // Diciembre
+      comparisonYear = year;
+    }
+  }
+  
   const previousComparisonMonth = comparisonMonth === 0 ? 11 : comparisonMonth - 1;
   const previousComparisonYear = comparisonMonth === 0 ? comparisonYear - 1 : comparisonYear;
 
