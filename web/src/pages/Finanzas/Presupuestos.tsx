@@ -332,7 +332,12 @@ export default function Presupuestos() {
   const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const years = useMemo(() => {
     const y = hoy.getFullYear();
-    return [y-1, y, y+1];
+    // Incluir años pasados recientes y futuros para mejor planificación
+    const years = [];
+    for (let i = y - 2; i <= y + 5; i++) {
+      years.push(i);
+    }
+    return years;
   }, [hoy]);
 
   // Alertas de consumo (umbrales configurables)

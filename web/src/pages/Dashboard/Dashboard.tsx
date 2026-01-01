@@ -114,33 +114,50 @@ export default function Dashboard() {
       .catch(() => setDeudas([]));
   }, []);
 
+  // Fecha actual para filtros (memo para evitar recrearla en cada render)
+  const today = React.useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
   // Filtrar movimientos: mostrar solo los del año seleccionado y ya aplicados o cuya fecha es <= hoy
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const visibleMovimientos = movimientos.filter(m => {
-    try {
-      // Filtrar por año
-      if (!m.fecha) return false;
-      const movDate = new Date(m.fecha);
-      if (movDate.getFullYear() !== year) return false;
-      // Filtrar por mes si no es 'all'
-      if (month !== 'all' && movDate.getMonth() !== month) return false;
-      // Filtro por cuenta (si no es 'all')
-      if (cuentaSeleccionada !== 'all') {
-        const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
-        if (!isNaN(cid) && cid !== Number(cuentaSeleccionada)) return false;
+  const visibleMovimientos = React.useMemo(() => {
+    return movimientos.filter(m => {
+      try {
+        // Filtrar por año
+        if (!m.fecha) return false;
+        const movDate = new Date(m.fecha);
+        
+        // Validar que la fecha es válida
+        if (isNaN(movDate.getTime())) return false;
+        
+        if (movDate.getFullYear() !== year) return false;
+        
+        // Filtrar por mes si no es 'all'
+        if (month !== 'all' && movDate.getMonth() !== month) return false;
+        
+        // Filtro por cuenta (si no es 'all')
+        if (cuentaSeleccionada !== 'all') {
+          const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
+          if (!isNaN(cid) && cid !== Number(cuentaSeleccionada)) return false;
+        }
+        
+        // Si el backend ya incluye el flag `applied`, úsalo
+        if (typeof m.applied !== 'undefined' && m.applied !== null) {
+          return Number(m.applied) === 1;
+        }
+        
+        // Fallback: comparar solo la parte de fecha (sin hora)
+        // Mostrar movimientos pasados y del día actual
+        movDate.setHours(0, 0, 0, 0);
+        return movDate <= today;
+      } catch (e) {
+        console.error('Error filtrando movimiento:', e, m);
+        return false;
       }
-      // Si el backend ya incluye el flag `applied`, úsalo
-      if (typeof m.applied !== 'undefined' && m.applied !== null) {
-        return Number(m.applied) === 1;
-      }
-      // Fallback: comparar solo la parte de fecha (sin hora)
-      movDate.setHours(0, 0, 0, 0);
-      return movDate <= today;
-    } catch (e) {
-      return false;
-    }
-  });
+    });
+  }, [movimientos, year, month, cuentaSeleccionada, today]);
   const [incluirTransferencias, setIncluirTransferencias] = React.useState(false);
   const filteredMovs = React.useMemo(() => {
     if (incluirTransferencias) return visibleMovimientos;
@@ -525,12 +542,24 @@ export default function Dashboard() {
   // Años disponibles en los movimientos (hook debe ir antes de cualquier return condicional)
   const yearsAvailable = React.useMemo(() => {
     const set = new Set<number>();
+    const currentYear = new Date().getFullYear();
+    
+    // Agregar años de los movimientos existentes
     movimientos.forEach(m => {
       if (m.fecha) {
         const d = new Date(m.fecha);
         set.add(d.getFullYear());
       }
     });
+    
+    // Asegurar que el año actual esté disponible
+    set.add(currentYear);
+    
+    // Agregar los próximos 5 años para planificación futura
+    for (let i = 1; i <= 5; i++) {
+      set.add(currentYear + i);
+    }
+    
     return Array.from(set).sort((a, b) => b - a);
   }, [movimientos]);
 
