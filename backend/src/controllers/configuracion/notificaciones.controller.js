@@ -3,6 +3,7 @@ const router = express.Router();
 const sgMail = require('@sendgrid/mail');
 const mailer = require('../../utils/notifications/mailer');
 const sms = require('../../utils/notifications/sms');
+const kairosWhatsapp = require('../../utils/notifications/kairos-whatsapp');
 const auth = require('../../utils/auth/jwt');
 const db = require('../../../config/database');
 const cron = require('node-cron');
@@ -90,8 +91,25 @@ async function workerTick() {
           console.log(`[Notificaciones] Enviado SMS a ${n.usuario_telefono} (notif ${n.id})`);
         } else if (n.medio === 'whatsapp') {
           if (!n.usuario_telefono) { console.error('Notificación sin teléfono:', n.id); continue; }
-          await sms.sendWhatsApp(String(n.usuario_telefono), 'Kairos: recuerda registrar tus ingresos y egresos del día.');
-          console.log(`[Notificaciones] Enviado WhatsApp a ${n.usuario_telefono} (notif ${n.id})`);
+          
+          // 🆕 Usar el bot de MiBodega para enviar notificaciones por WhatsApp
+          const mensaje = '💰 *Kairos - Recordatorio*\n\n' +
+                         'Hola! 👋\n\n' +
+                         'Recuerda registrar tus ingresos y egresos del día para mantener tus finanzas al día y ser un ahorrador pro. 📊\n\n' +
+                         '_Mensaje enviado automáticamente por Kairos_';
+          
+          const resultado = await kairosWhatsapp.sendWhatsAppNotification(
+            String(n.usuario_telefono), 
+            mensaje
+          );
+          
+          if (resultado.success) {
+            console.log(`[Notificaciones] ✅ Enviado WhatsApp via MiBodega Bot a ${n.usuario_telefono} (notif ${n.id})`);
+          } else {
+            console.error(`[Notificaciones] ❌ Error al enviar WhatsApp via MiBodega Bot: ${resultado.error}`);
+            // Opcional: fallback a Twilio si falla el bot
+            // await sms.sendWhatsApp(String(n.usuario_telefono), 'Kairos: recuerda registrar tus ingresos y egresos del día.');
+          }
         } else {
           // Medio no soportado actualmente
           continue;
