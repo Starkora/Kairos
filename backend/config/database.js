@@ -20,7 +20,14 @@ if (useUrl) {
       acquireTimeout: Number(process.env.DB_ACQUIRE_TIMEOUT_MS || 10000),
       enableKeepAlive: true,
       keepAliveInitialDelay: 0,
-      charset: 'utf8mb4'
+      charset: 'utf8mb4',
+      characterEncoding: 'utf8mb4',
+      collation: 'utf8mb4_unicode_ci',
+      supportBigNumbers: true,
+      bigNumberStrings: false,
+      dateStrings: false,
+      multipleStatements: false,
+      timezone: 'Z'
     };
   } catch (e) {
     // Si la URL no parsea, como fallback usar string directa (mysql2 soporta string)
@@ -46,7 +53,14 @@ if (useUrl) {
     acquireTimeout: Number(process.env.DB_ACQUIRE_TIMEOUT_MS || 10000),
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
-    charset: 'utf8mb4'
+    charset: 'utf8mb4',
+    characterEncoding: 'utf8mb4',
+    collation: 'utf8mb4_unicode_ci',
+    supportBigNumbers: true,
+    bigNumberStrings: false,
+    dateStrings: false,
+    multipleStatements: false,
+    timezone: 'Z'
   };
 }
 
@@ -75,8 +89,39 @@ if (String(process.env.DB_SSL || '').toLowerCase() === 'true') {
   }
 }
 
-const db = (typeof poolConfig === 'string')
+const pool = (typeof poolConfig === 'string')
   ? mysql.createPool(poolConfig)
   : mysql.createPool(poolConfig);
+
+// Wrapper para ejecutar SET NAMES utf8mb4 en cada consulta
+const db = {
+  async query(...args) {
+    const conn = await pool.getConnection();
+    try {
+      // Asegurar UTF-8 en cada conexión
+      await conn.query("SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'");
+      const result = await conn.query(...args);
+      return result;
+    } finally {
+      conn.release();
+    }
+  },
+  async execute(...args) {
+    const conn = await pool.getConnection();
+    try {
+      await conn.query("SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'");
+      const result = await conn.execute(...args);
+      return result;
+    } finally {
+      conn.release();
+    }
+  },
+  getConnection: async () => {
+    const conn = await pool.getConnection();
+    await conn.query("SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'");
+    return conn;
+  },
+  pool // Exponer el pool original por si se necesita
+};
 
 module.exports = db;
