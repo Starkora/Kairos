@@ -43,7 +43,6 @@ export default function Notificaciones() {
   const getMedioIcon = (medio: string) => {
     switch(medio.toLowerCase()) {
       case 'correo': return React.createElement(FaEnvelope as any);
-      case 'sms': return React.createElement(FaSms as any);
       case 'whatsapp': return React.createElement(FaWhatsapp as any);
       default: return React.createElement(FaBell as any);
     }
