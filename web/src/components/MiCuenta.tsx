@@ -35,8 +35,6 @@ export default function MiCuenta() {
 
   React.useEffect(() => {
     const token = getToken();
-    console.log('Token enviado al backend:', token); // Log para depuración
-
     fetch(`${API_BASE}/api/usuarios`, {
       headers: {
         'Authorization': 'Bearer ' + token,
@@ -45,11 +43,9 @@ export default function MiCuenta() {
       credentials: 'include'
     })
       .then((res) => {
-        console.log('Respuesta recibida del servidor:', res); // Log para depuración
         return res.json();
       })
       .then((data) => {
-        console.log('Datos obtenidos del servidor:', data); // Log para depuración
         // El backend puede devolver: 1) un array de usuarios, 2) un objeto usuario, o
         // 3) una estructura anidada como [rows, ...]. Normalizamos esas formas.
         let usuario = null;
@@ -77,12 +73,6 @@ export default function MiCuenta() {
             nombre: usuario.nombre || '',
             apellido: usuario.apellido || ''
           });
-          console.log('Estado actualizado con los datos del usuario:', {
-            email: usuario.email || '',
-            telefono: usuario.telefono || usuario.numero || '',
-            nombre: usuario.nombre || '',
-            apellido: usuario.apellido || ''
-          }); // Log para depuración
         }
       })
       .catch((err) => {

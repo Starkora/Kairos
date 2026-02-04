@@ -59,9 +59,7 @@ exports.create = async (req, res) => {
       const [cats] = await db.query('SELECT * FROM categorias WHERE id = ? AND usuario_id = ?', [categoria_id, usuario_id]);
       if (!cats || cats.length === 0) return res.status(403).json({ error: 'Categoría no pertenece al usuario' });
     }
-    console.log('[transacciones.create] Payload recibido:', { usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color });
     const result = await Transaccion.create({ usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color });
-    console.log('[transacciones.create] Resultado create.insertId:', result && result.insertId);
     res.status(201).json({ message: 'Movimiento creado', id: result.insertId });
   } catch (err) {
     res.status(500).json({ error: err.message });

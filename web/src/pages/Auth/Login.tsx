@@ -5,10 +5,11 @@ declare global {
     grecaptcha?: any;
   }
 }
-import Swal from 'sweetalert2';
 import GoogleAuthButton from './../../components/features/auth/GoogleAuthButton';
 import API_BASE from '../../utils/apiBase';
 import ReCAPTCHA from 'react-google-recaptcha';
+import WelcomeModal from '../../components/WelcomeModal';
+import { FaExclamationTriangle, FaCheckCircle, FaInfoCircle, FaTimesCircle, FaSun, FaMoon } from 'react-icons/fa';
 
 const Login = ({ onLogin }) => {
   // CAPTCHA config (v2 visible o v3 invisible)
@@ -53,19 +54,25 @@ const Login = ({ onLogin }) => {
       // En v2 usamos el token del widget visible
       return captchaTokenV2;
     }
-    // Espera a que grecaptcha esté listo
-    const ensureReady = () => new Promise((resolve) => {
+    // Espera a que grecaptcha esté listo con timeout
+    const ensureReady = () => new Promise((resolve, reject) => {
+      let attempts = 0;
+      const maxAttempts = 50; // 5 segundos máximo
       const tryReady = () => {
         if (window.grecaptcha && typeof window.grecaptcha.ready === 'function') {
           window.grecaptcha.ready(() => resolve(true));
+        } else if (attempts >= maxAttempts) {
+          reject(new Error('reCAPTCHA timeout'));
         } else {
+          attempts++;
           setTimeout(tryReady, 100);
         }
       };
       tryReady();
     });
-    await ensureReady();
+    
     try {
+      await ensureReady();
       const token = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: action || 'submit' });
       return token;
     } catch (e) {
@@ -83,6 +90,7 @@ const Login = ({ onLogin }) => {
   const [apellido, setApellido] = useState('');
   const [correo, setCorreo] = useState('');
   const [telefono, setTelefono] = useState('');
+  const [countryCode, setCountryCode] = useState('+51'); // Código de país
   const [regPassword, setRegPassword] = useState('');
   const [regPassword2, setRegPassword2] = useState('');
   const [confirmMethod, setConfirmMethod] = useState('correo'); // 'correo' o 'telefono'
@@ -92,9 +100,59 @@ const Login = ({ onLogin }) => {
   // Reenvío
   const [resendLoading, setResendLoading] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  // Modal de bienvenida para nuevos usuarios
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  
+  // Modo oscuro/claro
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved ? saved === 'dark' : true; // Por defecto oscuro
+  });
+  
+  // Aplicar tema al cargar
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
+  
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+  
+  // Estados para alertas Bootstrap
+  const [alert, setAlert] = useState<{type: 'success' | 'danger' | 'warning' | 'info', message: string} | null>(null);
+
+  // Auto-ocultar alerta después de 5 segundos
+  useEffect(() => {
+    if (alert) {
+      const timer = setTimeout(() => setAlert(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [alert]);
+
+  const showAlert = (type: 'success' | 'danger' | 'warning' | 'info', message: string) => {
+    setAlert({ type, message });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validar campos vacíos
+    if (!email.trim()) {
+      showAlert('warning', 'Por favor ingresa tu correo electrónico.');
+      return;
+    }
+    if (!password) {
+      showAlert('warning', 'Por favor ingresa tu contraseña.');
+      return;
+    }
+    
     setLoading(true);
     try {
       // Obtener token de CAPTCHA si está habilitado
@@ -102,7 +160,7 @@ const Login = ({ onLogin }) => {
       if (CAPTCHA_ENABLED) {
         if (RECAPTCHA_VERSION === 'v2') {
           if (!captchaTokenV2) {
-            Swal.fire('CAPTCHA', 'Marca el reCAPTCHA antes de continuar.', 'info');
+            showAlert('info', 'Marca el reCAPTCHA antes de continuar.');
             setLoading(false);
             return;
           }
@@ -126,71 +184,105 @@ const Login = ({ onLogin }) => {
         } else if (data.user && data.user.id) {
           localStorage.setItem('userId', data.user.id);
         }
-        Swal.fire('¡Bienvenido!', 'Inicio de sesión exitoso', 'success');
+        showAlert('success', '¡Bienvenido! Inicio de sesión exitoso.');
         if (onLogin) onLogin();
       } else {
         // Manejo preciso de errores 401 desde backend
         if (res.status === 401) {
           switch (data && data.code) {
             case 'EMAIL_NOT_FOUND':
-              Swal.fire('Correo no encontrado', 'Verifica que tu correo esté bien escrito o regístrate.', 'warning');
+              showAlert('warning', 'Correo no encontrado. Verifica que tu correo esté bien escrito o regístrate.');
               break;
             case 'INVALID_PASSWORD':
-              Swal.fire('Contraseña incorrecta', 'Intenta nuevamente o restablece tu contraseña.', 'warning');
+              showAlert('warning', 'Contraseña incorrecta. Intenta nuevamente o restablece tu contraseña.');
               break;
             default:
-              Swal.fire('Credenciales inválidas', data.message || 'Revisa tu correo y contraseña.', 'warning');
+              showAlert('warning', data.message || 'Credenciales inválidas. Revisa tu correo y contraseña.');
           }
         } else if (res.status === 403) {
           if (data && data.code === 'ACCOUNT_UNVERIFIED') {
-            Swal.fire('Cuenta no verificada', data.message || 'Revisa tu correo para confirmar el registro.', 'info');
+            showAlert('info', data.message || 'Cuenta no verificada. Revisa tu correo para confirmar el registro.');
           } else if (data && data.code === 'ACCOUNT_NOT_APPROVED') {
-            Swal.fire('Cuenta registrada', 'Tu cuenta fue registrada correctamente. Falta la aprobación del administrador para iniciar sesión.', 'info');
+            showAlert('info', 'Tu cuenta fue registrada correctamente. Falta la aprobación del administrador para iniciar sesión.');
           } else {
-            Swal.fire('Acceso denegado', data.message || 'No tienes permisos para acceder.', 'info');
+            showAlert('info', data.message || 'Acceso denegado. No tienes permisos para acceder.');
           }
         } else {
-          Swal.fire('Error', data.message || 'No se pudo iniciar sesión', 'error');
+          showAlert('danger', data.message || 'No se pudo iniciar sesión');
         }
       }
     } catch (err) {
-      Swal.fire('Error', 'No se pudo conectar al servidor', 'error');
+      showAlert('danger', 'No se pudo conectar al servidor');
     }
     setLoading(false);
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    
+    // Validaciones de campos vacíos
+    if (!nombre.trim()) {
+      showAlert('warning', 'Por favor ingresa tu nombre completo.');
+      return;
+    }
+    if (!apellido.trim()) {
+      showAlert('warning', 'Por favor ingresa tu apellido.');
+      return;
+    }
+    if (!correo.trim()) {
+      showAlert('warning', 'Por favor ingresa tu correo electrónico.');
+      return;
+    }
+    if (!telefono.trim()) {
+      showAlert('warning', 'Por favor ingresa tu número de teléfono.');
+      return;
+    }
+    if (!regPassword) {
+      showAlert('warning', 'Por favor ingresa una contraseña.');
+      return;
+    }
+    if (!regPassword2) {
+      showAlert('warning', 'Por favor confirma tu contraseña.');
+      return;
+    }
+    
+    // Validación de formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(correo)) {
+      showAlert('warning', 'Por favor ingresa un correo electrónico válido.');
+      return;
+    }
+    
     // Validación de longitud nombre/apellido
     if ((nombre || '').length > 50) {
-      Swal.fire('Nombre demasiado largo', 'El nombre no puede exceder 50 caracteres.', 'warning');
+      showAlert('warning', 'El nombre no puede exceder 50 caracteres.');
       return;
     }
     if ((apellido || '').length > 50) {
-      Swal.fire('Apellido demasiado largo', 'El apellido no puede exceder 50 caracteres.', 'warning');
+      showAlert('warning', 'El apellido no puede exceder 50 caracteres.');
       return;
     }
-    // Validar teléfono: solo dígitos y exactamente 9
+    // Validar teléfono: entre 6 y 15 dígitos (estándar internacional)
     const telDigits = (telefono || '').replace(/\D/g, '');
-    if (telDigits.length !== 9) {
-      Swal.fire('Teléfono inválido', 'El teléfono debe tener exactamente 9 dígitos.', 'warning');
+    if (telDigits.length < 6 || telDigits.length > 15) {
+      showAlert('warning', 'El teléfono debe tener entre 6 y 15 dígitos.');
       return;
     }
     if (regPassword !== regPassword2) {
-      Swal.fire('Error', 'Las contraseñas no coinciden', 'error');
+      showAlert('danger', 'Las contraseñas no coinciden');
       return;
     }
     // Validación de contraseña fuerte
     if (regPassword.length < 8) {
-      Swal.fire('Error', 'La contraseña debe tener al menos 8 caracteres', 'error');
+      showAlert('danger', 'La contraseña debe tener al menos 8 caracteres');
       return;
     }
     if (!/[0-9]/.test(regPassword)) {
-      Swal.fire('Error', 'La contraseña debe contener al menos un número', 'error');
+      showAlert('danger', 'La contraseña debe contener al menos un número');
       return;
     }
     if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(regPassword)) {
-      Swal.fire('Error', 'La contraseña debe contener al menos un signo o símbolo', 'error');
+      showAlert('danger', 'La contraseña debe contener al menos un signo o símbolo');
       return;
     }
     setLoading(true);
@@ -200,7 +292,7 @@ const Login = ({ onLogin }) => {
       if (CAPTCHA_ENABLED) {
         if (RECAPTCHA_VERSION === 'v2') {
           if (!captchaTokenV2) {
-            Swal.fire('CAPTCHA', 'Marca el reCAPTCHA antes de registrarte.', 'info');
+            showAlert('info', 'Marca el reCAPTCHA antes de registrarte.');
             setLoading(false);
             return;
           }
@@ -215,7 +307,7 @@ const Login = ({ onLogin }) => {
         credentials: 'include',
         body: JSON.stringify({
           email: correo,
-          numero: telDigits,
+          numero: countryCode + telDigits, // Número completo con código de país
           password: regPassword,
           nombre,
           apellido,
@@ -228,39 +320,46 @@ const Login = ({ onLogin }) => {
       if (res.ok) {
         setRegistroEnviado(true);
         setIdRegistrado(data.id); // Guardar el id del usuario registrado
-        Swal.fire('Registro enviado', `Se envió un código de confirmación a tu ${confirmMethod === 'correo' ? 'correo' : 'teléfono'}.`, 'info');
+        showAlert('info', `Se envió un código de confirmación a tu ${confirmMethod === 'correo' ? 'correo' : 'teléfono'}`);
       } else {
         // Manejo de conflictos específicos
         if (res.status === 409) {
           switch (data && data.code) {
             case 'EMAIL_IN_USE':
-              Swal.fire('Correo en uso', 'El correo ya está asociado a una cuenta.', 'warning');
+              showAlert('warning', 'El correo ya está asociado a una cuenta.');
               break;
             case 'PHONE_IN_USE':
-              Swal.fire('Teléfono en uso', 'El número ya está asociado a una cuenta.', 'warning');
+              showAlert('warning', 'El número ya está asociado a una cuenta.');
               break;
             case 'EMAIL_AND_PHONE_IN_USE':
-              Swal.fire('Correo y teléfono en uso', 'Ambos ya están asociados a una cuenta.', 'warning');
+              showAlert('warning', 'Ambos ya están asociados a una cuenta.');
               break;
             default:
-              Swal.fire('Conflicto', data.message || 'El correo o el número ya están en uso.', 'warning');
+              showAlert('warning', data.message || 'El correo o el número ya están en uso.');
           }
         } else {
-          Swal.fire('Error', data.message || data.error || 'No se pudo registrar', 'error');
+          showAlert('danger', data.message || data.error || 'No se pudo registrar');
         }
       }
     } catch (err) {
-      Swal.fire('Error', 'No se pudo conectar al servidor', 'error');
+      showAlert('danger', 'No se pudo conectar al servidor');
     }
     setLoading(false);
   };
 
   const handleConfirm = async (e) => {
     e.preventDefault();
+    
+    // Validar código
+    if (!codigo.trim()) {
+      showAlert('warning', 'Por favor ingresa el código de confirmación.');
+      return;
+    }
+    
     setLoading(true);
     try {
       if (!correo) {
-        Swal.fire('Error', 'No se pudo obtener el correo para confirmar', 'error');
+        showAlert('danger', 'No se pudo obtener el correo para confirmar');
         setLoading(false);
         return;
       }
@@ -273,25 +372,33 @@ const Login = ({ onLogin }) => {
       const data = await res.json();
       if (res.ok && data.success) {
         setLoading(false);
-  Swal.fire('¡Registro confirmado!', 'Tu cuenta ha sido activada. Ahora solo falta que el administrador apruebe tu cuenta para iniciar sesión.', 'success');
+        
+        // Si es nuevo usuario, mostrar modal de bienvenida
+        if (data.isNewUser) {
+          setNewUserName(nombre);
+          setShowWelcomeModal(true);
+        } else {
+          showAlert('success', '¡Registro confirmado! Tu cuenta ha sido activada exitosamente.');
+        }
+        
         setShowRegister(false);
         setRegistroEnviado(false);
-  setNombre(''); setApellido(''); setCorreo(''); setTelefono(''); setRegPassword(''); setRegPassword2(''); setCodigo('');
+        setNombre(''); setApellido(''); setCorreo(''); setTelefono(''); setRegPassword(''); setRegPassword2(''); setCodigo('');
         setIdRegistrado(null);
         setCooldownSeconds(0);
       } else {
         setLoading(false);
-        Swal.fire('Error', data.error || 'No se pudo confirmar el registro', 'error');
+        showAlert('danger', data.error || 'No se pudo confirmar el registro');
       }
     } catch (err) {
       setLoading(false);
-      Swal.fire('Error', 'No se pudo conectar al servidor', 'error');
+      showAlert('danger', 'No se pudo conectar al servidor');
     }
   };
 
   const handleResend = async () => {
     if (!correo) {
-      Swal.fire('Error', 'No se pudo determinar el correo para reenviar el código.', 'error');
+      showAlert('danger', 'No se pudo determinar el correo para reenviar el código.');
       return;
     }
     setResendLoading(true);
@@ -304,7 +411,7 @@ const Login = ({ onLogin }) => {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        Swal.fire('Código reenviado', 'Revisa tu bandeja de entrada o SMS.', 'success');
+        showAlert('success', 'Código reenviado. Revisa tu bandeja de entrada o WhatsApp.');
         if (data.nextAllowedAt) {
           const now = Date.now();
           const seconds = Math.max(1, Math.ceil((Number(data.nextAllowedAt) - now) / 1000));
@@ -318,16 +425,16 @@ const Login = ({ onLogin }) => {
         const match = /([0-9]+)\s*segundos?/.exec(data.message || '');
         const seconds = match ? parseInt(match[1], 10) : 120;
         setCooldownSeconds(seconds);
-        Swal.fire('Debes esperar', data.message || 'Intenta nuevamente más tarde.', 'info');
+        showAlert('info', data.message || 'Intenta nuevamente más tarde.');
       } else if (res.status === 404 && data && data.code === 'NO_PENDING') {
-        Swal.fire('Registro no encontrado', 'Vuelve a iniciar el registro para generar un nuevo código.', 'warning');
+        showAlert('warning', 'Registro no encontrado. Vuelve a iniciar el registro para generar un nuevo código.');
       } else if (res.status === 400 && (data.code === 'CODE_EXPIRED' || data.code === 'PENDING_NOT_FOUND')) {
-        Swal.fire('Código caducado', 'Vuelve a iniciar el registro para generar un nuevo código.', 'warning');
+        showAlert('warning', 'Código caducado. Vuelve a iniciar el registro para generar un nuevo código.');
       } else {
-        Swal.fire('Error', data.message || data.error || 'No se pudo reenviar el código', 'error');
+        showAlert('danger', data.message || data.error || 'No se pudo reenviar el código');
       }
     } catch (err) {
-      Swal.fire('Error', 'No se pudo conectar al servidor', 'error');
+      showAlert('danger', 'No se pudo conectar al servidor');
     }
     setResendLoading(false);
   };
@@ -349,8 +456,46 @@ const Login = ({ onLogin }) => {
       justifyContent: 'center',
       alignItems: 'center',
       // Usar el fondo global del tema (soporta modo oscuro)
-      background: 'var(--color-bg)'
+      background: 'var(--color-bg)',
+      position: 'relative'
     }}>
+      {/* Botón de toggle de tema */}
+      <button
+        onClick={toggleTheme}
+        style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          width: '55px',
+          height: '55px',
+          borderRadius: '50%',
+          border: 'none',
+          background: isDarkMode ? '#FFD700' : '#1a1a2e',
+          color: isDarkMode ? '#1a1a2e' : '#FFD700',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1.6rem',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          transition: 'all 0.3s ease',
+          zIndex: 1000
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.15) rotate(20deg)';
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.5)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+        }}
+        title={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+        aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+      >
+        {/* @ts-ignore */}
+        {isDarkMode ? <FaSun /> : <FaMoon />}
+      </button>
+      
       <div style={{
         background: 'var(--color-card)',
         padding: '2.5rem 2rem',
@@ -359,6 +504,22 @@ const Login = ({ onLogin }) => {
         minWidth: '340px',
         maxWidth: 400
       }}>
+        {/* Alerta Bootstrap */}
+        {alert && (
+          <div className={`alert alert-${alert.type} alert-dismissible fade show`} role="alert" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* @ts-ignore */}
+            {alert.type === 'success' && <FaCheckCircle style={{ flexShrink: 0 }} />}
+            {/* @ts-ignore */}
+            {alert.type === 'danger' && <FaTimesCircle style={{ flexShrink: 0 }} />}
+            {/* @ts-ignore */}
+            {alert.type === 'warning' && <FaExclamationTriangle style={{ flexShrink: 0 }} />}
+            {/* @ts-ignore */}
+            {alert.type === 'info' && <FaInfoCircle style={{ flexShrink: 0 }} />}
+            <span style={{ flex: 1 }}>{alert.message}</span>
+            <button type="button" className="btn-close" onClick={() => setAlert(null)} aria-label="Close"></button>
+          </div>
+        )}
+        
         {!showRegister ? (
           <>
             <h2 style={{
@@ -375,7 +536,6 @@ const Login = ({ onLogin }) => {
                 placeholder="Correo electrónico"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                required
                 style={{
                   padding: '0.7rem',
                   borderRadius: '6px',
@@ -390,7 +550,6 @@ const Login = ({ onLogin }) => {
                 placeholder="Contraseña"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                required
                 style={{
                   padding: '0.7rem',
                   borderRadius: '6px',
@@ -457,7 +616,6 @@ const Login = ({ onLogin }) => {
                     setNombre(v);
                   }}
                   maxLength={50}
-                  required
                   style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }}
                 />
                 <input
@@ -471,28 +629,55 @@ const Login = ({ onLogin }) => {
                   maxLength={50}
                   style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }}
                 />
-                <input type="email" placeholder="Correo electrónico" value={correo} onChange={e => setCorreo(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
-                <input
-                  type="tel"
-                  placeholder="Teléfono (9 dígitos)"
-                  value={telefono}
-                  onChange={e => {
-                    const v = e.target.value.replace(/\D/g, '').slice(0, 9);
-                    setTelefono(v);
-                  }}
-                  maxLength={9}
-                  required
-                  style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }}
-                />
-                <input type="password" placeholder="Contraseña" value={regPassword} onChange={e => setRegPassword(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
-                <input type="password" placeholder="Confirmar contraseña" value={regPassword2} onChange={e => setRegPassword2(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
-                <div style={{ display: 'flex', gap: 16, alignItems: 'center', margin: '0.5rem 0' }}>
-                  <span>Confirmar vía:</span>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <input type="radio" name="confirmMethod" value="correo" checked={confirmMethod === 'correo'} onChange={() => setConfirmMethod('correo')} /> Correo
+                <input type="email" placeholder="Correo electrónico" value={correo} onChange={e => setCorreo(e.target.value)} style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+                
+                {/* Teléfono con selector de código de país */}
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <select 
+                    value={countryCode} 
+                    onChange={e => setCountryCode(e.target.value)}
+                    style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem', width: '120px' }}
+                  >
+                    <option value="+1">US +1</option>
+                    <option value="+52">MX +52</option>
+                    <option value="+51">PE +51</option>
+                    <option value="+54">AR +54</option>
+                    <option value="+56">CL +56</option>
+                    <option value="+57">CO +57</option>
+                    <option value="+58">VE +58</option>
+                    <option value="+593">EC +593</option>
+                    <option value="+591">BO +591</option>
+                    <option value="+595">PY +595</option>
+                    <option value="+598">UY +598</option>
+                    <option value="+55">BR +55</option>
+                    <option value="+34">ES +34</option>
+                    <option value="+44">GB +44</option>
+                    <option value="+49">DE +49</option>
+                    <option value="+33">FR +33</option>
+                    <option value="+39">IT +39</option>
+                  </select>
+                  <input
+                    type="tel"
+                    placeholder="Número de teléfono"
+                    value={telefono}
+                    onChange={e => {
+                      const v = e.target.value.replace(/\D/g, '').slice(0, 15);
+                      setTelefono(v);
+                    }}
+                    maxLength={15}
+                    style={{ flex: 1, padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }}
+                  />
+                </div>
+                
+                <input type="password" placeholder="Contraseña" value={regPassword} onChange={e => setRegPassword(e.target.value)} style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+                <input type="password" placeholder="Confirmar contraseña" value={regPassword2} onChange={e => setRegPassword2(e.target.value)} style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center', margin: '0.5rem 0', color: 'var(--color-text)' }}>
+                  <span style={{ fontWeight: 500 }}>Confirmar vía:</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: 'var(--color-text)' }}>
+                    <input type="radio" name="confirmMethod" value="correo" checked={confirmMethod === 'correo'} onChange={() => setConfirmMethod('correo')} style={{ cursor: 'pointer', accentColor: 'var(--color-primary)' }} /> Correo
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <input type="radio" name="confirmMethod" value="telefono" checked={confirmMethod === 'telefono'} onChange={() => setConfirmMethod('telefono')} /> Teléfono
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: 'var(--color-text)' }}>
+                    <input type="radio" name="confirmMethod" value="telefono" checked={confirmMethod === 'telefono'} onChange={() => setConfirmMethod('telefono')} style={{ cursor: 'pointer', accentColor: 'var(--color-primary)' }} /> Teléfono
                   </label>
                 </div>
                 <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: 'var(--color-primary)', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
@@ -513,7 +698,7 @@ const Login = ({ onLogin }) => {
             ) : (
               <form onSubmit={handleConfirm} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ marginBottom: 8, color: 'var(--color-text)' }}>Ingresa el código que recibiste por {confirmMethod === 'correo' ? 'correo' : 'teléfono'}:</div>
-                <input type="text" placeholder="Código de confirmación" value={codigo} onChange={e => setCodigo(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+                <input type="text" placeholder="Código de confirmación" value={codigo} onChange={e => setCodigo(e.target.value)} style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
                 <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: 'var(--color-primary)', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
                   {loading ? 'Validando...' : 'Confirmar registro'}
                 </button>
@@ -534,6 +719,13 @@ const Login = ({ onLogin }) => {
           <a href="/acerca" style={{ color: '#60a5fa', textDecoration: 'underline', fontSize: '0.95rem', fontWeight: 600 }}>Acerca de Kairos</a>
         </div>
       </div>
+      
+      {/* Modal de bienvenida para nuevos usuarios */}
+      <WelcomeModal 
+        show={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+        userName={newUserName}
+      />
     </div>
   );
 };

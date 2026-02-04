@@ -260,7 +260,7 @@ export default function Calendario() {
 
 ---
 
-## 🚀 Próximas Mejoras
+##  Próximas Mejoras
 
 - [ ] Agregar animaciones de entrada/salida
 - [ ] Soporte para temas personalizados

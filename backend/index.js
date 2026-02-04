@@ -1,24 +1,10 @@
 ﻿// Sincronizar modelos Sequelize
 const sequelize = require('./config/sequelize');
 sequelize.sync().then(() => {
-  console.log('[Sequelize] Modelos sincronizados');
 }).catch(err => {
   console.error('[Sequelize] Error al sincronizar modelos:', err);
 });
 require('dotenv').config();
-// Evitar imprimir secretos en logs
-if (process.env.NODE_ENV !== 'production') {
-  console.log('[env] Variables cargadas:', [
-    'SENDGRID_API_KEY',
-    'MAIL_FROM',
-    'TWILIO_ACCOUNT_SID',
-    'TWILIO_AUTH_TOKEN',
-    'TWILIO_PHONE_NUMBER',
-    'PORT',
-    'GOOGLE_CLIENT_ID',
-    'GOOGLE_CLIENT_IDS',
-  ].filter((k) => process.env[k]).join(', '));
-}
 
 const express = require('express');
 const http = require('http');
@@ -53,7 +39,6 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log('[CORS] Origin recibido:', origin);
     // Permite herramientas como Postman (sin origin)
     if (!origin) return callback(null, true);
     const isProd = process.env.NODE_ENV === 'production';
@@ -140,11 +125,6 @@ if (redisUrl) {
   console.warn('[session] REDIS_URL no definido. Usando MemoryStore para sesiones.');
 }
 
-// Logs de conexión a Redis para depurar
-if (process.env.DEBUG_REDIS === 'true') {
-  redisClient.on('connect', () => console.log('Conectando a Redis...'));
-  redisClient.on('ready', () => console.log('Redis listo para usar.'));
-}
 if (redisClient) {
   redisClient.on('error', (err) => console.error('Error de Redis:', err));
 }
@@ -263,10 +243,8 @@ async function setupCleanupJob() {
     const [rows] = await db.query("SELECT EVENT_NAME FROM INFORMATION_SCHEMA.EVENTS WHERE EVENT_SCHEMA = DATABASE() AND EVENT_NAME = 'ev_cleanup_usuarios_pendientes'");
     const hasEvent = Array.isArray(rows) && rows.length > 0;
     if (hasEvent) {
-      console.log('[cleanup] Evento MySQL ev_cleanup_usuarios_pendientes detectado. No se inicia job en Node.');
       app.locals.cleanupStrategy = 'mysql-event';
     } else {
-      console.log('[cleanup] Evento MySQL no encontrado. Iniciando job de limpieza en Node cada 60s.');
       cleanupInterval = setInterval(cleanupExpiredPendings, 60 * 1000);
       app.locals.cleanupStrategy = 'node-fallback';
     }
@@ -286,12 +264,12 @@ async function applyPendingJob() {
     // Primero materializamos las ocurrencias recurrentes de HOY
     try {
       const mat = await (MovimientoRecurrente.materializeDueForToday && MovimientoRecurrente.materializeDueForToday());
-      if (mat > 0) console.log(`[applyPendingJob] Ocurrencias recurrentes materializadas: ${mat}`);
+      if (mat > 0);
     } catch (e) {
       console.error('[applyPendingJob] Error materializando recurrentes:', e && e.message);
     }
     const appliedCount = await Transaccion.applyPendingMovements();
-    if (appliedCount > 0) console.log(`[applyPendingJob] Movimientos aplicados: ${appliedCount}`);
+    if (appliedCount > 0);
   } catch (e) {
     console.error('[applyPendingJob] Error ejecutando job:', e.message);
   }
@@ -429,25 +407,20 @@ app.get('/', (req, res) => {
 // Forzar el guardado de la sesión después de asignar el código de verificación
 app.post('/api/guardar-codigo', (req, res) => {
   req.session.codigoVerificacion = '602755';
-  console.log('Código asignado a la sesión:', req.session.codigoVerificacion);
-  console.log('Estado de la sesión antes de guardar:', req.session);
   req.session.save((err) => {
     if (err) {
       console.error('Error al guardar la sesión:', err);
       return res.status(500).json({ error: 'Error al guardar la sesión' });
     } else {
-      console.log('Sesión guardada correctamente en Redis.');
       // Verificar el contenido de la sesión en Redis después de guardar
       req.session.save((err) => {
         if (err) {
           console.error('Error al guardar la sesión:', err);
         } else {
-          console.log('Sesión guardada correctamente. Verificando contenido en Redis...');
           redisClient.get(`sess:${req.sessionID}`, (err, sessionData) => {
             if (err) {
               console.error('Error al obtener la sesión de Redis:', err);
             } else {
-              console.log('Contenido de la sesión en Redis después de guardar:', sessionData);
             }
           });
         }
@@ -460,8 +433,6 @@ app.post('/api/guardar-codigo', (req, res) => {
 // Verificar si las cookies se envían correctamente
 if (process.env.DEBUG_HTTP === 'true') {
   app.use((req, res, next) => {
-    console.log('Cookies recibidas en la solicitud:', req.cookies);
-    console.log('ID de sesión recibido:', req.sessionID);
     next();
   });
 }
@@ -469,7 +440,6 @@ if (process.env.DEBUG_HTTP === 'true') {
 // Verificar el contenido de la sesión al inicio de cada solicitud
 if (process.env.DEBUG_HTTP === 'true') {
   app.use((req, res, next) => {
-    console.log('Estado de la sesión al inicio de la solicitud:', req.session);
     next();
   });
 }
@@ -479,7 +449,6 @@ if (process.env.DEBUG_REDIS === 'true') {
   redisClient.once('ready', async () => {
     try {
       const keys = await redisClient.keys('*');
-      console.log('Claves almacenadas en Redis:', keys);
     } catch (err) {
       console.error('Error al obtener claves de Redis:', err);
     }
@@ -491,7 +460,6 @@ function startServer(port, attemptsLeft = 10) {
   const server = http.createServer(app);
 
   const onListening = () => {
-    console.log(`Servidor Kairos backend escuchando en puerto ${port}`);
   };
 
   const onError = (err) => {
@@ -520,7 +488,6 @@ if (process.env.DEBUG_HTTP === 'true') {
         if (err) {
           console.error('Error al obtener la sesión de Redis:', err);
         } else {
-          console.log('Datos de la sesión en Redis:', sessionData);
         }
       });
     }

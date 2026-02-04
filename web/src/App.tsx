@@ -131,7 +131,6 @@ function AppRoutes({ email, name, refreshUser, sidebarOpen, setSidebarOpen, isMo
   useInactivityTimeout({ 
     timeoutMinutes: 15,
     onTimeout: () => {
-      console.log('Sesión cerrada por inactividad');
     }
   });
   

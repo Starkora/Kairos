@@ -13,9 +13,7 @@ const UsuarioPendiente = {
     return results;
   },
   findByEmail: async (email) => {
-    console.log('[Kairos][DEBUG][usuarioPendiente] Ejecutando SQL: SELECT * FROM usuarios_pendientes WHERE email = ?', email);
     const [results] = await db.query('SELECT * FROM usuarios_pendientes WHERE email = ?', [email]);
-    console.log('[Kairos][DEBUG][usuarioPendiente] Resultados:', results);
     return results;
   },
   deleteByEmail: async (email, plataforma) => {

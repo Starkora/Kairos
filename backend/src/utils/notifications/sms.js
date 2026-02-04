@@ -10,11 +10,6 @@ const whatsappFrom = process.env.TWILIO_WHATSAPP_FROM; // ej: 'whatsapp:+1415523
 const preferredChannel = (process.env.TWILIO_PREFERRED_CHANNEL || 'sms').toLowerCase(); // 'sms' | 'whatsapp'
 const waFallbackToSMS = String(process.env.TWILIO_WHATSAPP_FALLBACK_TO_SMS || 'false').toLowerCase() === 'true';
 
-console.log('[Kairos][Twilio] SID presente:', !!accountSid);
-console.log('[Kairos][Twilio] TOKEN presente:', !!authToken);
-console.log('[Kairos][Twilio] FROM (SMS) presente:', !!smsFrom);
-console.log('[Kairos][Twilio] FROM (WA) presente:', !!whatsappFrom);
-
 let client = null;
 if (accountSid && authToken) {
   client = twilio(accountSid, authToken);
@@ -38,11 +33,9 @@ function normalizeTo(to) {
  
 async function sendSMS(to, text) {
   if (!client) {
-    console.error('[Kairos] Twilio no configurado. Falta TWILIO_ACCOUNT_SID o TWILIO_AUTH_TOKEN');
     return;
   }
   if (!smsFrom) {
-    console.error('[Kairos] No hay remitente SMS configurado. Define TWILIO_SMS_FROM o TWILIO_PHONE_NUMBER en el entorno.');
     return;
   }
   try {
@@ -51,21 +44,17 @@ async function sendSMS(to, text) {
   from: smsFrom,
       to: normalizeTo(to) // Asume Perú por defecto; ajustar según despliegue
     });
-    console.log('[Kairos] SMS enviado:', res.sid);
     return res;
   } catch (e) {
-    console.error('[Kairos] Error al enviar SMS:', e);
     throw e;
   }
 }
 
 async function sendWhatsApp(to, text) {
   if (!client) {
-    console.error('[Kairos] Twilio no configurado. Falta TWILIO_ACCOUNT_SID o TWILIO_AUTH_TOKEN');
     return;
   }
   if (!whatsappFrom) {
-    console.error('[Kairos] TWILIO_WHATSAPP_FROM no está definido. Usa el número de Sandbox (whatsapp:+14155238886) o tu número habilitado.');
     return;
   }
   try {
@@ -75,30 +64,22 @@ async function sendWhatsApp(to, text) {
       ? whatsappFrom
       : ('whatsapp:' + (whatsappFrom.startsWith('+') ? whatsappFrom : normalizeTo(whatsappFrom)));
     if (!whatsappFrom.startsWith('whatsapp:')) {
-      console.warn('[Kairos] Advertencia: TWILIO_WHATSAPP_FROM debe iniciar con "whatsapp:". Se usará normalizado:', fromWa);
     }
     const res = await client.messages.create({
       body: text,
       from: fromWa,
       to: toWa
     });
-    console.log('[Kairos] WhatsApp enviado:', res.sid);
     return res;
   } catch (e) {
     if (e && e.code === 21910) {
-      console.error('[Kairos] Twilio 21910: From y To deben ser del mismo canal. Asegúrate que:',
-        '\n- TWILIO_WHATSAPP_FROM sea algo como whatsapp:+14155238886 (Sandbox)',
-        '\n- El destinatario esté en formato whatsapp:+<pais><numero> (el código ya lo aplica) y haya unido el sandbox (join ...)');
     } else {
-      console.error('[Kairos] Error al enviar WhatsApp:', e);
     }
     // Fallback opcional a SMS si está habilitado
     if (waFallbackToSMS) {
-      console.warn('[Kairos] Fallback habilitado: reintentando por SMS tras error en WhatsApp...');
       try {
         return await sendSMS(to, text);
       } catch (e2) {
-        console.error('[Kairos] Error también al enviar SMS (fallback de WA):', e2);
         throw e2;
       }
     }
@@ -112,7 +93,6 @@ async function send(to, text) {
     if (whatsappFrom) {
       try { return await sendWhatsApp(to, text); } catch (e) { throw e; }
     } else {
-      console.warn('[Kairos] TWILIO_PREFERRED_CHANNEL=whatsapp pero TWILIO_WHATSAPP_FROM no está configurado. Enviando por SMS como fallback.');
       return sendSMS(to, text);
     }
   }

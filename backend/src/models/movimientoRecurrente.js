@@ -116,6 +116,6 @@ MovimientoRecurrente.materializeDueForToday = async function materializeDueForTo
       console.warn('[recurrentes.materialize] Error con', r && r.id, e && e.message);
     }
   }
-  if (created > 0) console.log(`[recurrentes.materialize] Movimientos creados hoy: ${created}`);
+  if (created > 0);
   return created;
 };

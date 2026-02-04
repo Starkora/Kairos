@@ -90,7 +90,6 @@ export default function Categorias() {
         return res.json();
       })
       .then(data => {
-        console.log('Datos recibidos en GET /api/categorias:', data); // Depuración
         if (Array.isArray(data)) {
           setCategorias(data);
         } else {
@@ -158,7 +157,6 @@ export default function Categorias() {
     });
     if (result.isConfirmed) {
       setLoading(true);
-      console.log('Datos enviados en POST /api/categorias:', { ...form, plataforma: 'web' }); // Depuración
       const res = await fetch(`${API_BASE}/api/categorias`, {
         method: 'POST',
         headers: {

@@ -37,7 +37,6 @@ exports.marcarPagada = async (req, res) => {
 
 exports.eliminarDeuda = async (req, res) => {
   try {
-    console.log('Intentando eliminar deuda con ID:', req.params.id); // Log para depuración
     await Deuda.delete(req.params.id);
     res.json({ success: true });
   } catch (err) {
@@ -55,8 +54,6 @@ exports.registrarPago = async (req, res) => {
     if (!deuda_id || !monto || isNaN(monto)) {
       return res.status(400).json({ error: 'Datos inválidos: deuda_id y monto son requeridos y deben ser válidos.' });
     }
-
-    console.log('Datos recibidos para registrar pago:', { deuda_id, monto, fecha });
 
     // Registrar pago
     await Deuda.registrarPago(deuda_id, monto, fecha);

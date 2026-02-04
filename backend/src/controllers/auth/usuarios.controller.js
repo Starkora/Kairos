@@ -11,10 +11,7 @@ const UsuarioPendiente = require('../../models/usuarioPendiente');
 const getUserInfo = async (req, res) => {
   try {
     const usuarioId = req.user.id; // Obtener el ID del usuario autenticado
-    console.log('ID del usuario autenticado:', usuarioId); // Log para depuración
-    console.log('Ejecutando consulta SQL para obtener datos del usuario');
     const [rows] = await db.query('SELECT email, numero AS telefono, nombre, apellido, rol, aprobado FROM usuarios WHERE id = ?', [usuarioId]);
-    console.log('Resultado de la consulta SQL:', rows); // Log para depuración
 
     if (!Array.isArray(rows) || rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -30,14 +27,9 @@ const getUserInfo = async (req, res) => {
 // Método para enviar código de verificación
 const enviarCodigoVerificacion = async (req, res) => {
   try {
-    console.log('[RecuperarPassword] Petición recibida:', req.body);
-    console.log('Usuario en enviarCodigoVerificacion:', req.user); // Log para depuración
-
     const usuarioId = req.user.id; // Obtener el ID del usuario autenticado
     const { metodo = 'correo' } = req.body || {}; // 'correo' | 'telefono'
     const resultado = await db.query('SELECT email, nombre, apellido, numero AS telefono FROM usuarios WHERE id = ?', [usuarioId]);
-
-    console.log('Resultado de la consulta SQL:', resultado); // Log detallado del resultado
 
     if (!resultado || resultado.length === 0 || resultado[0].length === 0) {
       console.error('Usuario no encontrado en la base de datos:', resultado);
@@ -47,24 +39,22 @@ const enviarCodigoVerificacion = async (req, res) => {
     const usuario = resultado[0][0]; // Acceder al primer objeto del arreglo anidado
 
     const email = (usuario.email || '').trim();
-    const telDigits = String(usuario.telefono || '').replace(/\D/g, '');
+    const telefono = String(usuario.telefono || '').trim();
+    
     if (metodo === 'telefono') {
-      if (telDigits.length !== 9) {
+      // Validar número internacional (debe empezar con + y tener entre 8-18 caracteres)
+      if (!telefono.startsWith('+') || telefono.length < 8 || telefono.length > 18) {
         console.error('Teléfono del usuario no válido:', usuario);
-        return res.status(400).json({ error: 'Teléfono del usuario inválido o no configurado (requiere 9 dígitos)' });
+        return res.status(400).json({ error: 'Teléfono del usuario inválido o no configurado' });
       }
     } else {
       if (!email) {
         console.error('Correo del usuario no encontrado o inválido:', usuario);
         return res.status(404).json({ error: 'Correo del usuario no encontrado o inválido' });
       }
-      console.log(`Correo válido encontrado: ${email}`);
     }
 
     const codigo = crypto.randomInt(100000, 999999).toString();
-    console.log(`Código generado: ${codigo}`); // Log para confirmar el código
-
-    console.log('Estado de req.session antes de asignar el código:', req.session); // Log para depuración
     req.session.codigoVerificacion = codigo;
     // Guardar la sesión explícitamente para garantizar persistencia
     await new Promise((resolve, reject) => {
@@ -73,23 +63,24 @@ const enviarCodigoVerificacion = async (req, res) => {
           console.error('Error al guardar la sesión con el código:', err);
           return reject(err);
         }
-        console.log('Sesión guardada con el código de verificación');
         resolve();
       });
     });
-    console.log('Estado de req.session después de asignar el código:', req.session); // Log para depuración
 
     // Enviar el código por el medio seleccionado
     if (metodo === 'telefono') {
-      console.log(`Enviando código ${codigo} por SMS al ${telDigits}`);
       try {
-  await sms.send(telDigits, `Tu código de verificación es: ${codigo}`);
+        // Enviar código por WhatsApp usando el bot de MiBodega
+        const { sendVerificationCode } = require('../../utils/whatsapp-notifier');
+        const whatsappResult = await sendVerificationCode(telefono, codigo, 'registro');
+        if (!whatsappResult.success) {
+          throw new Error('No se pudo enviar el código por WhatsApp');
+        }
       } catch (e) {
-        console.error('Error al enviar SMS:', e);
-        return res.status(500).json({ error: 'No se pudo enviar el SMS' });
+        console.error('Error al enviar código por WhatsApp:', e);
+        return res.status(500).json({ error: 'No se pudo enviar el código por WhatsApp' });
       }
     } else {
-      console.log(`Enviando código ${codigo} al correo ${email}`); // Log para depuración
       await mailer.sendMail({
         to: email,
         subject: 'Código de verificación',
@@ -97,7 +88,7 @@ const enviarCodigoVerificacion = async (req, res) => {
       });
     }
 
-    res.status(200).json({ message: `Código enviado exitosamente por ${metodo === 'telefono' ? 'SMS' : 'correo'}.` });
+    res.status(200).json({ message: `Código enviado exitosamente por ${metodo === 'telefono' ? 'WhatsApp' : 'correo'}.` });
   } catch (error) {
     console.error('Error al enviar código de verificación:', error);
     res.status(500).json({ error: 'Error al enviar código de verificación' });
@@ -108,17 +99,6 @@ const enviarCodigoVerificacion = async (req, res) => {
 const verificarCodigoYGuardar = async (req, res) => {
   try {
   const { codigo, userInfo } = req.body;
-
-    console.log('Estado de req.session al inicio de verificarCodigoYGuardar:', req.session);
-    console.log('Código almacenado en la sesión:', req.session.codigoVerificacion); // Log para depuración
-    console.log('Código ingresado por el usuario:', codigo); // Log para depuración
-
-    // Debug: imprimir userInfo recibido para entender por qué puede fallar la validación de unicidad
-    try {
-      console.log('Payload userInfo recibido en verificarCodigoYGuardar:', JSON.stringify(userInfo));
-    } catch (e) {
-      console.log('Payload userInfo (no JSON):', userInfo);
-    }
 
     if (!req.session || !req.session.codigoVerificacion) {
       return res.status(400).json({ error: 'No hay código de verificación en la sesión' });
@@ -131,8 +111,6 @@ const verificarCodigoYGuardar = async (req, res) => {
     const userId = req.user.id;
     const email = (userInfo.email || '').trim();
     const numero = (userInfo.telefono || '').trim();
-
-    console.log(`Validando unicidad: email='${email}', numero='${numero}', userId=${userId}`);
 
     // Obtener valores actuales del usuario para comparar y evitar falsos positivos
     const [currentRows] = await db.query('SELECT email, numero FROM usuarios WHERE id = ?', [userId]);
@@ -173,7 +151,6 @@ const verificarCodigoYGuardar = async (req, res) => {
         resolve();
       });
     });
-    console.log('Estado de req.session al final de verificarCodigoYGuardar:', req.session);
     res.status(200).json({ message: 'Datos actualizados correctamente' });
   } catch (error) {
     console.error('Error al guardar cambios:', error);
@@ -578,8 +555,14 @@ const resend = async (req, res) => {
     const newCode = crypto.randomInt(100000, 999999).toString();
     const newHash = await bcrypt.hash(newCode, 10);
     await db.query('UPDATE usuarios_pendientes SET codigo = ? WHERE email = ?', [newHash, p.email]);
-    if (p.metodo === 'sms') {
-  await sms.send(p.numero, `Tu código de verificación de Kairos es: ${newCode}`);
+    
+    if (p.metodo === 'sms' || p.metodo === 'telefono') {
+      // Enviar código por WhatsApp usando el bot de MiBodega
+      const { sendVerificationCode } = require('../../utils/whatsapp-notifier');
+      const whatsappResult = await sendVerificationCode(p.numero, newCode, 'registro');
+      if (!whatsappResult.success) {
+        throw new Error('No se pudo enviar el código por WhatsApp');
+      }
     } else {
       await mailer.sendMail({ to: p.email, subject: 'Kairos - Código de verificación', text: `Tu código de verificación es: ${newCode}` });
     }

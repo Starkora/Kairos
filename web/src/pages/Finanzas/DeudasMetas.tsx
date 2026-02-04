@@ -294,7 +294,6 @@ export default function DeudasMetas() {
       });
       if (!confirm.isConfirmed) return;
 
-      console.log('Datos enviados a handlePago:', { id, tipo, monto }); // Log para depuración
       const url = tipo === 'deuda' ? `${API_BASE}/api/deudas/pago` : `${API_BASE}/api/metas/aporte`;
       const fecha = new Date().toISOString().split('T')[0]; // Fecha actual en formato YYYY-MM-DD
       // Construir body según tipo: deuda -> deuda_id, meta -> meta_id
@@ -305,8 +304,6 @@ export default function DeudasMetas() {
       };
   if (tipo === 'deuda') (body as any).deuda_id = id;
   else (body as any).meta_id = id;
-
-      console.log('Payload handlePago:', body);
 
       const response = await fetch(url, {
         method: 'POST',

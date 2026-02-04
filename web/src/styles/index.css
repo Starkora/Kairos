@@ -71,6 +71,15 @@ html:not(.dark) .swal2-html-container input[type="checkbox"] {
   --table-row-hover: #f9f9fb;
   --body-bg: #f8f9fa;
   
+  /* Variables para Login/Auth */
+  --color-bg: #f0f2f5;
+  --color-card: #ffffff;
+  --color-text: #1a202c;
+  --color-primary: #6c4fa1;
+  --color-input-border: #d1d5db;
+  --color-input-bg: #ffffff;
+  --card-shadow: rgba(0, 0, 0, 0.1);
+  
   /* Bordes */
   --border-color: #e0e0e0;
   --border-color-primary: #f3f0f7;
@@ -114,6 +123,15 @@ html.dark {
   --table-header-bg: #2a2a2a;
   --table-row-hover: #252525;
   --body-bg: #121212;
+  
+  /* Variables para Login/Auth */
+  --color-bg: #1a1a1a;
+  --color-card: #2d2d2d;
+  --color-text: #e5e7eb;
+  --color-primary: #9575cd;
+  --color-input-border: #4b5563;
+  --color-input-bg: #374151;
+  --card-shadow: rgba(0, 0, 0, 0.5);
   
   /* Bordes */
   --border-color: #3a3a3a;

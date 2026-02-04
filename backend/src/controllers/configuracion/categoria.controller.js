@@ -4,8 +4,6 @@ const db = require('../../../config/database'); // Asegúrate de requerir tu con
 exports.getAll = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   const plataforma = req.query.plataforma || req.body.plataforma;
-  console.log('Usuario ID en getAll:', usuario_id); // Depuración
-  console.log('Plataforma en getAll:', plataforma); // Depuración
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   if (!plataforma) return res.status(400).json({ error: 'Falta campo plataforma en la consulta' });
   try {
@@ -34,7 +32,6 @@ exports.getByTipo = async (req, res) => {
 exports.create = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   const { nombre, tipo, plataforma } = req.body;
-  console.log('Datos recibidos en create:', { nombre, tipo, plataforma }); // Depuración
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   if (!nombre || !tipo || !plataforma) return res.status(400).json({ error: 'Faltan campos requeridos (incluye plataforma)' });
   try {
@@ -57,7 +54,6 @@ exports.update = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   const { nombre, tipo, plataforma } = req.body;
   const id = req.params.id;
-  console.log('Datos recibidos en update:', { id, nombre, tipo, plataforma }); // Depuración
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   if (!nombre || !tipo || !plataforma) return res.status(400).json({ error: 'Faltan campos requeridos (incluye plataforma)' });
   try {
@@ -75,17 +71,13 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   const id = req.params.id;
-  console.log('Datos recibidos en delete:', { id }); // Depuración
-  console.log('Usuario ID en delete:', usuario_id); // Depuración
   try {
     // Eliminar movimientos relacionados antes de eliminar la categoría
     await db.query('DELETE FROM movimientos WHERE categoria_id = ?', [id]);
     const result = await Categoria.delete({ id, usuario_id });
-    console.log('Resultado de la consulta delete:', result); // Depuración
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Categoría no encontrada' });
     res.json({ message: 'Categoría eliminada' });
   } catch (err) {
-    console.error('Error en delete:', err); // Depuración
     res.status(500).json({ error: err.message });
   }
 };

@@ -30,7 +30,6 @@ const socket = tls.connect({ host, port, servername: host, rejectUnauthorized: f
     }
     const pem = derToPem(cert.raw);
     const spki = getSpkiHashFromPemCert(pem);
-    console.log(JSON.stringify({ host, port, spkiBase64: spki }, null, 2));
   } catch (e) {
     console.error('Error generando SPKI:', e && (e.stack || e.message || e));
     process.exitCode = 2;

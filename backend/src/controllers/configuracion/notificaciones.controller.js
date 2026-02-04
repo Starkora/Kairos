@@ -67,30 +67,27 @@ async function fetchNotificacionesConEmail() {
 
 async function workerTick() {
   const now = new Date(); // Asume TZ del servidor
-  try {
-    const list = await fetchNotificacionesConEmail();
+  const list = await fetchNotificacionesConEmail();
     for (const n of list) {
       if (!n) continue;
       if (!isDue(n, now)) continue;
       const key = buildSlotKey(now, n.id);
       if (sentTracker.has(key)) continue; // ya enviado en este minuto
-      try {
-        if (n.medio === 'correo') {
-          if (!n.usuario_email) { console.error('Notificación sin email:', n.id); continue; }
+      
+      if (n.medio === 'correo') {
+          if (!n.usuario_email) { continue; }
           await mailer.sendMail({
             to: n.usuario_email,
             subject: 'Recordatorio de Notificación',
             text: 'Hola, recuerda anotar tus ingresos y egresos del día para ser un ahorrador pro.'
           });
-          console.log(`[Notificaciones] Enviado correo a ${n.usuario_email} (notif ${n.id})`);
         } else if (n.medio === 'sms') {
-          if (!n.usuario_telefono) { console.error('Notificación sin teléfono:', n.id); continue; }
+          if (!n.usuario_telefono) { continue; }
           // Enviar SIEMPRE por SMS cuando el medio configurado es 'sms',
           // ignorando TWILIO_PREFERRED_CHANNEL para respetar la preferencia por notificación.
           await sms.sendSMS(String(n.usuario_telefono), 'Kairos: recuerda registrar tus ingresos y egresos del día.');
-          console.log(`[Notificaciones] Enviado SMS a ${n.usuario_telefono} (notif ${n.id})`);
         } else if (n.medio === 'whatsapp') {
-          if (!n.usuario_telefono) { console.error('Notificación sin teléfono:', n.id); continue; }
+          if (!n.usuario_telefono) { continue; }
           
           // 🆕 Usar el bot de MiBodega para enviar notificaciones por WhatsApp
           const mensaje = '💰 *Kairos - Recordatorio*\n\n' +
@@ -103,10 +100,7 @@ async function workerTick() {
             mensaje
           );
           
-          if (resultado.success) {
-            console.log(`[Notificaciones] ✅ Enviado WhatsApp via MiBodega Bot a ${n.usuario_telefono} (notif ${n.id})`);
-          } else {
-            console.error(`[Notificaciones] ❌ Error al enviar WhatsApp via MiBodega Bot: ${resultado.error}`);
+          if (!resultado.success) {
             // Opcional: fallback a Twilio si falla el bot
             // await sms.sendWhatsApp(String(n.usuario_telefono), 'Kairos: recuerda registrar tus ingresos y egresos del día.');
           }
@@ -115,18 +109,12 @@ async function workerTick() {
           continue;
         }
         sentTracker.set(key, Date.now());
-      } catch (err) {
-        console.error('[Notificaciones] Error al enviar:', err && err.response ? err.response.body : err);
-      }
     }
     // Limpieza básica del tracker (entradas > 36h)
     const cutoff = Date.now() - 36 * 3600 * 1000;
     for (const [k, ts] of sentTracker.entries()) {
       if (ts < cutoff) sentTracker.delete(k);
     }
-  } catch (e) {
-    console.error('[Notificaciones] Tick error:', e);
-  }
 }
 
 // Ejecutar cada minuto
@@ -137,9 +125,6 @@ router.post('/notificaciones', async (req, res) => {
   const { frecuencia, medio, horaInicio, intervaloHoras, dia } = req.body;
   const user = req.user; // Obtener el usuario desde el token
   const email = user.email; // Extraer el correo del usuario
-
-  console.log('Usuario autenticado:', req.user); // Depuración
-  console.log('Datos recibidos:', { frecuencia, medio, horaInicio, intervaloHoras, dia }); // Depuración
 
   if (!frecuencia || !medio || !horaInicio || !intervaloHoras || (frecuencia === 'semanal' && !dia)) {
     return res.status(400).json({ error: 'Faltan datos requeridos' });
@@ -164,10 +149,8 @@ router.post('/notificaciones', async (req, res) => {
 
     const usuarioEmail = usuario[0]?.email;
     if (!usuarioEmail) {
-      console.error('Correo del usuario no encontrado:', usuario);
       return res.status(500).json({ error: 'Correo del usuario no encontrado' });
     }
-    console.log('Correo del usuario:', usuarioEmail); // Depuración
 
     await db.query(
       'INSERT INTO notificaciones (usuario_id, frecuencia, medio, hora_inicio, intervalo_horas, dia) VALUES (?, ?, ?, ?, ?, ?)',
@@ -176,7 +159,6 @@ router.post('/notificaciones', async (req, res) => {
 
     res.status(201).json({ message: 'Configuración guardada exitosamente' });
   } catch (error) {
-    console.error('Error al guardar configuración en la base de datos:', error);
     res.status(500).json({ error: 'Error al guardar configuración' });
   }
 });
@@ -185,16 +167,13 @@ router.post('/notificaciones', async (req, res) => {
 router.get('/notificaciones', async (req, res) => {
   try {
     const usuarioId = req.user.id; // Obtener el ID del usuario autenticado
-    console.log('Usuario ID utilizado en la consulta:', usuarioId); // Depuración
     const resultado = await db.query(
       'SELECT * FROM notificaciones WHERE usuario_id = ?',
       [usuarioId]
     );
     const notificaciones = resultado[0]; // Acceder al primer índice del resultado para obtener las filas
-    console.log('Notificaciones obtenidas:', notificaciones); // Depuración
     res.json(notificaciones || []); // Asegurar que siempre se devuelva un arreglo
   } catch (error) {
-    console.error('Error al obtener notificaciones:', error);
     res.status(500).json({ error: 'Error al obtener las notificaciones' });
   }
 });
@@ -225,7 +204,6 @@ router.put('/notificaciones/:id', async (req, res) => {
 
     res.json({ message: 'Notificación actualizada exitosamente' });
   } catch (error) {
-    console.error('Error al actualizar la notificación:', error);
     res.status(500).json({ error: 'Error al actualizar la notificación' });
   }
 });
@@ -247,7 +225,6 @@ router.delete('/notificaciones/:id', async (req, res) => {
 
     res.json({ message: 'Notificación eliminada exitosamente' });
   } catch (error) {
-    console.error('Error al eliminar la notificación:', error);
     res.status(500).json({ error: 'Error al eliminar la notificación' });
   }
 });

@@ -11,7 +11,6 @@ exports.crearMeta = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Error al crear la meta', details: err.message });
   }
-  console.log('Datos recibidos en req.body:', req.body);
 };
 
 exports.obtenerMetas = async (req, res) => {

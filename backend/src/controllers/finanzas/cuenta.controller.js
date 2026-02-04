@@ -3,15 +3,12 @@
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   const { nombre, saldo_inicial, tipo, plataforma } = req.body;
 
-  console.log('Datos recibidos en create:', { nombre, saldo_inicial, tipo, plataforma }); // Depuración
-
   if (!nombre || saldo_inicial === undefined || !tipo || !plataforma) {
     console.error('Datos inválidos en create:', { nombre, saldo_inicial, tipo, plataforma }); // Depuración
     return res.status(400).json({ error: 'Faltan campos requeridos' });
   }
   try {
     const result = await Cuenta.create({ usuario_id, nombre, saldo_inicial, tipo, plataforma });
-    console.log('Cuenta creada:', result); // Depuración
     res.status(201).json({ message: 'Cuenta creada', id: result.id });
   } catch (err) {
     console.error('Error al crear cuenta:', err.message); // Depuración
@@ -25,9 +22,6 @@ exports.getAll = async (req, res) => {
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   const plataforma = req.query.plataforma || req.body.plataforma;
 
-  console.log('Usuario ID en getAll:', usuario_id); // Depuración
-  console.log('Plataforma en getAll:', plataforma); // Depuración
-
   if (!plataforma) {
     console.error('Plataforma faltante en getAll:', plataforma); // Depuración
     return res.status(400).json({ error: 'Falta campo plataforma en la consulta' });
@@ -35,7 +29,6 @@ exports.getAll = async (req, res) => {
 
   try {
     const rows = await Cuenta.getAllByUsuario(usuario_id, plataforma);
-    console.log('Cuentas obtenidas:', rows); // Depuración
     res.json(rows);
   } catch (err) {
     console.error('Error al obtener cuentas:', err.message); // Depuración
@@ -47,8 +40,6 @@ exports.deleteById = async (req, res) => {
   const id = Number(req.params.id);
   const usuario_id = req.user && req.user.id;
   const cascade = String(req.query.cascade || '').toLowerCase() === 'true' || req.body?.cascade === true;
-
-  console.log('[cuentas.delete] ID:', id, 'user:', usuario_id, 'cascade:', cascade);
 
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   if (!id) return res.status(400).json({ error: 'ID inválido' });
@@ -97,8 +88,6 @@ exports.update = async (req, res) => {
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   const id = req.params.id;
   const { nombre, tipo, plataforma } = req.body;
-
-  console.log('Datos recibidos en update cuenta:', { id, nombre, tipo, plataforma });
 
   if (!id || !nombre || !tipo) {
     return res.status(400).json({ error: 'Faltan campos requeridos' });

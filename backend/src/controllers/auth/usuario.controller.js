@@ -31,7 +31,12 @@ async function enviarCodigo(email, numero, metodo, res) {
     if (metodo === 'correo') {
       await sendMail(email, 'Código de recuperación Kairos', `Tu código de recuperación es: ${codigo}`);
     } else {
-      await send(numero, `Tu código de recuperación Kairos es: ${codigo}`);
+      // Enviar código por WhatsApp usando el bot de MiBodega
+      const { sendVerificationCode } = require('../../utils/whatsapp-notifier');
+      const whatsappResult = await sendVerificationCode(numero, codigo, 'recuperacion');
+      if (!whatsappResult.success) {
+        throw new Error('No se pudo enviar el código por WhatsApp');
+      }
     }
     res.json({ success: true });
   } catch (e) {
@@ -79,38 +84,57 @@ const JWT_SECRET = process.env.JWT_SECRET || 'kairos_secret';
 exports.register = async (req, res) => {
   let { email, numero, password, nombre, confirmMethod, plataforma } = req.body;
   if (!email || !numero || !password || !nombre || !confirmMethod) {
-    console.log('[Kairos][DEBUG][register] Faltan campos requeridos:', req.body);
     return res.status(400).json({ error: 'Todos los campos son requeridos' });
   }
-    email = email.trim().toLowerCase();
-    try {
-      const users = await Usuario.findByEmail(email);
-      if (users && users.length > 0) return res.status(400).json({ error: 'El correo ya está registrado' });
-      const users2 = await Usuario.findByNumero(numero);
-      if (users2 && users2.length > 0) return res.status(400).json({ error: 'El número ya está registrado' });
-      console.log('[Kairos][DEBUG] Buscando pendiente por email:', email);
-      const pendientes = await UsuarioPendiente.findByEmail(email);
-      if (pendientes && pendientes.length > 0) return res.status(400).json({ error: 'Ya hay un registro pendiente para este correo' });
-      const hash = bcrypt.hashSync(password, 10);
-      const codigo = Math.floor(100000 + Math.random() * 900000).toString();
-      const expires = Date.now() + 15 * 60 * 1000;
-      console.log('[Kairos][DEBUG] Insertando usuario pendiente:', {email, numero, nombre, codigo, metodo: confirmMethod, expires});
-      await UsuarioPendiente.create({
-        email,
-        numero,
-        nombre,
-        password: hash,
-        codigo,
-        metodo: confirmMethod,
-        expires,
-        plataforma: plataforma || 'web'
-      });
+  
+  email = email.trim().toLowerCase();
+  
+  // Normalizar número de teléfono internacional
+  let numeroNormalizado = (numero || '').trim();
+  if (!numeroNormalizado.startsWith('+')) {
+    return res.status(400).json({ error: 'El número debe incluir el código de país (ej: +51987654321)' });
+  }
+  
+  // Validar que el número tenga entre 8 y 18 caracteres (+xxx...)
+  if (numeroNormalizado.length < 8 || numeroNormalizado.length > 18) {
+    return res.status(400).json({ error: 'Número de teléfono inválido' });
+  }
+  
+  // Validar que después del + solo haya dígitos
+  const soloDigitos = numeroNormalizado.slice(1).replace(/\D/g, '');
+  if (soloDigitos.length < 7 || soloDigitos.length > 15) {
+    return res.status(400).json({ error: 'El número debe tener entre 7 y 15 dígitos' });
+  }
+  
+  try {
+    const users = await Usuario.findByEmail(email);
+    if (users && users.length > 0) return res.status(400).json({ error: 'El correo ya está registrado' });
+    const users2 = await Usuario.findByNumero(numeroNormalizado);
+    if (users2 && users2.length > 0) return res.status(400).json({ error: 'El número ya está registrado' });
+    const pendientes = await UsuarioPendiente.findByEmail(email);
+    if (pendientes && pendientes.length > 0) return res.status(400).json({ error: 'Ya hay un registro pendiente para este correo' });
+    const hash = bcrypt.hashSync(password, 10);
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = Date.now() + 15 * 60 * 1000;
+    await UsuarioPendiente.create({
+      email,
+      numero: numeroNormalizado,
+      nombre,
+      password: hash,
+      codigo,
+      metodo: confirmMethod,
+      expires,
+      plataforma: plataforma || 'web'
+    });
       if (confirmMethod === 'correo') {
-        console.log('[Kairos] Enviando correo a', email, 'con código', codigo);
         const sendRes = await sendMail(email, 'Código de confirmación Kairos', `Tu código de confirmación es: ${codigo}`);
-        console.log('[Kairos] Respuesta SendGrid:', sendRes);
       } else {
-        await send(numero, `Tu código de confirmación Kairos es: ${codigo}`);
+        // Enviar código por WhatsApp usando el bot de MiBodega
+        const { sendVerificationCode } = require('../../utils/whatsapp-notifier');
+        const whatsappResult = await sendVerificationCode(numero, codigo, 'registro');
+        if (!whatsappResult.success) {
+          throw new Error('No se pudo enviar el código por WhatsApp');
+        }
       }
       res.status(201).json({ email, numero, verificado: 0, mensaje: 'Código enviado. Falta confirmar.' });
     } catch (e) {
@@ -122,35 +146,55 @@ exports.register = async (req, res) => {
 
 exports.verify = async (req, res) => {
   try {
-    console.log('[Kairos][DEBUG] /verify llamado. Body:', req.body);
     let { email, codigo } = req.body;
     if (!email || !codigo) {
-      console.log('[Kairos][DEBUG][verify] Faltan campos requeridos:', req.body);
       return res.status(400).json({ error: 'Email y código son requeridos' });
     }
     email = email.trim().toLowerCase();
-    console.log('[Kairos][DEBUG] Intentando verificar usuario pendiente para email:', email);
     const pendientes = await UsuarioPendiente.findByEmail(email);
     if (!pendientes || pendientes.length === 0) {
-      console.log('[Kairos][DEBUG] No se encontró usuario pendiente para este correo:', email);
       return res.status(400).json({ error: 'No se encontró usuario pendiente para este correo' });
     }
     const entry = pendientes[0];
-    console.log('[Kairos][DEBUG] Usuario pendiente encontrado:', entry);
     if (entry.expires < Date.now()) {
       await UsuarioPendiente.deleteByEmail(email);
       return res.status(400).json({ error: 'El código ha expirado' });
     }
     if (codigo !== entry.codigo) return res.status(400).json({ error: 'Código incorrecto' });
+    
+    // REGISTRO LIBRE: Usuario aprobado automáticamente con 30 días de prueba
     const result = await Usuario.create({
       email: entry.email,
       numero: entry.numero,
       password: entry.password,
       verificado: 1,
+      aprobado: 1, // ✓ Acceso inmediato sin aprobación del admin
+      nombre: entry.nombre || '',
+      apellido: entry.apellido || '',
       plataforma: entry.plataforma || req.body.plataforma || 'web'
     });
+    
     await UsuarioPendiente.deleteByEmail(email);
-    res.json({ success: true, id: result.insertId, email: entry.email });
+    
+    // Notificar al admin por WhatsApp sobre el nuevo usuario
+    const { notifyAdminNewUser } = require('../../utils/whatsapp-notifier');
+    notifyAdminNewUser({
+      nombre: entry.nombre,
+      apellido: entry.apellido,
+      email: entry.email,
+      numero: entry.numero,
+      plataforma: entry.plataforma || 'web'
+    }).catch(err => {
+      console.error('[Kairos] Error al notificar admin por WhatsApp:', err);
+      // No bloquear el registro si falla la notificación
+    });
+    
+    res.json({ 
+      success: true, 
+      id: result.insertId || result.id, 
+      email: entry.email,
+      isNewUser: true // Flag para mostrar modal de bienvenida en frontend
+    });
   } catch (err) {
     console.error('Error al crear usuario tras confirmación:', err);
     res.status(500).json({ error: 'Error al crear usuario' });

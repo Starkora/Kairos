@@ -1411,7 +1411,6 @@ export default function Calendario() {
               recordatorios={recordatoriosPendientes}
               onDismiss={(id) => {
                 // Marcar como dismissed (podrías persistir esto)
-                console.log('Dismissed recordatorio:', id);
               }}
               maxVisible={3}
             />

@@ -85,12 +85,10 @@ export default function Cuentas() {
       body: JSON.stringify({ plataforma: 'web' })
     })
       .then(res => {
-        console.log('Respuesta del servidor en POST /api/cuentas:', res.status); // Depuración
         if (!res.ok) throw new Error('No autorizado');
         return res.json();
       })
       .then(data => {
-        console.log('Datos recibidos en POST /api/cuentas:', data); // Depuración
         if (Array.isArray(data)) setCuentas(data);
         else setCuentas([]);
       })
@@ -293,7 +291,6 @@ export default function Cuentas() {
     }).then((result) => {
       if (result.isConfirmed) {
         const token = getToken();
-        console.log('Token enviado:', token); // Depuración
         fetch(`${API_BASE}/api/cuentas/${id}`, {
           method: 'DELETE',
           headers: {
@@ -301,7 +298,6 @@ export default function Cuentas() {
           }
         })
           .then(async res => {
-            console.log('Respuesta del servidor en DELETE /api/cuentas:', res.status); // Depuración
             const data = await res.json().catch(() => ({}));
             if (res.status === 409 && (data.code === 'ACCOUNT_HAS_MOVEMENTS' || data.count > 0)) {
               // Mostrar alerta para eliminar movimientos y la cuenta

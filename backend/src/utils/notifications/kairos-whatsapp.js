@@ -16,9 +16,6 @@ const MIBODEGA_BOT_API_KEY = process.env.MIBODEGA_BOT_API_KEY || 'kairos-mibodeg
  */
 async function sendWhatsAppNotification(numero, mensaje) {
   try {
-    console.log('[Kairos→MiBodega] Enviando notificación WhatsApp');
-    console.log(`[Kairos→MiBodega] Destinatario: ${numero}`);
-    console.log(`[Kairos→MiBodega] URL: ${MIBODEGA_BOT_URL}/api/notifications`);
 
     const response = await axios.post(
       `${MIBODEGA_BOT_URL}/api/notifications`,
@@ -34,37 +31,26 @@ async function sendWhatsAppNotification(numero, mensaje) {
         timeout: 30000 // 30 segundos de timeout
       }
     );
-
-    console.log('[Kairos→MiBodega] ✅ Notificación enviada:', response.data);
     return {
       success: true,
       data: response.data
     };
   } catch (error) {
-    console.error('[Kairos→MiBodega] ❌ Error al enviar notificación:', error.message);
     
     if (error.response) {
       // El servidor respondió con un código de error
-      console.error('[Kairos→MiBodega] Respuesta del servidor:', error.response.data);
-      console.error('[Kairos→MiBodega] Código de estado:', error.response.status);
-      
       return {
         success: false,
         error: error.response.data.error || 'Error del servidor',
         statusCode: error.response.status
       };
     } else if (error.request) {
-      // La petición fue enviada pero no hubo respuesta
-      console.error('[Kairos→MiBodega] No se recibió respuesta del bot');
-      
       return {
         success: false,
         error: 'No se pudo conectar con el bot de WhatsApp. Verifica que esté en ejecución.'
       };
     } else {
-      // Algo pasó al configurar la petición
-      console.error('[Kairos→MiBodega] Error al configurar la petición:', error.message);
-      
+      // Algo pasó al configurar la petición      
       return {
         success: false,
         error: error.message
@@ -86,7 +72,6 @@ async function checkBotStatus() {
     
     return response.data.connected === true;
   } catch (error) {
-    console.error('[Kairos→MiBodega] Error al verificar estado del bot:', error.message);
     return false;
   }
 }

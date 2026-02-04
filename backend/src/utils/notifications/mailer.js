@@ -12,13 +12,10 @@ async function sendMail({ to, subject, text }) {
   if ((typeof from !== 'string' || !from.trim()) || !apiKey) {
     if (allowDevFallback) {
       console.warn('[mailer] Falta configuración de SendGrid/Mail From. Simulando envío (DEV).');
-      console.log(`[mailer][SIMULATED] To: ${to} | Subject: ${subject} | Text: ${text}`);
       return { simulated: true };
     }
     throw new Error('Configuración de correo incompleta: falta MAIL_FROM o SENDGRID_API_KEY');
   }
-
-  console.log(`Intentando enviar correo a ${to} con asunto: ${subject}`); // Log para depuración
 
   return sgMail.send({
     to: to.trim(),

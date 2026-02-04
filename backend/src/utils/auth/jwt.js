@@ -4,29 +4,29 @@ const Usuario = require('../../models/usuario');
 
 module.exports = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  if (process.env.DEBUG_AUTH === 'true') console.log('Authorization header presente:', !!authHeader);
+  if (process.env.DEBUG_AUTH === 'true');
 
   if (!authHeader) return res.status(401).json({ error: 'Token requerido' });
   const token = authHeader.split(' ')[1];
-  if (process.env.DEBUG_AUTH === 'true') console.log('Token recibido (oculto)');
+  if (process.env.DEBUG_AUTH === 'true');
 
   if (!token) return res.status(401).json({ error: 'Token inválido' });
   try {
   const user = jwt.verify(token, JWT_SECRET);
-    if (process.env.DEBUG_AUTH === 'true') console.log('Token decodificado (sin imprimir datos sensibles)');
+    if (process.env.DEBUG_AUTH === 'true');
 
     // Compatibilidad: si el token no trae id pero sí email, intentar obtener el id desde la BD
     if (!user.id && user.email) {
-      if (process.env.DEBUG_AUTH === 'true') console.log('Falta id en token; buscando id por email');
+      if (process.env.DEBUG_AUTH === 'true');
       try {
         const rows = await Usuario.findByEmail(String(user.email).trim());
         const found = Array.isArray(rows) ? rows[0] : null;
         if (found && found.id) {
           user.id = found.id;
-          if (process.env.DEBUG_AUTH === 'true') console.log('ID recuperado por email');
+          if (process.env.DEBUG_AUTH === 'true');
         }
       } catch (e) {
-        if (process.env.DEBUG_AUTH === 'true') console.log('Error buscando usuario por email:', e && e.message);
+        if (process.env.DEBUG_AUTH === 'true');
       }
     }
 
@@ -44,7 +44,7 @@ module.exports = async (req, res, next) => {
           if (user.aprobado === undefined) user.aprobado = dbUser.aprobado;
         }
       } catch (e) {
-        if (process.env.DEBUG_AUTH === 'true') console.log('No se pudo completar rol/aprobado desde BD:', e && e.message);
+        if (process.env.DEBUG_AUTH === 'true');
       }
     }
 

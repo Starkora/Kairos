@@ -28,15 +28,12 @@ const Deuda = {
   },
   registrarPago: async (deuda_id, monto, fecha) => {
     try {
-      console.log('Datos recibidos en registrarPago:', { deuda_id, monto, fecha }); // Log para depuración
 
       const insertPagoQuery = 'INSERT INTO pagos_deuda (deuda_id, monto, fecha) VALUES (?, ?, ?)';
       const updateDeudaQuery = 'UPDATE deudas SET monto_pagado = monto_pagado + ? WHERE id = ?';
 
-      console.log('Ejecutando consulta:', insertPagoQuery, [deuda_id, monto, fecha]);
       await db.query(insertPagoQuery, [deuda_id, monto, fecha]);
 
-      console.log('Ejecutando consulta:', updateDeudaQuery, [monto, deuda_id]);
       await db.query(updateDeudaQuery, [monto, deuda_id]);
     } catch (err) {
       console.error('Error en registrarPago:', err); // Log de error
