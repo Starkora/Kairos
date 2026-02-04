@@ -315,14 +315,22 @@ const verify = async (req, res) => {
       return res.status(400).json({ code: 'CODE_EXPIRED', message: 'El código ha expirado, vuelve a registrarte' });
     }
 
-    // Insertar en usuarios definitivo
+    // Insertar en usuarios definitivo con acceso inmediato (aprobado = 1)
     const [ins] = await db.query(
       'INSERT INTO usuarios (email, password, nombre, apellido, numero, verificado, plataforma, rol, aprobado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [p.email, p.password, p.nombre || '', p.apellido || '', p.numero || '', 1, (p.plataforma || 'web'), 'user', 0]
+      [p.email, p.password, p.nombre || '', p.apellido || '', p.numero || '', 1, (p.plataforma || 'web'), 'user', 1]
     );
+    
+    // Notificar al administrador sobre el nuevo usuario
+    try {
+      const { notifyAdminNewUser } = require('../../utils/whatsapp-notifier');
+      await notifyAdminNewUser(p.nombre, p.email, p.numero);
+    } catch (notifyError) {
+      console.log('No se pudo notificar al admin:', notifyError.message);
+    }
 
     await UsuarioPendiente.deleteByEmail(p.email);
-    return res.status(200).json({ success: true, id: ins && ins.insertId, message: 'Registro confirmado' });
+    return res.status(200).json({ success: true, isNewUser: true, id: ins && ins.insertId, message: 'Registro confirmado' });
   } catch (err) {
     console.error('Error en verify:', err);
     return res.status(500).json({ message: 'Error interno en verificación' });
