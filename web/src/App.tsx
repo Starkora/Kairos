@@ -33,7 +33,19 @@ function getUserInfoFromToken() {
   const token = getToken();
   if (!token) return {};
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    // Decodificar JWT correctamente con soporte UTF-8
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    
+    // Decodificar base64 a bytes
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    
+    const payload = JSON.parse(jsonPayload);
     return {
       email: payload.email || '',
       name: payload.name || '',
