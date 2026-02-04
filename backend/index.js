@@ -101,8 +101,40 @@ app.use((req, res, next) => {
 
 // Middleware para parsear JSON con charset UTF-8
 app.use(express.json({ limit: '1mb' }));
+
+// Middleware para asegurar UTF-8 en peticiones y respuestas
 app.use((req, res, next) => {
+  // Asegurar que las respuestas usen UTF-8
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  
+  // Forzar interpretación UTF-8 para datos entrantes
+  if (req.body && typeof req.body === 'object') {
+    // Función recursiva para decodificar strings correctamente
+    const fixEncoding = (obj) => {
+      if (typeof obj === 'string') {
+        try {
+          // Si el string viene mal codificado (ISO-8859-1 interpretado como UTF-8)
+          // lo recodificamos correctamente
+          const buffer = Buffer.from(obj, 'latin1');
+          return buffer.toString('utf8');
+        } catch {
+          return obj;
+        }
+      } else if (Array.isArray(obj)) {
+        return obj.map(fixEncoding);
+      } else if (obj && typeof obj === 'object') {
+        const fixed = {};
+        for (const [key, value] of Object.entries(obj)) {
+          fixed[key] = fixEncoding(value);
+        }
+        return fixed;
+      }
+      return obj;
+    };
+    
+    req.body = fixEncoding(req.body);
+  }
+  
   next();
 });
 

@@ -171,7 +171,7 @@ const Login = ({ onLogin }) => {
       }
       const res = await fetch(`${API_BASE}/api/usuarios/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'ngrok-skip-browser-warning': 'true' },
         credentials: 'include',
         body: JSON.stringify({ email, password, plataforma: 'web', captchaToken })
       });
@@ -303,7 +303,7 @@ const Login = ({ onLogin }) => {
       }
       const res = await fetch(`${API_BASE}/api/usuarios/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'ngrok-skip-browser-warning': 'true' },
         credentials: 'include',
         body: JSON.stringify({
           email: correo,
@@ -365,7 +365,7 @@ const Login = ({ onLogin }) => {
       }
       const res = await fetch(`${API_BASE}/api/usuarios/verify`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'ngrok-skip-browser-warning': 'true' },
         credentials: 'include',
         body: JSON.stringify({ email: correo, codigo })
       });
@@ -405,7 +405,7 @@ const Login = ({ onLogin }) => {
     try {
       const res = await fetch(`${API_BASE}/api/usuarios/resend`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'ngrok-skip-browser-warning': 'true' },
         credentials: 'include',
         body: JSON.stringify({ email: correo })
       });
