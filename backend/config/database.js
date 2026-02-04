@@ -20,6 +20,7 @@ if (useUrl) {
       acquireTimeout: Number(process.env.DB_ACQUIRE_TIMEOUT_MS || 10000),
       enableKeepAlive: true,
       keepAliveInitialDelay: 0,
+      charset: 'utf8mb4'
     };
   } catch (e) {
     // Si la URL no parsea, como fallback usar string directa (mysql2 soporta string)
@@ -45,6 +46,7 @@ if (useUrl) {
     acquireTimeout: Number(process.env.DB_ACQUIRE_TIMEOUT_MS || 10000),
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
+    charset: 'utf8mb4'
   };
 }
 

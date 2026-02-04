@@ -98,7 +98,13 @@ app.use((req, res, next) => {
   } catch {}
   next();
 });
+
+// Middleware para parsear JSON con charset UTF-8
 app.use(express.json({ limit: '1mb' }));
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
 
 // Agregar cookie-parser para poder leer req.cookies
 const cookieParser = require('cookie-parser');

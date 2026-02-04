@@ -105,23 +105,23 @@ const Login = ({ onLogin }) => {
   const [newUserName, setNewUserName] = useState('');
   
   // Modo oscuro/claro
-  const [isDarkMode, setIsDarkMode] = useState(() => {
+  const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
     return saved ? saved === 'dark' : true; // Por defecto oscuro
   });
   
   // Aplicar tema al cargar
   useEffect(() => {
-    if (isDarkMode) {
+    if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
   
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
+    setDarkMode(!darkMode);
   };
   
   // Estados para alertas Bootstrap
@@ -470,8 +470,8 @@ const Login = ({ onLogin }) => {
           height: '55px',
           borderRadius: '50%',
           border: 'none',
-          background: isDarkMode ? '#FFD700' : '#1a1a2e',
-          color: isDarkMode ? '#1a1a2e' : '#FFD700',
+          background: darkMode ? '#FFD700' : '#1a1a2e',
+          color: darkMode ? '#1a1a2e' : '#FFD700',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -489,11 +489,11 @@ const Login = ({ onLogin }) => {
           e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
           e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
         }}
-        title={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-        aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+        title={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+        aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
       >
         {/* @ts-ignore */}
-        {isDarkMode ? <FaSun /> : <FaMoon />}
+        {darkMode ? <FaSun /> : <FaMoon />}
       </button>
       
       <div style={{
