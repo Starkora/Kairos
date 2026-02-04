@@ -86,6 +86,7 @@ body {
   --table-header-bg: #f5f5f7;
   --table-row-hover: #f9f9fb;
   --body-bg: #f8f9fa;
+  --color-card-alt: #f9fafb;
   
   /* Variables para Login/Auth */
   --color-bg: #f0f2f5;
@@ -95,6 +96,7 @@ body {
   --color-input-border: #d1d5db;
   --color-input-bg: #ffffff;
   --card-shadow: rgba(0, 0, 0, 0.1);
+  --color-text-secondary: #6b7280;
   
   /* Bordes */
   --border-color: #e0e0e0;
@@ -139,6 +141,7 @@ html.dark {
   --table-header-bg: #2a2a2a;
   --table-row-hover: #252525;
   --body-bg: #121212;
+  --color-card-alt: #252525;
   
   /* Variables para Login/Auth */
   --color-bg: #1a1a1a;
@@ -148,6 +151,7 @@ html.dark {
   --color-input-border: #4b5563;
   --color-input-bg: #374151;
   --card-shadow: rgba(0, 0, 0, 0.5);
+  --color-text-secondary: #9ca3af;
   
   /* Bordes */
   --border-color: #3a3a3a;
@@ -438,6 +442,45 @@ html.dark .swal2-select {
     font-size: 16px;
     min-height: 44px;
   }
+}
+
+/* Estilos base para cards */
+.card {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* Estilos para inputs y selects */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="date"],
+input[type="datetime-local"],
+select,
+textarea {
+  background: var(--color-input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--color-input-border);
+  border-radius: 6px;
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
 /* Media queries específicas para móviles */
