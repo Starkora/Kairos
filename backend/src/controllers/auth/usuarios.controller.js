@@ -197,15 +197,26 @@ const register = async (req, res) => {
     if (!emailTrimmed || !password || !nombreTrimmed || !phoneInput) {
       return res.status(400).json({ message: 'Faltan campos requeridos (email, password, nombre, telefono/numero)' });
     }
-    // Normalizar teléfono: solo dígitos y exigir exactamente 9
-    const telefonoDigits = phoneInput.replace(/\D/g, '');
-    if (telefonoDigits.length !== 9) {
-      return res.status(400).json({ code: 'INVALID_PHONE', message: 'El teléfono debe tener exactamente 9 dígitos' });
+    
+    // Validar teléfono internacional: debe empezar con + y tener entre 8-18 caracteres totales
+    if (!phoneInput.startsWith('+')) {
+      return res.status(400).json({ code: 'INVALID_PHONE_FORMAT', message: 'El teléfono debe incluir el código de país (ej: +51 999888777)' });
     }
+    
+    // Extraer solo dígitos después del +
+    const telefonoDigits = phoneInput.slice(1).replace(/\D/g, '');
+    
+    // Validar que tenga entre 7 y 15 dígitos (estándar internacional)
+    if (telefonoDigits.length < 7 || telefonoDigits.length > 15) {
+      return res.status(400).json({ code: 'INVALID_PHONE_LENGTH', message: 'El teléfono debe tener entre 7 y 15 dígitos después del código de país' });
+    }
+    
+    // Guardar con el formato completo: +codigopais+numero
+    const telefonoNormalizado = '+' + telefonoDigits;
 
     // Verificar si el usuario ya existe (mensajes diferenciados)
     const [emailRows] = await db.query('SELECT id FROM usuarios WHERE email = ? AND plataforma = ?', [emailTrimmed, plat]);
-    const [phoneRows] = await db.query('SELECT id FROM usuarios WHERE numero = ? AND plataforma = ?', [telefonoDigits, plat]);
+    const [phoneRows] = await db.query('SELECT id FROM usuarios WHERE numero = ? AND plataforma = ?', [telefonoNormalizado, plat]);
     if (Array.isArray(emailRows) && emailRows.length > 0 && Array.isArray(phoneRows) && phoneRows.length > 0) {
       return res.status(409).json({ code: 'EMAIL_AND_PHONE_IN_USE', message: 'El correo y el número de teléfono ya están en uso' });
     }
@@ -243,7 +254,7 @@ const register = async (req, res) => {
 
     await UsuarioPendiente.create({
       email: emailTrimmed,
-      numero: telefonoDigits,
+      numero: telefonoNormalizado,
       nombre: nombreTrimmed,
       apellido: apellidoTrimmed,
       password: hashedPassword,
@@ -255,7 +266,9 @@ const register = async (req, res) => {
 
     // Enviar código por el método elegido
     if (confirmMethod === 'telefono') {
-  await sms.send(telefonoDigits, `Tu código de verificación de Kairos es: ${codigo}`);
+      // Usar WhatsApp notifier en lugar de SMS
+      const { sendVerificationCode } = require('../../utils/whatsapp-notifier');
+      await sendVerificationCode(telefonoNormalizado, codigo, 'registro');
     } else {
       await mailer.sendMail({
         to: emailTrimmed,
