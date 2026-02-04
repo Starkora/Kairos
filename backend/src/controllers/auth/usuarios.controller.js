@@ -324,7 +324,13 @@ const verify = async (req, res) => {
     // Notificar al administrador sobre el nuevo usuario
     try {
       const { notifyAdminNewUser } = require('../../utils/whatsapp-notifier');
-      await notifyAdminNewUser(p.nombre, p.email, p.numero);
+      await notifyAdminNewUser({
+        nombre: p.nombre || '',
+        apellido: p.apellido || '',
+        email: p.email,
+        numero: p.numero,
+        plataforma: p.plataforma || 'web'
+      });
     } catch (notifyError) {
       console.log('No se pudo notificar al admin:', notifyError.message);
     }

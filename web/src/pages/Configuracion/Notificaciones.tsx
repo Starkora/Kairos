@@ -16,7 +16,7 @@ import {
   Modal,
   type ColumnConfig
 } from '../../components/ui';
-import { FaBell, FaClock, FaEnvelope, FaSms, FaWhatsapp, FaCalendarAlt } from 'react-icons/fa';
+import { FaBell, FaClock, FaEnvelope, FaWhatsapp, FaCalendarAlt } from 'react-icons/fa';
 
 export default function Notificaciones() {
   const [notificaciones, setNotificaciones] = React.useState<{ 
@@ -327,7 +327,7 @@ export default function Notificaciones() {
       </div>
 
       {/* Estadísticas */}
-      <StatsGrid columns={4}>
+      <StatsGrid columns={3}>
         <StatsCard
           title="Total"
           value={stats.total}
@@ -343,18 +343,11 @@ export default function Notificaciones() {
           subtitle="Notificaciones por email"
         />
         <StatsCard
-          title="SMS"
-          value={stats.porMedio['sms'] || 0}
-          icon={React.createElement(FaSms as any)}
-          color="warning"
-          subtitle="Notificaciones por SMS"
-        />
-        <StatsCard
           title="WhatsApp"
           value={stats.porMedio['whatsapp'] || 0}
           icon={React.createElement(FaWhatsapp as any)}
           color="success"
-          subtitle="Notificaciones por WhatsApp"
+          subtitle="Notificaciones por WhatsApp (Bot)"
         />
       </StatsGrid>
 
@@ -465,7 +458,6 @@ export default function Notificaciones() {
               onChange={handleNotificacionesChange}
               options={[
                 { value: 'correo', label: 'Correo' },
-                { value: 'sms', label: 'SMS' },
                 { value: 'whatsapp', label: 'WhatsApp' }
               ]}
             />
@@ -548,7 +540,6 @@ export default function Notificaciones() {
               onChange={handleNotificacionesChange}
               options={[
                 { value: 'correo', label: 'Correo' },
-                { value: 'sms', label: 'SMS' },
                 { value: 'whatsapp', label: 'WhatsApp' }
               ]}
             />
