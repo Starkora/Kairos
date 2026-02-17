@@ -58,7 +58,6 @@ export default function Presupuestos() {
         if (!/application\/json/i.test(ct)) {
           // Evitar crash si el backend devuelve HTML
           const text = await res.text();
-          ', 'status:', res.status, 'content-type:', ct, 'preview:', text.slice(0, 160));
           return [];
         }
         try { return await res.json(); } catch { return []; }
