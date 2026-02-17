@@ -113,24 +113,24 @@ const RecuperarPassword = ({ onVolver }) => {
           background: darkMode ? '#FFD700' : '#1a1a2e',
           color: darkMode ? '#1a1a2e' : '#FFD700',
           cursor: 'pointer',
-          display: 'flex',var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
-            ) : (
-              <input type="tel" placeholder="Teléfono" value={numero} onChange={e => setNumero(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
-            )}
-            <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: 'var(--color-primary)', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
-              {loading ? 'Enviando...' : 'Enviar código'}
-            </button>
-            <button type="button" onClick={onVolver} style={{ background: 'none', border: 'none', color: '#60a5fa
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1.6rem',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          transition: 'all 0.3s ease',
+          zIndex: 1000
+        }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'scale(1.15) rotate(20deg)';
           e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.5)';
-        }}var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
-            <input type="password" placeholder="Nueva contraseña" value={nuevaPassword} onChange={e => setNuevaPassword(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
-            <input type="password" placeholder="Confirmar contraseña" value={confirmarPassword} onChange={e => setConfirmarPassword(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
-            <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: 'var(--color-primary)', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
-              {loading ? 'Cambiando...' : 'Cambiar contraseña'}
-            </button>
-            <button type="button" onClick={() => { setPaso(1); setCodigo(''); setNuevaPassword(''); setConfirmarPassword(''); }} style={{ background: 'none', border: 'none', color: '#60a5fa
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+        }}
+        title={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+        aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
       >
         {darkMode ? <FaSun /> : <FaMoon />}
       </button>
@@ -149,24 +149,24 @@ const RecuperarPassword = ({ onVolver }) => {
               </label>
             </div>
             {metodo === 'correo' ? (
-              <input type="email" placeholder="Correo electrónico" value={correo} onChange={e => setCorreo(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }} />
+              <input type="email" placeholder="Correo electrónico" value={correo} onChange={e => setCorreo(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
             ) : (
-              <input type="tel" placeholder="Teléfono" value={numero} onChange={e => setNumero(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }} />
+              <input type="tel" placeholder="Teléfono" value={numero} onChange={e => setNumero(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
             )}
-            <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: '#6C4AB6', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
+            <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: 'var(--color-primary)', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
               {loading ? 'Enviando...' : 'Enviar código'}
             </button>
-            <button type="button" onClick={onVolver} style={{ background: 'none', border: 'none', color: '#6C4AB6', fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>Volver</button>
+            <button type="button" onClick={onVolver} style={{ background: 'none', border: 'none', color: '#60a5fa', fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>Volver</button>
           </form>
         ) : (
           <form onSubmit={handleCambiarPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <input type="text" placeholder="Código recibido" value={codigo} onChange={e => setCodigo(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }} />
-            <input type="password" placeholder="Nueva contraseña" value={nuevaPassword} onChange={e => setNuevaPassword(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }} />
-            <input type="password" placeholder="Confirmar contraseña" value={confirmarPassword} onChange={e => setConfirmarPassword(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }} />
-            <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: '#6C4AB6', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
+            <input type="text" placeholder="Código recibido" value={codigo} onChange={e => setCodigo(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+            <input type="password" placeholder="Nueva contraseña" value={nuevaPassword} onChange={e => setNuevaPassword(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+            <input type="password" placeholder="Confirmar contraseña" value={confirmarPassword} onChange={e => setConfirmarPassword(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+            <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: 'var(--color-primary)', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
               {loading ? 'Cambiando...' : 'Cambiar contraseña'}
             </button>
-            <button type="button" onClick={() => { setPaso(1); setCodigo(''); setNuevaPassword(''); setConfirmarPassword(''); }} style={{ background: 'none', border: 'none', color: '#6C4AB6', fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>Volver</button>
+            <button type="button" onClick={() => { setPaso(1); setCodigo(''); setNuevaPassword(''); setConfirmarPassword(''); }} style={{ background: 'none', border: 'none', color: '#60a5fa', fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>Volver</button>
           </form>
         )}
       </div>
