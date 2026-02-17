@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import API_BASE from '../../utils/apiBase';
 import Swal from 'sweetalert2';
+import { FaSun, FaMoon } from 'react-icons/fa';
 
 const RecuperarPassword = ({ onVolver }) => {
   const [metodo, setMetodo] = useState('correo');
@@ -11,6 +12,26 @@ const RecuperarPassword = ({ onVolver }) => {
   const [confirmarPassword, setConfirmarPassword] = useState('');
   const [paso, setPaso] = useState(1); // 1: pedir dato, 2: pedir código y nueva pass
   const [loading, setLoading] = useState(false);
+  
+  // Modo oscuro/claro
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved ? saved === 'dark' : true; // Por defecto oscuro
+  });
+  
+  // Aplicar tema al cargar
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+  
+  const toggleTheme = () => {
+    setDarkMode(!darkMode);
+  };
 
   const handleEnviarCodigo = async (e) => {
     e.preventDefault();
@@ -77,9 +98,45 @@ const RecuperarPassword = ({ onVolver }) => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f7f7fa' }}>
-  <div style={{ background: 'var(--color-card)', padding: '2.5rem 2rem', borderRadius: '12px', boxShadow: '0 2px 16px var(--card-shadow)', minWidth: '340px', maxWidth: 400 }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '2rem', color: '#4B2E83' }}>Recuperar Contraseña</h2>
+    <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--color-bg)', position: 'relative' }}>
+      {/* Botón de toggle de tema */}
+      <button
+        onClick={toggleTheme}
+        style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          width: '55px',
+          height: '55px',
+          borderRadius: '50%',
+          border: 'none',
+          background: darkMode ? '#FFD700' : '#1a1a2e',
+          color: darkMode ? '#1a1a2e' : '#FFD700',
+          cursor: 'pointer',
+          display: 'flex',var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+            ) : (
+              <input type="tel" placeholder="Teléfono" value={numero} onChange={e => setNumero(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+            )}
+            <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: 'var(--color-primary)', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
+              {loading ? 'Enviando...' : 'Enviar código'}
+            </button>
+            <button type="button" onClick={onVolver} style={{ background: 'none', border: 'none', color: '#60a5fa
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.15) rotate(20deg)';
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.5)';
+        }}var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+            <input type="password" placeholder="Nueva contraseña" value={nuevaPassword} onChange={e => setNuevaPassword(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+            <input type="password" placeholder="Confirmar contraseña" value={confirmarPassword} onChange={e => setConfirmarPassword(e.target.value)} required style={{ padding: '0.7rem', borderRadius: 6, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: '1rem' }} />
+            <button type="submit" disabled={loading} style={{ padding: '0.7rem', borderRadius: 6, background: 'var(--color-primary)', color: '#fff', fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
+              {loading ? 'Cambiando...' : 'Cambiar contraseña'}
+            </button>
+            <button type="button" onClick={() => { setPaso(1); setCodigo(''); setNuevaPassword(''); setConfirmarPassword(''); }} style={{ background: 'none', border: 'none', color: '#60a5fa
+      >
+        {darkMode ? <FaSun /> : <FaMoon />}
+      </button>
+      
+      <div style={{ background: 'var(--color-card)', padding: '2.5rem 2rem', borderRadius: '12px', boxShadow: '0 2px 16px var(--card-shadow)', minWidth: '340px', maxWidth: 400 }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '2rem', color: 'var(--color-text)' }}>Recuperar Contraseña</h2>
         {paso === 1 ? (
           <form onSubmit={handleEnviarCodigo} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'flex', gap: 16, alignItems: 'center', margin: '0.5rem 0' }}>

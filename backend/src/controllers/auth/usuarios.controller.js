@@ -2,6 +2,7 @@
 const crypto = require('crypto');
 const mailer = require('../../utils/notifications/mailer');
 const sms = require('../../utils/notifications/sms');
+const whatsappBot = require('../../utils/notifications/kairos-whatsapp');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'kairos_secret';
@@ -470,7 +471,17 @@ const enviarCodigoRecuperacion = async (req, res) => {
 
     // Enviar por el canal seleccionado
     if (method === 'telefono') {
-  await sms.send(userRow.numero, `Tu código para recuperar contraseña de Kairos es: ${code}`);
+      // Enviar por WhatsApp usando el bot de MiBodega
+      const whatsappResult = await whatsappBot.sendWhatsAppNotification(
+        userRow.numero,
+        `Kairos - Recuperación de contraseña*\n\nTu código de recuperación es: *${code}*\n\nEste código expira en ${smsMins} minutos.\n\n_No compartas este código con nadie._`
+      );
+      
+      // Si falla WhatsApp, intentar con SMS como fallback
+      if (!whatsappResult.success) {
+        console.warn('[Recovery] WhatsApp falló, usando SMS como fallback:', whatsappResult.error);
+        await sms.send(userRow.numero, `Tu código para recuperar contraseña de Kairos es: ${code}`);
+      }
     } else {
       await mailer.sendMail({
         to: userRow.email,
