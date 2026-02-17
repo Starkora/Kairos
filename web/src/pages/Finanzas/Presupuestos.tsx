@@ -58,7 +58,7 @@ export default function Presupuestos() {
         if (!/application\/json/i.test(ct)) {
           // Evitar crash si el backend devuelve HTML
           const text = await res.text();
-          console.error('[Presupuestos] Respuesta no JSON:', res.url || '(sin url)', 'status:', res.status, 'content-type:', ct, 'preview:', text.slice(0, 160));
+          ', 'status:', res.status, 'content-type:', ct, 'preview:', text.slice(0, 160));
           return [];
         }
         try { return await res.json(); } catch { return []; }
@@ -97,7 +97,7 @@ export default function Presupuestos() {
         
         setMovimientosPorCategoria(movimientosMap);
       } catch (err) {
-        console.error('Error cargando movimientos:', err);
+        
         setMovimientosPorCategoria({});
       }
       

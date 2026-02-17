@@ -40,7 +40,7 @@ export function useInactivityTimeout({
         if (!isLoggedIn()) return;
         
         Swal.fire({
-          title: '⚠️ Sesión por expirar',
+          title: ' Sesión por expirar',
           text: `Tu sesión expirará en 1 minuto por inactividad. ¿Deseas continuar?`,
           icon: 'warning',
           showCancelButton: true,

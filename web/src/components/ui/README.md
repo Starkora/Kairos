@@ -132,8 +132,8 @@ import { DragDropProvider, DraggableMovimiento, DroppableDate, useDragDrop } fro
 // 2. Hacer un elemento draggable
 <DraggableMovimiento
   movimiento={mov}
-  onDragStart={(m) => console.log('Arrastrando:', m)}
-  onDragEnd={() => console.log('Fin')}
+  onDragStart={(m) => }
+  onDragEnd={() => }
 >
   <div>Mi contenido</div>
 </DraggableMovimiento>

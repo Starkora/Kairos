@@ -481,7 +481,7 @@ exports.list = async (req, res) => {
           insights.push({ id: 'forecast-30-neg', severity: 'danger', title: 'Riesgo de saldo negativo en 30 días', body: `Proyección de saldo: S/ ${endBalance.toFixed(2)}.`, cta: { label: 'Ajustar recurrentes', href: '/movimientos-recurrentes' } });
         }
       } catch (err) { 
-        console.error('[insights quick forecast] error:', err);
+        
         forecastWarnings.push('No se pudo calcular el forecast rápido debido a un error temporal. Intenta nuevamente o contacta soporte si persiste.');
       }
     } else if (doForecast && timeLeft() > 800) try {
@@ -618,7 +618,7 @@ exports.list = async (req, res) => {
         insights.push({ id: 'forecast-60-neg', severity: 'warning', title: 'Posible saldo negativo en 60 días', body: `Proyección de saldo: S/ ${f60.projectedBalanceEnd.toFixed(2)}. Considera optimizar gastos.`, cta: { label: 'Ver Presupuestos', href: '/presupuestos' } });
       }
   } catch (err) { 
-    console.error('[insights full forecast] error:', err);
+    
     forecastWarnings.push('El forecast detallado falló. Esto puede deberse a datos inconsistentes en recurrentes o excepciones. Prueba con el cálculo rápido o revisa tus movimientos recurrentes.');
   }
 
@@ -656,7 +656,7 @@ exports.list = async (req, res) => {
       return res.json(result);
     }
   } catch (err) {
-    console.error('[insights.list] error:', err);
+    
     return res.status(500).json({ error: 'No se pudieron calcular insights' });
   }
 };
@@ -683,7 +683,7 @@ exports.dismiss = async (req, res) => {
     try { invalidateUser(usuario_id); } catch (_) {}
     return res.json({ success: true, id, until });
   } catch (err) {
-    console.error('[insights.dismiss] error:', err);
+    
     return res.status(500).json({ error: 'No se pudo registrar dismiss' });
   }
 };

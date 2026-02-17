@@ -76,7 +76,7 @@ export default function MiCuenta() {
         }
       })
       .catch((err) => {
-        console.error('Error al obtener información del usuario:', err); // Log para depuración
+        // Log para depuración
       });
   }, []);
 
@@ -203,7 +203,7 @@ export default function MiCuenta() {
         }
       })
       .catch((err) => {
-        console.error('Error al verificar código:', err);
+        
       });
   };
 
@@ -314,7 +314,7 @@ export default function MiCuenta() {
         }
       })
       .catch((err) => {
-        console.error('Error al verificar el código:', err);
+        
         showAlert({
           icon: 'error',
           title: 'Error',

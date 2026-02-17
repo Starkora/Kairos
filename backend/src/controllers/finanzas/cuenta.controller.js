@@ -4,14 +4,14 @@
   const { nombre, saldo_inicial, tipo, plataforma } = req.body;
 
   if (!nombre || saldo_inicial === undefined || !tipo || !plataforma) {
-    console.error('Datos inválidos en create:', { nombre, saldo_inicial, tipo, plataforma }); // Depuración
+    // Depuración
     return res.status(400).json({ error: 'Faltan campos requeridos' });
   }
   try {
     const result = await Cuenta.create({ usuario_id, nombre, saldo_inicial, tipo, plataforma });
     res.status(201).json({ message: 'Cuenta creada', id: result.id });
   } catch (err) {
-    console.error('Error al crear cuenta:', err.message); // Depuración
+    // Depuración
     res.status(500).json({ error: err.message });
   }
 };
@@ -23,7 +23,7 @@ exports.getAll = async (req, res) => {
   const plataforma = req.query.plataforma || req.body.plataforma;
 
   if (!plataforma) {
-    console.error('Plataforma faltante en getAll:', plataforma); // Depuración
+    // Depuración
     return res.status(400).json({ error: 'Falta campo plataforma en la consulta' });
   }
 
@@ -31,7 +31,7 @@ exports.getAll = async (req, res) => {
     const rows = await Cuenta.getAllByUsuario(usuario_id, plataforma);
     res.json(rows);
   } catch (err) {
-    console.error('Error al obtener cuentas:', err.message); // Depuración
+    // Depuración
     res.status(500).json({ error: err.message });
   }
 };
@@ -77,7 +77,7 @@ exports.deleteById = async (req, res) => {
     await Cuenta.deleteById(id);
     return res.json({ message: 'Cuenta eliminada' });
   } catch (err) {
-    console.error('Error al eliminar cuenta:', err && err.message);
+    
     return res.status(500).json({ error: err.message || 'Error al eliminar cuenta' });
   }
 };
@@ -96,7 +96,7 @@ exports.update = async (req, res) => {
     await Cuenta.update({ id, usuario_id, nombre: nombre.trim(), tipo: tipo.trim(), plataforma });
     res.json({ message: 'Cuenta actualizada' });
   } catch (err) {
-    console.error('Error al actualizar cuenta:', err.message);
+    
     if (err.code === 'NOMBRE_DUPLICADO' || err.message === 'NOMBRE_DUPLICADO') {
       return res.status(409).json({ error: 'Ya existe una cuenta con ese nombre' });
     }

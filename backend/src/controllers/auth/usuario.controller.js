@@ -138,7 +138,7 @@ exports.register = async (req, res) => {
       }
       res.status(201).json({ email, numero, verificado: 0, mensaje: 'Código enviado. Falta confirmar.' });
     } catch (e) {
-      console.error('[Kairos] Error al enviar código:', e);
+      
       UsuarioPendiente.deleteByEmail(email, () => {});
       return res.status(500).json({ error: 'No se pudo enviar el código de confirmación' });
     }
@@ -185,7 +185,7 @@ exports.verify = async (req, res) => {
       numero: entry.numero,
       plataforma: entry.plataforma || 'web'
     }).catch(err => {
-      console.error('[Kairos] Error al notificar admin por WhatsApp:', err);
+      
       // No bloquear el registro si falla la notificación
     });
     
@@ -196,7 +196,7 @@ exports.verify = async (req, res) => {
       isNewUser: true // Flag para mostrar modal de bienvenida en frontend
     });
   } catch (err) {
-    console.error('Error al crear usuario tras confirmación:', err);
+    
     res.status(500).json({ error: 'Error al crear usuario' });
   }
 };

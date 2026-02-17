@@ -22,7 +22,7 @@ const Deuda = {
       // Eliminar la deuda
       await db.query('DELETE FROM deudas WHERE id = ?', [id]);
     } catch (err) {
-      console.error('Error en delete:', err);
+      
       throw err;
     }
   },
@@ -36,7 +36,7 @@ const Deuda = {
 
       await db.query(updateDeudaQuery, [monto, deuda_id]);
     } catch (err) {
-      console.error('Error en registrarPago:', err); // Log de error
+      // Log de error
       throw err; // Relanzar el error para que el controlador lo maneje
     }
   },
@@ -52,7 +52,7 @@ const Deuda = {
       );
       return result.affectedRows > 0 ? { id, ...deuda } : null;
     } catch (err) {
-      console.error('Error en update:', err);
+      
       throw err;
     }
   },

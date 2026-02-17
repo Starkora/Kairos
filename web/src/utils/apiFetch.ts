@@ -26,7 +26,7 @@ export default async function apiFetch(url: string, options: ApiFetchOptions = {
       if (/\/api\//.test(finalUrl) && /text\/html|text\/plain/i.test(ct)) {
         const txt = await res.clone().text();
         // Solo un preview para no saturar
-        console.error('[apiFetch] Respuesta no-JSON para', finalUrl, 'status:', res.status, 'content-type:', ct, 'preview:', txt.slice(0, 160));
+        );
       }
     } catch {}
     return res;

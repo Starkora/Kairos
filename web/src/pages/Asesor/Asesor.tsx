@@ -588,7 +588,7 @@ export default function Asesor() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
             {insights.length === 0 && (
               <div className="card" style={{ padding: 16 }}>
-                <div style={{ fontWeight: 700 }}>✅ Sin recomendaciones por ahora</div>
+                <div style={{ fontWeight: 700 }}>Sin recomendaciones por ahora</div>
                 <div style={{ opacity: 0.8 }}>Todo se ve bien. ¡Sigue así!</div>
               </div>
             )}

@@ -60,11 +60,11 @@ exports.crear = async (req, res) => {
         });
       }
     } catch (e) {
-      console.warn('[movimientosRecurrentes.crear] No se pudo materializar movimiento de hoy:', e && e.message);
+      
     }
     res.status(201).json(nuevo);
   } catch (err) {
-    console.error('[movimientosRecurrentes.crear] Error:', err);
+    
     res.status(500).json({ error: 'No se pudo crear el movimiento recurrente.' });
   }
 };
@@ -101,7 +101,7 @@ exports.aplicarAhora = async (req, res) => {
     });
     res.json({ ok: true });
   } catch (err) {
-    console.error('[recurrentes.aplicarAhora] Error:', err);
+    
     res.status(500).json({ error: 'No se pudo aplicar el movimiento.' });
   }
 };

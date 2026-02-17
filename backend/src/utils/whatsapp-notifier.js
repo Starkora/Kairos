@@ -43,17 +43,15 @@ El usuario tiene acceso inmediato al sistema con 30 días de prueba gratuita.`;
     );
 
     if (response.data.success) {
-      console.log('[Kairos WhatsApp] ✓ Notificación enviada al admin:', ADMIN_WHATSAPP_NUMBER);
       return { success: true };
     } else {
-      console.error('[Kairos WhatsApp] ✗ Error en respuesta del bot:', response.data);
       return { success: false, error: 'Respuesta inválida del bot' };
     }
   } catch (error) {
-    console.error('[Kairos WhatsApp] ✗ Error al enviar notificación:', error.message);
+    
     
     if (error.code === 'ECONNABORTED') {
-      console.error('[Kairos WhatsApp] Timeout - El bot no respondió en 30 segundos');
+      
     } else if (error.response) {
       console.error('[Kairos WhatsApp] Respuesta del servidor:', {
         status: error.response.status,
@@ -108,17 +106,17 @@ _Si no solicitaste este código, ignora este mensaje._`;
     );
 
     if (response.data.success) {
-      console.log('[Kairos WhatsApp] ✓ Código enviado a:', numeroNormalizado);
+      
       return { success: true };
     } else {
-      console.error('[Kairos WhatsApp] ✗ Error en respuesta del bot:', response.data);
+      
       return { success: false, error: 'Respuesta inválida del bot' };
     }
   } catch (error) {
-    console.error('[Kairos WhatsApp] ✗ Error al enviar código:', error.message);
+    
     
     if (error.code === 'ECONNABORTED') {
-      console.error('[Kairos WhatsApp] Timeout - El bot no respondió en 30 segundos');
+      
     } else if (error.response) {
       console.error('[Kairos WhatsApp] Respuesta del servidor:', {
         status: error.response.status,
@@ -140,14 +138,14 @@ async function checkBotStatus() {
     });
     
     if (response.data.connected) {
-      console.log('[Kairos WhatsApp] ✓ Bot conectado y disponible');
+      
       return { connected: true };
     } else {
-      console.log('[Kairos WhatsApp] ⚠ Bot no conectado a WhatsApp');
+      
       return { connected: false };
     }
   } catch (error) {
-    console.error('[Kairos WhatsApp] ✗ No se pudo verificar estado del bot:', error.message);
+    
     return { connected: false, error: error.message };
   }
 }

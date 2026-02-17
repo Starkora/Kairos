@@ -19,7 +19,7 @@ const getUserInfo = async (req, res) => {
 
     res.json(rows[0]);
   } catch (error) {
-    console.error('Error al obtener información del usuario:', error);
+    
     res.status(500).json({ error: 'Error al obtener información del usuario' });
   }
 };
@@ -32,7 +32,7 @@ const enviarCodigoVerificacion = async (req, res) => {
     const resultado = await db.query('SELECT email, nombre, apellido, numero AS telefono FROM usuarios WHERE id = ?', [usuarioId]);
 
     if (!resultado || resultado.length === 0 || resultado[0].length === 0) {
-      console.error('Usuario no encontrado en la base de datos:', resultado);
+      
       return res.status(404).json({ error: 'Usuario no encontrado en la base de datos' });
     }
 
@@ -44,12 +44,12 @@ const enviarCodigoVerificacion = async (req, res) => {
     if (metodo === 'telefono') {
       // Validar número internacional (debe empezar con + y tener entre 8-18 caracteres)
       if (!telefono.startsWith('+') || telefono.length < 8 || telefono.length > 18) {
-        console.error('Teléfono del usuario no válido:', usuario);
+        
         return res.status(400).json({ error: 'Teléfono del usuario inválido o no configurado' });
       }
     } else {
       if (!email) {
-        console.error('Correo del usuario no encontrado o inválido:', usuario);
+        
         return res.status(404).json({ error: 'Correo del usuario no encontrado o inválido' });
       }
     }
@@ -60,7 +60,7 @@ const enviarCodigoVerificacion = async (req, res) => {
     await new Promise((resolve, reject) => {
       req.session.save((err) => {
         if (err) {
-          console.error('Error al guardar la sesión con el código:', err);
+          
           return reject(err);
         }
         resolve();
@@ -77,7 +77,7 @@ const enviarCodigoVerificacion = async (req, res) => {
           throw new Error('No se pudo enviar el código por WhatsApp');
         }
       } catch (e) {
-        console.error('Error al enviar código por WhatsApp:', e);
+        
         return res.status(500).json({ error: 'No se pudo enviar el código por WhatsApp' });
       }
     } else {
@@ -90,7 +90,7 @@ const enviarCodigoVerificacion = async (req, res) => {
 
     res.status(200).json({ message: `Código enviado exitosamente por ${metodo === 'telefono' ? 'WhatsApp' : 'correo'}.` });
   } catch (error) {
-    console.error('Error al enviar código de verificación:', error);
+    
     res.status(500).json({ error: 'Error al enviar código de verificación' });
   }
 };
@@ -145,7 +145,7 @@ const verificarCodigoYGuardar = async (req, res) => {
     await new Promise((resolve, reject) => {
       req.session.save((err) => {
         if (err) {
-          console.error('Error al limpiar el código de la sesión:', err);
+          
           // No bloquea la respuesta si falla la limpieza
         }
         resolve();
@@ -153,7 +153,7 @@ const verificarCodigoYGuardar = async (req, res) => {
     });
     res.status(200).json({ message: 'Datos actualizados correctamente' });
   } catch (error) {
-    console.error('Error al guardar cambios:', error);
+    
     if (error && error.code === 'ER_DUP_ENTRY') {
       const msg = (error.sqlMessage || '').toLowerCase();
       if (msg.includes('email')) {
@@ -279,7 +279,7 @@ const register = async (req, res) => {
 
     return res.status(200).json({ success: true, message: 'Código enviado. Revisa tu ' + (confirmMethod === 'telefono' ? 'teléfono' : 'correo') + '.', email: emailTrimmed });
   } catch (error) {
-    console.error('Error en el registro de usuario:', error);
+    
     res.status(500).json({ message: 'Error interno en el registro de usuario' });
   }
 };
@@ -332,13 +332,12 @@ const verify = async (req, res) => {
         plataforma: p.plataforma || 'web'
       });
     } catch (notifyError) {
-      console.log('No se pudo notificar al admin:', notifyError.message);
     }
 
     await UsuarioPendiente.deleteByEmail(p.email);
     return res.status(200).json({ success: true, isNewUser: true, id: ins && ins.insertId, message: 'Registro confirmado' });
   } catch (err) {
-    console.error('Error en verify:', err);
+    
     return res.status(500).json({ message: 'Error interno en verificación' });
   }
 };
@@ -412,7 +411,7 @@ const login = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Error en login:', err);
+    
     return res.status(500).json({ message: 'Error interno en login' });
   }
 };
@@ -482,7 +481,7 @@ const enviarCodigoRecuperacion = async (req, res) => {
 
     return res.status(200).json({ success: true, message: 'Código enviado' });
   } catch (err) {
-    console.error('Error en enviarCodigoRecuperacion:', err);
+    
     return res.status(500).json({ error: 'Error al iniciar la recuperación' });
   }
 };
@@ -549,7 +548,7 @@ const confirmarRecuperacion = async (req, res) => {
 
     return res.status(200).json({ success: true, message: 'Contraseña actualizada' });
   } catch (err) {
-    console.error('Error en confirmarRecuperacion:', err);
+    
     return res.status(500).json({ error: 'Error al confirmar la recuperación' });
   }
 };
@@ -602,7 +601,7 @@ const resend = async (req, res) => {
 
     return res.status(200).json({ success: true, message: 'Código reenviado', nextAllowedAt: nextAt, resendCount: nextCount });
   } catch (err) {
-    console.error('Error en resend:', err);
+    
     return res.status(500).json({ message: 'Error interno en reenvío' });
   }
 };

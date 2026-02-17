@@ -10,7 +10,7 @@ async function getPreferencias(req, res) {
     }
     return res.json({ data: {} });
   } catch (e) {
-    console.error('getPreferencias error:', e);
+    
     return res.status(500).json({ error: 'Error obteniendo preferencias' });
   }
 }
@@ -36,7 +36,7 @@ async function savePreferencias(req, res) {
     }
     return res.json({ success: true, data: next });
   } catch (e) {
-    console.error('savePreferencias error:', e);
+    
     return res.status(500).json({ error: 'Error guardando preferencias' });
   }
 }

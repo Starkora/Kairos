@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const host = process.argv[2];
 const port = Number(process.argv[3] || 443);
 if (!host) {
-  console.error('Uso: node tools/gen-spki-pin.js <host> [port]');
+  
   process.exit(1);
 }
 
@@ -31,7 +31,7 @@ const socket = tls.connect({ host, port, servername: host, rejectUnauthorized: f
     const pem = derToPem(cert.raw);
     const spki = getSpkiHashFromPemCert(pem);
   } catch (e) {
-    console.error('Error generando SPKI:', e && (e.stack || e.message || e));
+    );
     process.exitCode = 2;
   } finally {
     socket.end();
@@ -39,6 +39,6 @@ const socket = tls.connect({ host, port, servername: host, rejectUnauthorized: f
 });
 
 socket.on('error', (err) => {
-  console.error('Error TLS:', err && (err.stack || err.message || err));
+  );
   process.exitCode = 3;
 });

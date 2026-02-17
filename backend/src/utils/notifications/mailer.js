@@ -11,7 +11,7 @@ async function sendMail({ to, subject, text }) {
   const allowDevFallback = process.env.ALLOW_DEV_MAIL_FALLBACK === 'true' || process.env.NODE_ENV !== 'production';
   if ((typeof from !== 'string' || !from.trim()) || !apiKey) {
     if (allowDevFallback) {
-      console.warn('[mailer] Falta configuración de SendGrid/Mail From. Simulando envío (DEV).');
+      .');
       return { simulated: true };
     }
     throw new Error('Configuración de correo incompleta: falta MAIL_FROM o SENDGRID_API_KEY');

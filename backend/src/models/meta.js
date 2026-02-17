@@ -25,7 +25,7 @@ const Meta = {
       // Eliminar la meta
       await db.query('DELETE FROM metas WHERE id = ?', [id]);
     } catch (err) {
-      console.error('Error en delete:', err);
+      
       throw err;
     }
   },
@@ -45,7 +45,7 @@ const Meta = {
       );
       return result.affectedRows > 0 ? { id, ...meta } : null;
     } catch (err) {
-      console.error('Error en update:', err);
+      
       throw err;
     }
   },

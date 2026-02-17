@@ -194,7 +194,7 @@ export default function Categorias() {
         let text = await res.text();
         let parsed = null;
         try { parsed = JSON.parse(text); } catch (e) { /* no JSON */ }
-        console.error('Error al crear categoría, status:', res.status, 'body:', parsed || text);
+        
         const message = (parsed && (parsed.message || parsed.error)) ? (parsed.message || parsed.error) : (`HTTP ${res.status}` + (typeof text === 'string' ? (': ' + text) : ''));
         Swal.fire({ icon: 'error', title: 'Error', text: message });
       }

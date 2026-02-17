@@ -7,7 +7,7 @@ const db = require('../../../config/database');
 const RAW_GOOGLE_IDS = process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || '351324441687-39sdmfov119bqa28d703aqodo181jpih.apps.googleusercontent.com';
 const GOOGLE_AUDIENCES = String(RAW_GOOGLE_IDS).split(',').map(s => s.trim()).filter(Boolean);
 if (!process.env.GOOGLE_CLIENT_ID && !process.env.GOOGLE_CLIENT_IDS) {
-  console.warn('[googleAuth] GOOGLE_CLIENT_ID/GOOGLE_CLIENT_IDS no está definido; usando fallback hardcodeado (Web Client ID). Configura la variable de entorno en producción.');
+  console.warn('No se han configurado los Client IDs de Google. Configura la variable de entorno en producción.');
 }
 const client = new OAuth2Client(GOOGLE_AUDIENCES[0]);
 
@@ -30,21 +30,14 @@ exports.loginGoogle = async (req, res) => {
         const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
         const json = Buffer.from(b64, 'base64').toString('utf8');
         const payloadPreview = JSON.parse(json);
-        console.log('[googleAuth] idToken payload:', {
-          aud: payloadPreview.aud,
-          azp: payloadPreview.azp,
-          iss: payloadPreview.iss,
-          email: payloadPreview.email,
-          sub: payloadPreview.sub,
-        });
         if (payloadPreview && payloadPreview.aud && !GOOGLE_AUDIENCES.includes(payloadPreview.aud)) {
-          console.warn('[googleAuth] WARNING: aud del token no está en GOOGLE_AUDIENCES permitidos');
+          console.warn(`Token de Google con audiencia no permitida: ${payloadPreview.aud}`);
         }
       } else {
-        console.warn('[googleAuth] idToken no tiene 3 partes');
+        console.warn('Token de Google con formato inválido');
       }
     } catch (decErr) {
-      console.warn('[googleAuth] No se pudo decodificar idToken localmente:', decErr && decErr.message);
+      console.warn('Error al decodificar el token de Google:', decErr);
     }
 
     // Intentar validar contra cualquiera de las audiencias permitidas

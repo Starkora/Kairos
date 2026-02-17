@@ -213,14 +213,14 @@ curl -X POST http://localhost:3001/api/notifications \
 [Kairos→MiBodega] Enviando notificación WhatsApp
 [Kairos→MiBodega] Destinatario: 51987654321
 [Kairos→MiBodega] URL: https://mibodega-whatsapp-bot.onrender.com/api/notifications
-[Kairos→MiBodega] ✅ Notificación enviada: { success: true, ... }
+[Kairos→MiBodega] Notificación enviada: { success: true, ... }
 ```
 
 ### Logs del Bot
 ```bash
-🔔 Enviando notificación de Kairos a 51987654321@s.whatsapp.net
-📝 Mensaje: 💰 *Kairos - Recordatorio* ...
-✅ Notificación enviada exitosamente
+ Enviando notificación de Kairos a 51987654321@s.whatsapp.net
+ Mensaje: 💰 *Kairos - Recordatorio* ...
+Notificación enviada exitosamente
 ```
 
 ## Mejoras Futuras

@@ -40,7 +40,7 @@ const Login = ({ onLogin }) => {
     script.setAttribute('data-captcha', 'recaptcha-v3');
     script.onload = () => setCaptchaReady(true);
     script.onerror = () => {
-      console.warn('No se pudo cargar reCAPTCHA');
+      
       setCaptchaReady(false);
     };
     document.body.appendChild(script);
@@ -76,7 +76,7 @@ const Login = ({ onLogin }) => {
       const token = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: action || 'submit' });
       return token;
     } catch (e) {
-      console.warn('Error ejecutando reCAPTCHA', e);
+      
       return null;
     }
   };

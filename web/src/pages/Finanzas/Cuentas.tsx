@@ -92,7 +92,6 @@ export default function Cuentas() {
         if (Array.isArray(data)) setCuentas(data);
         else setCuentas([]);
       })
-      .catch(err => console.error('Error en POST /api/cuentas:', err.message)); // Depuración
 
   fetch(`${API_BASE}/api/cuentas?plataforma=web`, {
       headers: {
@@ -100,16 +99,13 @@ export default function Cuentas() {
       }
     })
       .then(res => {
-        console.log('Respuesta del servidor en GET /api/cuentas:', res.status); // Depuración
         if (!res.ok) throw new Error('No autorizado');
         return res.json();
       })
       .then(data => {
-        console.log('Datos recibidos en GET /api/cuentas:', data); // Depuración
         if (Array.isArray(data)) setCuentas(data);
         else setCuentas([]);
       })
-      .catch(err => console.error('Error en GET /api/cuentas:', err.message)); // Depuración
   }, []);
 
   // Listener para refrescar cuentas desde otros componentes
@@ -251,12 +247,10 @@ export default function Cuentas() {
           })
         })
           .then(res => {
-            console.log('Respuesta del servidor en POST /api/cuentas:', res.status); // Depuración
             if (!res.ok) throw new Error('No autorizado');
             return res.json();
           })
           .then(data => {
-            console.log('Cuenta agregada:', data); // Depuración
             setCuentas(prevCuentas => [...prevCuentas, {
               id: data.id,
               nombre: form.nombre,
@@ -269,7 +263,7 @@ export default function Cuentas() {
             Swal.fire({ icon: 'success', title: 'Cuenta agregada', showConfirmButton: false, timer: 1200 });
           })
           .catch(err => {
-            console.error('Error al agregar cuenta:', err.message); // Depuración
+            // Depuración
             Swal.fire({ icon: 'error', title: 'Error al agregar cuenta', text: err.message });
           });
       }
@@ -336,7 +330,7 @@ export default function Cuentas() {
             Swal.fire({ icon: 'success', title: 'Cuenta eliminada', showConfirmButton: false, timer: 1200 });
           })
           .catch(err => {
-            console.error('Error al eliminar cuenta:', err.message); // Depuración
+            // Depuración
             Swal.fire({ icon: 'error', title: 'Error al eliminar cuenta', text: err.message });
           });
       }

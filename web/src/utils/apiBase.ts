@@ -44,7 +44,7 @@ export const API_BASE = (() => {
     if (isPublicHosting) {
       const fallback = process.env.REACT_APP_PUBLIC_API_BASE || 'https://kr-backend-u06r.onrender.com';
       if (!process.env.REACT_APP_API_BASE) {
-        try { console.warn('[apiBase] Usando fallback público:', fallback); } catch {}
+        try { } catch {}
       }
       return fallback;
     }

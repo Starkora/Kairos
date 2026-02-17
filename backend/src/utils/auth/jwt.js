@@ -52,7 +52,7 @@ module.exports = async (req, res, next) => {
     req.user = user;
     next();
   } catch (err) {
-    console.error('Error al verificar token:', err && err.message);
+    
     return res.status(401).json({ error: 'Token inválido' });
   }
 };

@@ -17,7 +17,7 @@ exports.getAll = async (req, res) => {
     const rows = await Transaccion.getAllByUsuario(usuario_id, plataforma);
     res.json(rows);
   } catch (err) {
-    console.error('[transacciones.create] Error al crear movimiento:', err && err.message, err && err.code);
+    
     // Detectar errores por valor no permitido (ENUM/truncation) y sugerir migración
     if (err && (err.code === 'ER_WARN_DATA_OUT_OF_RANGE' || /truncated|incorrect value for column|Illegal mix of collations/i.test(err.message || ''))) {
       return res.status(400).json({ code: 'INVALID_TYPE', message: 'El tipo proporcionado no es válido en la base de datos. Aplica la migración add_ahorro_to_categorias.sql para permitir el tipo "ahorro" en categorías y movimientos.' });
@@ -40,7 +40,7 @@ exports.create = async (req, res) => {
   if (!monto) missing.push('monto');
   if (!fecha) missing.push('fecha');
   if (missing.length) {
-    console.warn('[transacciones.create] Faltan campos requeridos:', missing, 'Payload recibido:', req.body);
+    
     return res.status(400).json({ error: 'Faltan campos requeridos', missing, receivedKeys: Object.keys(req.body || {}) });
   }
 
@@ -179,7 +179,7 @@ exports.deleteById = async (req, res) => {
       }
     } catch (e) {
       // No bloquear la eliminación si falla la reversión; solo loguear
-      console.warn('[transacciones.deleteById] No se pudo revertir deuda/meta:', e && e.message);
+      
     }
 
     res.json({ success: true });

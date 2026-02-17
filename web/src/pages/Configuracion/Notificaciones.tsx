@@ -65,7 +65,6 @@ export default function Notificaciones() {
   };
 
   const guardarConfiguracion = () => {
-    console.log('Datos enviados al backend:', notificaciones);
   fetch(`${API_BASE}/api/notificaciones`, {
       method: 'POST',
       headers: {
@@ -120,14 +119,11 @@ export default function Notificaciones() {
         if (Array.isArray(data)) {
           setNotificacionesList(data);
         } else {
-          console.error('La respuesta no es un arreglo:', data);
           setNotificacionesList([]);
         }
-        console.log('Notificaciones recibidas del backend:', data);
         setLoading(false);
       })
       .catch(err => {
-        console.error('Error al obtener notificaciones:', err);
         setNotificacionesList([]);
         setLoading(false);
       });
@@ -200,7 +196,6 @@ export default function Notificaciones() {
   };
 
   const handleEditSubmit = () => {
-    console.log('Editando notificación:', notificaciones);
     fetch(`${API_BASE}/api/notificaciones/${notificaciones.id}`, {
       method: 'PUT',
       headers: {

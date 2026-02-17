@@ -31,7 +31,6 @@ export default function CategoriasCuenta() {
         return res.json();
       })
       .then(data => {
-        console.log('Datos recibidos para categorías de cuenta:', data); // Depuración
         setCategorias(data);
         setLoading(false);
       })

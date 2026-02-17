@@ -2,7 +2,7 @@
 const sequelize = require('./config/sequelize');
 sequelize.sync().then(() => {
 }).catch(err => {
-  console.error('[Sequelize] Error al sincronizar modelos:', err);
+  
 });
 require('dotenv').config();
 
@@ -17,7 +17,7 @@ app.set('trust proxy', 1);
 
 // Advertencia: JWT_SECRET por defecto en producción
 if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'kairos_secret')) {
-  console.warn('[seguridad] JWT_SECRET no está configurado en producción; usa un valor fuerte en las variables de entorno.');
+  
 }
 
 // Middleware CORS
@@ -135,11 +135,11 @@ if (redisUrl) {
     enableOfflineQueue: false,
   });
 } else {
-  console.warn('[session] REDIS_URL no definido. Usando MemoryStore para sesiones.');
+  
 }
 
 if (redisClient) {
-  redisClient.on('error', (err) => console.error('Error de Redis:', err));
+  redisClient.on('error', (err) => );
 }
 
 // Configurar almacenamiento de sesiones personalizado
@@ -246,7 +246,7 @@ const cleanupExpiredPendings = async () => {
     const now = Date.now();
     await db.query('DELETE FROM usuarios_pendientes WHERE expires IS NOT NULL AND expires < ?', [now]);
   } catch (err) {
-    console.error('[cleanupExpiredPendings] Error al limpiar usuarios_pendientes expirados:', err);
+    
   }
 };
 
@@ -262,7 +262,7 @@ async function setupCleanupJob() {
       app.locals.cleanupStrategy = 'node-fallback';
     }
   } catch (err) {
-    console.warn('[cleanup] No se pudo verificar el evento MySQL. Usando fallback en Node.', err);
+    
     cleanupInterval = setInterval(cleanupExpiredPendings, 60 * 1000);
     app.locals.cleanupStrategy = 'node-fallback';
   }
@@ -279,12 +279,12 @@ async function applyPendingJob() {
       const mat = await (MovimientoRecurrente.materializeDueForToday && MovimientoRecurrente.materializeDueForToday());
       if (mat > 0);
     } catch (e) {
-      console.error('[applyPendingJob] Error materializando recurrentes:', e && e.message);
+      
     }
     const appliedCount = await Transaccion.applyPendingMovements();
     if (appliedCount > 0);
   } catch (e) {
-    console.error('[applyPendingJob] Error ejecutando job:', e.message);
+    
   }
 }
 // En producción se puede programar una vez al día; mientras tanto ejecutamos cada 60s para dev/test
@@ -375,7 +375,7 @@ app.get('/api/admin/health', async (req, res) => {
       clientIp: ip,
     });
   } catch (err) {
-    console.error('[health] Error:', err);
+    
     res.status(500).json({ ok: false, error: 'health_error', message: String(err && err.message || err) });
   }
 });
@@ -422,17 +422,17 @@ app.post('/api/guardar-codigo', (req, res) => {
   req.session.codigoVerificacion = '602755';
   req.session.save((err) => {
     if (err) {
-      console.error('Error al guardar la sesión:', err);
+      
       return res.status(500).json({ error: 'Error al guardar la sesión' });
     } else {
       // Verificar el contenido de la sesión en Redis después de guardar
       req.session.save((err) => {
         if (err) {
-          console.error('Error al guardar la sesión:', err);
+          
         } else {
           redisClient.get(`sess:${req.sessionID}`, (err, sessionData) => {
             if (err) {
-              console.error('Error al obtener la sesión de Redis:', err);
+              
             } else {
             }
           });
@@ -463,7 +463,7 @@ if (process.env.DEBUG_REDIS === 'true') {
     try {
       const keys = await redisClient.keys('*');
     } catch (err) {
-      console.error('Error al obtener claves de Redis:', err);
+      
     }
   });
 }
@@ -478,11 +478,11 @@ function startServer(port, attemptsLeft = 10) {
   const onError = (err) => {
     if (err && err.code === 'EADDRINUSE' && attemptsLeft > 0) {
       const nextPort = port + 1;
-      console.warn(`Puerto ${port} en uso, intentando en ${nextPort}... (${attemptsLeft - 1} intentos restantes)`);
+      `);
       server.removeAllListeners();
       setTimeout(() => startServer(nextPort, attemptsLeft - 1), 300);
     } else {
-      console.error('No se pudo iniciar el servidor:', err);
+      
     }
   };
 
@@ -499,7 +499,7 @@ if (process.env.DEBUG_HTTP === 'true') {
     if (req.sessionID) {
       redisClient.get(`sess:${req.sessionID}`, (err, sessionData) => {
         if (err) {
-          console.error('Error al obtener la sesión de Redis:', err);
+          
         } else {
         }
       });
@@ -512,11 +512,11 @@ if (process.env.DEBUG_HTTP === 'true') {
 if (process.env.NODE_ENV === 'production') {
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret || jwtSecret === 'kairos_secret') {
-    console.error('[SECURITY] JWT_SECRET no configurado correctamente en producción. Continuando para evitar 502, pero configura uno seguro ASAP.');
+    
     // No hacemos process.exit(1) para no tirar la instancia en Render free
   }
   if (!process.env.SENDGRID_API_KEY || !process.env.MAIL_FROM) {
-    console.warn('[SECURITY] Falta configuración de email (SENDGRID_API_KEY o MAIL_FROM).');
+    .');
   }
 }
 

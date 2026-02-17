@@ -63,7 +63,6 @@ const MovimientosRecurrentes = () => {
             });
             if (!res.ok) throw new Error('No autorizado');
             const data = await res.json();
-            console.log('Movimientos recurrentes recibidos:', data);
             setMovimientos(Array.isArray(data) ? data : []);
             // Cuentas
             try {

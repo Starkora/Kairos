@@ -113,7 +113,7 @@ MovimientoRecurrente.materializeDueForToday = async function materializeDueForTo
       created += 1;
     } catch (e) {
       // Continuar con el resto, log de depuración mínimo
-      console.warn('[recurrentes.materialize] Error con', r && r.id, e && e.message);
+      
     }
   }
   if (created > 0);

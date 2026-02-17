@@ -114,7 +114,7 @@ const Transaccion = {
         }
         await db.query('UPDATE movimientos SET applied = 1 WHERE id = ?', [mov.id]);
       } catch (e) {
-        console.error('[applyPendingMovements] Error aplicando movimiento', mov.id, e.message);
+        
       }
     }
     return rows.length;

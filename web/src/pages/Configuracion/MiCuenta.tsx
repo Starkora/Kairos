@@ -35,7 +35,6 @@ export default function MiCuenta() {
 
   React.useEffect(() => {
     const token = getToken();
-    console.log('Token enviado al backend:', token); // Log para depuración
 
     fetch(`${API_BASE}/api/usuarios`, {
       headers: {
@@ -45,13 +44,9 @@ export default function MiCuenta() {
       credentials: 'include'
     })
       .then((res) => {
-        console.log('Respuesta recibida del servidor:', res); // Log para depuración
         return res.json();
       })
       .then((data) => {
-        console.log('Datos obtenidos del servidor:', data); // Log para depuración
-        // El backend puede devolver: 1) un array de usuarios, 2) un objeto usuario, o
-        // 3) una estructura anidada como [rows, ...]. Normalizamos esas formas.
         let usuario = null;
         if (Array.isArray(data) && data.length > 0) {
           // Caso común: array plano de usuarios
@@ -77,16 +72,9 @@ export default function MiCuenta() {
             nombre: usuario.nombre || '',
             apellido: usuario.apellido || ''
           });
-          console.log('Estado actualizado con los datos del usuario:', {
-            email: usuario.email || '',
-            telefono: usuario.telefono || usuario.numero || '',
-            nombre: usuario.nombre || '',
-            apellido: usuario.apellido || ''
-          }); // Log para depuración
         }
       })
       .catch((err) => {
-        console.error('Error al obtener información del usuario:', err); // Log para depuración
       });
   }, []);
 
@@ -213,7 +201,7 @@ export default function MiCuenta() {
         }
       })
       .catch((err) => {
-        console.error('Error al verificar código:', err);
+        
       });
   };
 
@@ -324,7 +312,7 @@ export default function MiCuenta() {
         }
       })
       .catch((err) => {
-        console.error('Error al verificar el código:', err);
+        
         showAlert({
           icon: 'error',
           title: 'Error',

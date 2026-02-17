@@ -223,15 +223,15 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onClose }) => {
 export const toast = {
   success: (message: string, duration?: number) => {
     // Esta función se usa a través del hook useToast
-    console.log('Toast success:', message);
+    
   },
   error: (message: string, duration?: number) => {
-    console.log('Toast error:', message);
+    
   },
   warning: (message: string, duration?: number) => {
-    console.log('Toast warning:', message);
+    
   },
   info: (message: string, duration?: number) => {
-    console.log('Toast info:', message);
+    
   }
 };

@@ -10,7 +10,7 @@ router.get('/users/pending', auth, requireAdmin, async (req, res) => {
     const [rows] = await db.query('SELECT id, email, nombre, apellido, numero, plataforma, created_at AS creado_en, verificado, rol, aprobado FROM usuarios WHERE aprobado = 0 ORDER BY id DESC');
     res.json(Array.isArray(rows) ? rows : []);
   } catch (e) {
-    console.error('[admin] pending users error:', e);
+    
     res.status(500).json({ error: 'Error al obtener usuarios pendientes' });
   }
 });
@@ -26,7 +26,7 @@ router.post('/users/:id/approve', auth, requireAdmin, async (req, res) => {
     }
     res.json({ success: true });
   } catch (e) {
-    console.error('[admin] approve user error:', e);
+    
     res.status(500).json({ error: 'Error al aprobar usuario' });
   }
 });
@@ -43,7 +43,7 @@ router.post('/users/:id/promote', auth, requireAdmin, async (req, res) => {
     }
     res.json({ success: true, rol: 'admin' });
   } catch (e) {
-    console.error('[admin] promote user error:', e);
+    
     res.status(500).json({ error: 'Error al promover usuario' });
   }
 });

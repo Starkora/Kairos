@@ -153,7 +153,7 @@ export default function Dashboard() {
         movDate.setHours(0, 0, 0, 0);
         return movDate <= today;
       } catch (e) {
-        console.error('Error filtrando movimiento:', e, m);
+        
         return false;
       }
     });
@@ -1262,7 +1262,7 @@ export default function Dashboard() {
                 ));
               }
             } catch (error) {
-              console.error('Error al marcar como aplicado:', error);
+              
             }
           };
 

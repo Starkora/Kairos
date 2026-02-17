@@ -40,7 +40,7 @@ exports.eliminarDeuda = async (req, res) => {
     await Deuda.delete(req.params.id);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error al eliminar deuda:', err); // Log de error
+    // Log de error
     res.status(500).json({ error: 'Error al eliminar deuda', details: err.message });
   }
 };
@@ -59,7 +59,7 @@ exports.registrarPago = async (req, res) => {
     await Deuda.registrarPago(deuda_id, monto, fecha);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error al registrar pago de deuda:', err);
+    
     res.status(500).json({ error: 'Error al registrar pago de deuda', details: err.message });
   }
 };

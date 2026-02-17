@@ -334,7 +334,7 @@ export default function DeudasMetas() {
           });
         } catch (e) {
           // Si falla el movimiento, igual se registró el pago; informamos suavemente
-          console.warn('No se pudo registrar el movimiento para el pago/aporte:', e);
+          
         }
 
         Swal.fire({ icon: 'success', title: '¡Éxito!', text: data.message || (tipo === 'deuda' ? 'Pago registrado y descontado de la cuenta' : 'Aporte registrado y descontado de la cuenta') });
