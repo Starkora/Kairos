@@ -1,27 +1,45 @@
-const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
+const nodemailer = require('nodemailer');
 
-async function sendMail({ to, subject, text }) {
+// Configuración del transporter con SMTP (compatible con Gmail, Outlook, etc.)
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST || 'smtp-mail.outlook.com',
+  port: parseInt(process.env.EMAIL_PORT || '587'),
+  secure: process.env.EMAIL_SECURE === 'true', // true para puerto 465, false para otros puertos
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  },
+  tls: {
+    ciphers: 'SSLv3',
+    rejectUnauthorized: false
+  }
+});
+
+async function sendMail({ to, subject, text, html }) {
   if (typeof to !== 'string' || !to.trim()) {
     throw new Error('El campo `to` debe ser un correo electrónico válido.');
   }
 
-  const from = process.env.MAIL_FROM;
-  const apiKey = process.env.SENDGRID_API_KEY;
+  const from = process.env.EMAIL_FROM || process.env.EMAIL_USER;
   const allowDevFallback = process.env.ALLOW_DEV_MAIL_FALLBACK === 'true' || process.env.NODE_ENV !== 'production';
-  if ((typeof from !== 'string' || !from.trim()) || !apiKey) {
+  
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
     if (allowDevFallback) {
+      console.log('[Mailer] Modo desarrollo - Email simulado:', { to, subject });
       return { simulated: true };
     }
-    throw new Error('Configuración de correo incompleta: falta MAIL_FROM o SENDGRID_API_KEY');
+    throw new Error('Configuración de correo incompleta: falta EMAIL_USER o EMAIL_PASSWORD');
   }
 
-  return sgMail.send({
+  const mailOptions = {
+    from: `Kairos <${from}>`,
     to: to.trim(),
-    from: from.trim(), // Asegurarse de que el correo remitente esté limpio
     subject,
-    text
-  });
+    text,
+    html: html || text // Si no hay HTML, usar el texto plano
+  };
+
+  return transporter.sendMail(mailOptions);
 }
 
 module.exports = { sendMail };
