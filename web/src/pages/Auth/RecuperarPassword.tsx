@@ -132,6 +132,7 @@ const RecuperarPassword = ({ onVolver }) => {
         title={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
         aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
       >
+        {/* @ts-ignore */}
         {darkMode ? <FaSun /> : <FaMoon />}
       </button>
       
