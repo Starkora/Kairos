@@ -12,7 +12,11 @@ const transporter = nodemailer.createTransport({
   tls: {
     ciphers: 'SSLv3',
     rejectUnauthorized: false
-  }
+  },
+  // Timeouts para evitar esperas indefinidas
+  connectionTimeout: 10000, // 10 segundos para conectar
+  greetingTimeout: 10000, // 10 segundos para el greeting
+  socketTimeout: 30000 // 30 segundos para operaciones
 });
 
 async function sendMail({ to, subject, text, html }) {
@@ -39,7 +43,15 @@ async function sendMail({ to, subject, text, html }) {
     html: html || text // Si no hay HTML, usar el texto plano
   };
 
-  return transporter.sendMail(mailOptions);
+  try {
+    console.log('[Mailer] Enviando email a:', to);
+    const result = await transporter.sendMail(mailOptions);
+    console.log('[Mailer] Email enviado exitosamente:', result.messageId);
+    return result;
+  } catch (error) {
+    console.error('[Mailer] Error al enviar email:', error.message);
+    throw error;
+  }
 }
 
 module.exports = { sendMail };

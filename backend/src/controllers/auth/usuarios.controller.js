@@ -474,7 +474,7 @@ const enviarCodigoRecuperacion = async (req, res) => {
       // Enviar por WhatsApp usando el bot de MiBodega
       const whatsappResult = await whatsappBot.sendWhatsAppNotification(
         userRow.numero,
-        `Kairos - Recuperación de contraseña*\n\nTu código de recuperación es: *${code}*\n\nEste código expira en ${smsMins} minutos.\n\n_No compartas este código con nadie._`
+        `🔐 *Kairos - Recuperación de contraseña*\n\nTu código de recuperación es: *${code}*\n\nEste código expira en ${smsMins} minutos.\n\n_No compartas este código con nadie._`
       );
       
       // Si falla WhatsApp, intentar con SMS como fallback
@@ -483,17 +483,22 @@ const enviarCodigoRecuperacion = async (req, res) => {
         await sms.send(userRow.numero, `Tu código para recuperar contraseña de Kairos es: ${code}`);
       }
     } else {
+      console.log('[Recovery] Enviando código por email a:', userRow.email);
       await mailer.sendMail({
         to: userRow.email,
         subject: 'Kairos - Recuperación de contraseña',
         text: `Tu código de recuperación es: ${code}`,
       });
+      console.log('[Recovery] Email enviado exitosamente');
     }
 
     return res.status(200).json({ success: true, message: 'Código enviado' });
   } catch (err) {
-    
-    return res.status(500).json({ error: 'Error al iniciar la recuperación' });
+    console.error('[Recovery] Error en recuperación:', err.message);
+    // Verificar que no se hayan enviado headers antes
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'Error al iniciar la recuperación' });
+    }
   }
 };
 
