@@ -139,7 +139,7 @@ if (redisUrl) {
 }
 
 if (redisClient) {
-  redisClient.on('error', (err) => );
+  redisClient.on('error', (_err) => {});
 }
 
 // Configurar almacenamiento de sesiones personalizado
@@ -478,7 +478,6 @@ function startServer(port, attemptsLeft = 10) {
   const onError = (err) => {
     if (err && err.code === 'EADDRINUSE' && attemptsLeft > 0) {
       const nextPort = port + 1;
-      `);
       server.removeAllListeners();
       setTimeout(() => startServer(nextPort, attemptsLeft - 1), 300);
     } else {
@@ -512,11 +511,8 @@ if (process.env.DEBUG_HTTP === 'true') {
 if (process.env.NODE_ENV === 'production') {
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret || jwtSecret === 'kairos_secret') {
-    
-    // No hacemos process.exit(1) para no tirar la instancia en Render free
   }
   if (!process.env.SENDGRID_API_KEY || !process.env.MAIL_FROM) {
-    .');
   }
 }
 
