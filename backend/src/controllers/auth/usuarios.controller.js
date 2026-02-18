@@ -350,9 +350,20 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Email y contraseña son requeridos' });
     }
 
-    // Buscar usuario por email y plataforma (si existe), de lo contrario por email
+    // Estrategia de búsqueda de usuario:
+    // 1. Buscar por email + plataforma (datos separados por plataforma)
+    // 2. Si no existe, buscar solo por email (unificar datos entre plataformas)
     const [rowsByPlat] = await db.query('SELECT * FROM usuarios WHERE email = ? AND plataforma = ?', [email, plataforma]);
-    const user = (Array.isArray(rowsByPlat) && rowsByPlat[0]) ? rowsByPlat[0] : (await db.query('SELECT * FROM usuarios WHERE email = ?', [email]))[0][0];
+    let user = (Array.isArray(rowsByPlat) && rowsByPlat[0]) ? rowsByPlat[0] : null;
+    
+    // Si no existe en esta plataforma, buscar en todas (unificación automática)
+    if (!user) {
+      const [allRows] = await db.query('SELECT * FROM usuarios WHERE email = ?', [email]);
+      if (allRows && allRows.length > 0) {
+        console.log(`[Login] Usuario encontrado en otra plataforma (${allRows[0].plataforma}), unificando datos para: ${email}`);
+        user = allRows[0];
+      }
+    }
 
     if (!user) {
       return res.status(401).json({ code: 'EMAIL_NOT_FOUND', message: 'Correo no registrado' });
@@ -622,6 +633,49 @@ const resend = async (req, res) => {
   }
 };
 
+// Método para actualizar perfil del usuario
+const updateProfile = async (req, res) => {
+  try {
+    const usuarioId = req.user.id;
+    const { nombre, apellido } = req.body || {};
+
+    if (!nombre && !apellido) {
+      return res.status(400).json({ message: 'Se requiere al menos un campo para actualizar' });
+    }
+
+    const updates = [];
+    const values = [];
+
+    if (nombre !== undefined) {
+      updates.push('nombre = ?');
+      values.push(nombre);
+    }
+    if (apellido !== undefined) {
+      updates.push('apellido = ?');
+      values.push(apellido);
+    }
+
+    values.push(usuarioId);
+
+    await db.query(
+      `UPDATE usuarios SET ${updates.join(', ')} WHERE id = ?`,
+      values
+    );
+
+    // Obtener usuario actualizado
+    const [rows] = await db.query('SELECT id, email, nombre, apellido, numero, rol, aprobado, plataforma FROM usuarios WHERE id = ?', [usuarioId]);
+    
+    return res.json({ 
+      success: true, 
+      message: 'Perfil actualizado correctamente',
+      user: rows[0]
+    });
+  } catch (err) {
+    console.error('[updateProfile] Error:', err);
+    return res.status(500).json({ message: 'Error al actualizar perfil' });
+  }
+};
+
 module.exports = {
   getUserInfo,
   enviarCodigoVerificacion,
@@ -633,6 +687,7 @@ module.exports = {
   enviarCodigoRecuperacion,
   confirmarRecuperacion,
   resend,
+  updateProfile,
 };
 
 // Agregar al final del archivo para exportar función resend (y luego incluirla en module.exports si prefieres)

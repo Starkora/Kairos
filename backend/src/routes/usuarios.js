@@ -21,6 +21,8 @@ router.post('/verify', rlVerify, usuariosController.verify);
 router.post('/resend', rlResend, usuariosController.resend);
 router.post('/login', rlLogin, rlLoginEmail, captchaMiddleware('CAPTCHA_ON_LOGIN'), usuariosController.login);
 router.get('/profile', auth, usuariosController.getProfile);
+router.put('/perfil', auth, usuariosController.updateProfile); // Actualizar perfil
+router.get('/me', auth, usuariosController.getUserInfo); // Alias para getUserInfo
 router.get('/', auth, usuariosController.getUserInfo);
 
 // Recuperación de contraseña

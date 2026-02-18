@@ -58,8 +58,21 @@ exports.loginGoogle = async (req, res) => {
     const apellido = payload.family_name || '';
     const googleId = payload.sub;
 
+    // Estrategia de unificación de datos:
+    // 1. Buscar usuario por email + plataforma (datos separados)
+    // 2. Si no existe, buscar solo por email (unificar con otras plataformas)
     let users = await require('../../models/usuario').findByEmailAndPlataforma(email, plat);
     let user = users[0];
+    
+    // Si no existe en esta plataforma, buscar en todas (unificación automática)
+    if (!user) {
+      const allUsers = await require('../../models/usuario').findByEmail(email);
+      if (allUsers && allUsers.length > 0) {
+        console.log(`[GoogleAuth] Usuario encontrado en otra plataforma, unificando datos para: ${email}`);
+        user = allUsers[0]; // Usar el usuario existente de cualquier plataforma
+      }
+    }
+    
     if (!user) {
       const result = await require('../../models/usuario').create({
         email,
