@@ -542,6 +542,7 @@ export default function Calendario() {
       // Estado del formulario
       let formState = {
         cuenta_id: mov.cuenta_id,
+        tipo: (mov.tipo || '').toLowerCase(),
         monto: mov.monto,
         descripcion: mov.descripcion || '',
         fecha: (mov.fecha || '').slice(0, 10),
@@ -572,12 +573,13 @@ export default function Calendario() {
           });
         }
         
+        const currentTipo = formState.tipo || tipoNorm;
         if (badge) { 
-          badge.textContent = mov.tipo; 
-          badge.style.background = tipoNorm === 'ingreso' ? '#1de9b6' : (tipoNorm === 'ahorro' ? '#4fc3f7' : '#ff8a80'); 
+          badge.textContent = currentTipo; 
+          badge.style.background = currentTipo === 'ingreso' ? '#1de9b6' : (currentTipo === 'ahorro' ? '#4fc3f7' : '#ff8a80'); 
         }
         if (cuenta) cuenta.textContent = (cuentasList.find((c: any) => c.id === Number(formState.cuenta_id))?.nombre || mov.cuenta);
-        if (amount) amount.textContent = `${tipoNorm === 'ingreso' || tipoNorm === 'ahorro' ? '+' : '-'}S/ ${Number(formState.monto || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        if (amount) amount.textContent = `${currentTipo === 'ingreso' || currentTipo === 'ahorro' ? '+' : '-'}S/ ${Number(formState.monto || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
         if (desc) desc.textContent = formState.descripcion;
         
         // Actualizar el preview del icono en el selector
@@ -621,7 +623,11 @@ export default function Calendario() {
               
               <div style="display: flex; flex-direction: column; align-items: center;">
                 <label style="font-weight: 700; margin-bottom: 6px;">Tipo</label>
-                <input class="swal2-input" value="${mov.tipo}" disabled style="margin: 0; text-align: center; text-transform: capitalize; width: 100%; box-sizing: border-box;">
+                <select id="edit-mov-tipo-select" class="swal2-select" style="margin: 0; width: 100%; box-sizing: border-box; margin-top: 12px; text-transform: capitalize;">
+                  <option value="ingreso" ${tipoNorm === 'ingreso' ? 'selected' : ''}>Ingreso</option>
+                  <option value="egreso" ${tipoNorm === 'egreso' ? 'selected' : ''}>Egreso</option>
+                  <option value="ahorro" ${tipoNorm === 'ahorro' ? 'selected' : ''}>Ahorro</option>
+                </select>
               </div>
               
               <div style="display: flex; flex-direction: column; align-items: center;">
@@ -676,6 +682,7 @@ export default function Calendario() {
         cancelButtonText: 'Cancel',
         didOpen: () => {
           const cuentaSelect = document.getElementById('edit-mov-cuenta-select') as HTMLSelectElement;
+          const tipoSelect = document.getElementById('edit-mov-tipo-select') as HTMLSelectElement;
           const montoInput = document.getElementById('edit-mov-monto') as HTMLInputElement;
           const fechaInput = document.getElementById('edit-mov-fecha') as HTMLInputElement;
           const iconSelect = document.getElementById('edit-mov-icon-select') as HTMLSelectElement;
@@ -686,6 +693,7 @@ export default function Calendario() {
           const onChange = () => {
             formState = {
               cuenta_id: Number(cuentaSelect?.value || formState.cuenta_id),
+              tipo: tipoSelect?.value || formState.tipo,
               monto: parseFloat(montoInput?.value || String(formState.monto)),
               descripcion: descripcionInput?.value || formState.descripcion,
               fecha: fechaInput?.value || formState.fecha,
@@ -696,7 +704,7 @@ export default function Calendario() {
             updatePreview();
           };
 
-          [cuentaSelect, montoInput, fechaInput, iconSelect, colorInput, descripcionInput, categoriaSelect].forEach(el => {
+          [cuentaSelect, tipoSelect, montoInput, fechaInput, iconSelect, colorInput, descripcionInput, categoriaSelect].forEach(el => {
             el?.addEventListener('change', onChange);
             el?.addEventListener('input', onChange);
           });
@@ -715,7 +723,7 @@ export default function Calendario() {
 
       const body = { 
         cuenta_id: Number(confirmed.cuenta_id), 
-        tipo: mov.tipo, 
+        tipo: confirmed.tipo || mov.tipo, 
         monto: Number(confirmed.monto), 
         descripcion: confirmed.descripcion, 
         fecha: confirmed.fecha, 
