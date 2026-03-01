@@ -91,6 +91,8 @@ export default function Calendario() {
   const [agruparPorCategoria, setAgruparPorCategoria] = React.useState(true);
   const [vistaTimeline, setVistaTimeline] = React.useState(false);
   const [draggedItem, setDraggedItem] = React.useState<any>(null);
+  const [fechaInicioManual, setFechaInicioManual] = React.useState('');
+  const [fechaFinManual, setFechaFinManual] = React.useState('');
 
   // Cerrar menús al hacer click fuera o al presionar Escape
   React.useEffect(() => {
@@ -955,26 +957,41 @@ export default function Calendario() {
   };
 
   const handleExport = async () => {
-    // Si no está en modo exportación, activarlo para permitir selección de rango
-    if (!exportMode) {
-      setExportMode(true);
-      Swal.fire({ icon: 'info', title: 'Modo exportación activado', text: 'Selecciona un día o arrastra para elegir un rango y vuelve a presionar Exportar.' });
-      return;
-    }
-    // Exportar con la selección actual
+    // Exportar con fechas manuales o selección del calendario
     let start, end;
-    if (Array.isArray(value) && value.length === 2 && value[0] && value[1]) {
-      start = value[0].toISOString().slice(0, 10);
-      end = value[1].toISOString().slice(0, 10);
-    } else if (value instanceof Date) {
-      start = value.toISOString().slice(0, 10);
-      end = start;
-    } else {
-      Swal.fire({ icon: 'info', title: 'Selecciona una fecha o rango', text: 'Haz clic en un día o arrastra para seleccionar un rango.' });
+    
+    // Priorizar fechas manuales si están definidas
+    if (fechaInicioManual && fechaFinManual) {
+      start = fechaInicioManual;
+      end = fechaFinManual;
+    } else if (fechaInicioManual || fechaFinManual) {
+      Swal.fire({ icon: 'warning', title: 'Fechas incompletas', text: 'Debes ingresar tanto la fecha de inicio como la de fin.' });
       return;
+    } else {
+      // Usar selección del calendario
+      if (!exportMode) {
+        setExportMode(true);
+        Swal.fire({ icon: 'info', title: 'Modo exportación activado', text: 'Selecciona un día o arrastra para elegir un rango y vuelve a presionar Exportar, o ingresa fechas manualmente.' });
+        return;
+      }
+      if (Array.isArray(value) && value.length === 2 && value[0] && value[1]) {
+        start = value[0].toISOString().slice(0, 10);
+        end = value[1].toISOString().slice(0, 10);
+      } else if (value instanceof Date) {
+        start = value.toISOString().slice(0, 10);
+        end = start;
+      } else {
+        Swal.fire({ icon: 'info', title: 'Selecciona una fecha o rango', text: 'Haz clic en un día o arrastra para seleccionar un rango, o ingresa fechas manualmente.' });
+        return;
+      }
     }
+    
     try {
-      const url = `${API_BASE}/api/transacciones/export?start=${start}&end=${end}`;
+      // Construir URL con filtros
+      let url = `${API_BASE}/api/transacciones/export?start=${start}&end=${end}`;
+      if (cuentaFiltro !== 'all') {
+        url += `&cuenta_id=${cuentaFiltro}`;
+      }
       const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + getToken() } });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -1116,10 +1133,59 @@ export default function Calendario() {
         )}
       </div>
       <div className="calendar-actions toolbar" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center', position: 'relative' }}>
+        {/* Campos de fecha manual para exportación */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '4px 8px', background: 'var(--color-card)', borderRadius: 8, border: '1px solid var(--color-input-border)' }}>
+          <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-secondary)' }}>Desde:</label>
+          <input 
+            type="date" 
+            value={fechaInicioManual}
+            onChange={e => setFechaInicioManual(e.target.value)}
+            style={{ 
+              padding: '4px 6px', 
+              borderRadius: 4, 
+              border: '1px solid var(--color-input-border)', 
+              background: 'var(--color-input-bg)',
+              color: 'var(--color-text)',
+              fontSize: 13
+            }}
+          />
+          <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-secondary)' }}>Hasta:</label>
+          <input 
+            type="date" 
+            value={fechaFinManual}
+            onChange={e => setFechaFinManual(e.target.value)}
+            style={{ 
+              padding: '4px 6px', 
+              borderRadius: 4, 
+              border: '1px solid var(--color-input-border)', 
+              background: 'var(--color-input-bg)',
+              color: 'var(--color-text)',
+              fontSize: 13
+            }}
+          />
+          {(fechaInicioManual || fechaFinManual) && (
+            <button 
+              type="button"
+              onClick={() => { setFechaInicioManual(''); setFechaFinManual(''); }}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: 'var(--color-text-secondary)', 
+                cursor: 'pointer',
+                fontSize: 16,
+                padding: '0 4px'
+              }}
+              title="Limpiar fechas"
+            >
+              ✖
+            </button>
+          )}
+        </div>
+        
         <div ref={exportMenuRef} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
           <button type="button" className="btn btn-primary"
             onClick={handleExport}
-            title={exportMode ? 'Exportar por servidor usando la selección actual' : 'Entrar en modo de selección y exportar por servidor'}
+            title={fechaInicioManual && fechaFinManual ? 'Exportar usando las fechas ingresadas' : exportMode ? 'Exportar por servidor usando la selección actual' : 'Entrar en modo de selección y exportar por servidor'}
           >
             {exportMode ? 'Exportar (servidor)' : 'Exportar'}
           </button>
@@ -1307,7 +1373,7 @@ export default function Calendario() {
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." className="input" style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', minWidth: 200 }} />
-          <button className="btn" onClick={() => { setFilters(defaultFilters); setSearch(''); setCuentaFiltro('all'); }}>Limpiar</button>
+          <button className="btn" onClick={() => { setFilters(defaultFilters); setSearch(''); setCuentaFiltro('all'); setFechaInicioManual(''); setFechaFinManual(''); }}>Limpiar</button>
         </div>
       </div>
       {exportMode && (

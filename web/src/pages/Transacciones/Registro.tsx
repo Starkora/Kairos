@@ -395,13 +395,21 @@ export default function Registro() {
       if (!form.cuentaDestino) { Swal.fire({ icon: 'warning', title: 'Cuenta destino requerida', text: 'Selecciona la cuenta destino.' }); return; }
       if (String(form.cuenta) === String(form.cuentaDestino)) { Swal.fire({ icon: 'warning', title: 'Cuentas inválidas', text: 'La cuenta origen y destino deben ser diferentes.' }); return; }
     }
+    // Validaciones para pago de tarjeta
+    if (form.tipo === 'pago_tarjeta') {
+      if (!form.cuentaDestino) { Swal.fire({ icon: 'warning', title: 'Tarjeta requerida', text: 'Selecciona la tarjeta de crédito a pagar.' }); return; }
+      if (String(form.cuenta) === String(form.cuentaDestino)) { Swal.fire({ icon: 'warning', title: 'Cuentas inválidas', text: 'La cuenta origen y la tarjeta deben ser diferentes.' }); return; }
+    }
     // Validaciones para ahorro
     if (form.tipo === 'ahorro' && form.cuentaDestino && String(form.cuenta) !== String(form.cuentaDestino)) {
       // Es un ahorro hacia otra cuenta (como transferencia)
       if (!hasTwoAccounts) { Swal.fire({ icon: 'info', title: 'Se requiere otra cuenta', text: 'Necesitas al menos dos cuentas para ahorrar en otra cuenta.' }); return; }
     }
     const result = await Swal.fire({
-      title: form.tipo === 'transferencia' ? '¿Confirmar transferencia?' : form.tipo === 'ahorro' && String(form.cuenta) !== String(form.cuentaDestino) ? '¿Confirmar ahorro entre cuentas?' : '¿Seguro que quieres agregar este movimiento?',
+      title: form.tipo === 'transferencia' ? '¿Confirmar transferencia?' : 
+             form.tipo === 'pago_tarjeta' ? '¿Confirmar pago de tarjeta?' :
+             form.tipo === 'ahorro' && String(form.cuenta) !== String(form.cuentaDestino) ? '¿Confirmar ahorro entre cuentas?' : 
+             '¿Seguro que quieres agregar este movimiento?',
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, guardar',
@@ -440,6 +448,19 @@ export default function Registro() {
               categoria_id: form.categoria || null, // Categoría de ahorro si fue seleccionada
               icon: form.icon,
               color: form.color
+            })
+          });
+        } else if (form.tipo === 'pago_tarjeta') {
+          // Pago de tarjeta de crédito (transferencia que reduce deuda)
+          res = await apiFetch(`${API_BASE}/api/transacciones/transferir`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              origen_id: form.cuenta,
+              destino_id: form.cuentaDestino,
+              monto: Number(form.monto),
+              fecha: form.fecha,
+              descripcion: form.descripcion || 'Pago de tarjeta de crédito'
             })
           });
         } else if (repetir) {
@@ -483,6 +504,7 @@ export default function Registro() {
         }
         if (res && res.ok) {
           const successTitle = form.tipo === 'transferencia' ? 'Transferencia registrada' : 
+                               form.tipo === 'pago_tarjeta' ? 'Pago de tarjeta registrado' :
                                form.tipo === 'ahorro' && String(form.cuenta) !== String(form.cuentaDestino) ? 'Ahorro transferido' : 
                                'Movimiento registrado';
           Swal.fire({ icon: 'success', title: successTitle, showConfirmButton: false, timer: 1200 });

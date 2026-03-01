@@ -635,7 +635,7 @@ exports.importarExcel = async (req, res) => {
 exports.exportarExcel = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
-  const { start, end } = req.query;
+  const { start, end, cuenta_id } = req.query;
   if (!start || !end) return res.status(400).json({ error: 'Parámetros start y end requeridos (YYYY-MM-DD)' });
   try {
     const db = require('../../../config/database');
@@ -643,8 +643,9 @@ exports.exportarExcel = async (req, res) => {
     const [usuarios] = await db.query('SELECT plataforma FROM usuarios WHERE id = ?', [usuario_id]);
     if (!usuarios || usuarios.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
     const plataforma = usuarios[0].plataforma;
-    // Consultar movimientos dentro del rango
-    const sql = `
+    
+    // Construir consulta SQL con filtro opcional por cuenta
+    let sql = `
       SELECT m.id, m.tipo, m.monto, m.descripcion,
              DATE_FORMAT(m.fecha, '%Y-%m-%d') AS fecha,
              c.nombre AS cuenta, cat.nombre AS categoria
@@ -652,9 +653,18 @@ exports.exportarExcel = async (req, res) => {
       JOIN cuentas c ON m.cuenta_id = c.id
       LEFT JOIN categorias cat ON m.categoria_id = cat.id
       WHERE m.usuario_id = ? AND m.plataforma = ? AND DATE(m.fecha) BETWEEN ? AND ?
-      ORDER BY m.fecha ASC, m.id ASC
     `;
-    const [rows] = await db.query(sql, [usuario_id, plataforma, start, end]);
+    const params = [usuario_id, plataforma, start, end];
+    
+    // Agregar filtro por cuenta si se especifica
+    if (cuenta_id) {
+      sql += ' AND m.cuenta_id = ?';
+      params.push(cuenta_id);
+    }
+    
+    sql += ' ORDER BY m.fecha ASC, m.id ASC';
+    
+    const [rows] = await db.query(sql, params);
     const data = [
       ['id', 'tipo', 'monto', 'descripcion', 'fecha', 'cuenta', 'categoria'],
       ...rows.map(r => [r.id, r.tipo, r.monto, r.descripcion || '', r.fecha, r.cuenta, r.categoria || ''])
