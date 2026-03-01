@@ -259,15 +259,26 @@ export default function Registro() {
       return null;
     }
     
-    const saldoActual = parseFloat(cuentaSeleccionada.saldo_actual || 0);
+    // Detectar si es tarjeta de crédito
+    const esTarjeta = cuentaSeleccionada.tipo && 
+                      (cuentaSeleccionada.tipo.toLowerCase().includes('tarjeta') || 
+                       cuentaSeleccionada.tipo.toLowerCase().includes('crédito'));
+    
+    // Para tarjetas usar saldo_disponible, para cuentas normales usar saldo_actual
+    const saldoActual = esTarjeta 
+      ? parseFloat(cuentaSeleccionada.saldo_disponible || 0)
+      : parseFloat(cuentaSeleccionada.saldo_actual || 0);
     const monto = parseFloat(form.monto);
     let nuevoSaldo = saldoActual;
 
     if (form.tipo === 'ingreso') {
+      // Ingreso: aumenta saldo (para tarjetas esto sería raro, pero aumentaría disponible)
       nuevoSaldo = saldoActual + monto;
     } else if (form.tipo === 'egreso' || form.tipo === 'ahorro') {
+      // Egreso: disminuye saldo/disponible
       nuevoSaldo = saldoActual - monto;
-    } else if (form.tipo === 'transferencia') {
+    } else if (form.tipo === 'transferencia' || form.tipo === 'pago_tarjeta') {
+      // Transferencia: disminuye saldo origen
       nuevoSaldo = saldoActual - monto;
     }
 
@@ -275,7 +286,8 @@ export default function Registro() {
       saldoActual,
       nuevoSaldo,
       diferencia: nuevoSaldo - saldoActual,
-      quedaNegativo: nuevoSaldo < 0
+      quedaNegativo: nuevoSaldo < 0,
+      esTarjeta
     };
   }, [cuentas, form.cuenta, form.monto, form.tipo]);
 
@@ -763,7 +775,7 @@ export default function Registro() {
             </div>
             <div style={{ fontSize: 13, color: '#424242', lineHeight: 1.6 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span>Saldo actual:</span>
+                <span>{calcularSaldoProyectado.esTarjeta ? 'Disponible actual:' : 'Saldo actual:'}</span>
                 <span style={{ fontWeight: 600 }}>S/ {calcularSaldoProyectado.saldoActual.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -780,7 +792,7 @@ export default function Registro() {
                 fontWeight: 700,
                 fontSize: 15
               }}>
-                <span>Nuevo saldo:</span>
+                <span>{calcularSaldoProyectado.esTarjeta ? 'Nuevo disponible:' : 'Nuevo saldo:'}</span>
                 <span style={{ color: calcularSaldoProyectado.quedaNegativo ? '#c62828' : '#2e7d32' }}>
                   S/ {calcularSaldoProyectado.nuevoSaldo.toFixed(2)}
                 </span>
@@ -797,7 +809,9 @@ export default function Registro() {
                 gap: 6
               }}>
                 {React.createElement(FaExclamationTriangle as any)}
-                Advertencia: Tu saldo quedará en negativo
+                {calcularSaldoProyectado.esTarjeta 
+                  ? 'Advertencia: Excederás tu límite de crédito' 
+                  : 'Advertencia: Tu saldo quedará en negativo'}
               </div>
             )}
           </div>
