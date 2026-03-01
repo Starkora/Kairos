@@ -232,8 +232,8 @@ exports.descargarPlantilla = async (req, res) => {
   wsInfo.addRow(['- Icono y Color: opcionales. Puedes seleccionarlos del desplegable.']);
   wsInfo.addRow(['  Si los dejas vacíos, en la importación se aplicarán colores por defecto según el tipo.']);
   wsInfo.addRow(['  Colores por defecto: ingreso=verde (#2e7d32), egreso=rojo (#c62828), ahorro=naranja (#ff9800), transferencia=azul (#1976d2).']);
-  wsInfo.addRow(['  Icono en transferencias se fija a 🔁 automáticamente.']);
-  wsInfo.addRow(['Iconos disponibles: 💸  💰  🏦  🍎  🚗  💳  🔌  🎁  🛒  🏥']);
+  wsInfo.addRow(['  Icono en transferencias se fija a FaExchangeAlt automáticamente.']);
+  wsInfo.addRow(['Iconos disponibles: FaMoneyBillWave, FaWallet, FaUniversity, FaAppleAlt, FaCar, FaCreditCard, FaBolt, FaGift, FaShoppingCart, FaHospital']);
     wsInfo.addRow(['Ejemplo usando nombres:']);
     wsInfo.addRow(['cuenta', 'tipo', 'monto', 'descripcion', 'fecha', 'categoria']);
     wsInfo.addRow(['Cuenta 1', 'ingreso', '100.00', 'Texto opcional', todayISO(), 'Categoría 1']);
@@ -262,7 +262,7 @@ exports.descargarPlantilla = async (req, res) => {
   const cuentasVals = (cuentas && cuentas.length) ? cuentas.map(c => c.nombre) : ['-'];
   const categoriasVals = (categorias && categorias.length) ? categorias.map(c => c.nombre) : ['-'];
   const tiposVals = tipos;
-  const iconosVals = ['💸','💰','🏦','🍎','🚗','💳','🔌','🎁','🛒','🏥'];
+  const iconosVals = ['FaMoneyBillWave','FaWallet','FaUniversity','FaAppleAlt','FaCar','FaCreditCard','FaBolt','FaGift','FaShoppingCart','FaHospital'];
   const coloresVals = ['#2e7d32','#c62828','#ff9800','#1976d2','#6c4fa1','#607d8b'];
 
     cuentasVals.forEach((n, i) => wsList.getCell(2 + i, 1).value = n);
@@ -304,7 +304,7 @@ exports.descargarPlantilla = async (req, res) => {
       ws.getCell('E1').note = 'Fecha: formato YYYY-MM-DD. Ej: 2025-10-04';
       ws.getCell('F1').note = 'Categoría: selecciona por nombre (lista) o ingresa el ID. Opcional.';
       ws.getCell('G1').note = 'Cuenta destino: solo requerido cuando tipo=transferencia (por nombre o ID).';
-      ws.getCell('H1').note = 'Icono: opcional, por ejemplo 💸, 💰, 🏦. Si se omite, se dejará vacío (transferencia usa 🔁).';
+      ws.getCell('H1').note = 'Icono: opcional, por ejemplo FaMoneyBillWave, FaWallet, FaUniversity. Si se omite, se dejará vacío (transferencia usa FaExchangeAlt).';
       ws.getCell('I1').note = 'Color: opcional. Durante la importación se asignará por defecto según el tipo (ingreso=verde, egreso=rojo, ahorro=naranja, transferencia=azul).';
     } catch (e) { /* notas opcionales según soporte de Excel */ }
 
@@ -412,7 +412,7 @@ exports.importarExcel = async (req, res) => {
       transferencia: '#1976d2',
     };
     const defaultIconByTipo = {
-      transferencia: '🔁',
+      transferencia: 'FaExchangeAlt',
     };
     // Utilidad: normalizar fecha desde Excel (serial, Date o string) a YYYY-MM-DD
     const toISODate = (val) => {

@@ -3,7 +3,21 @@ import { createRoot, Root } from 'react-dom/client';
 import { TipoSelect, FrecuenciaSelect, ColorInput } from '../../components/SharedInputs';
 import apiFetch from '../../utils/apiFetch';
 // Importación asegurada de react-icons
-import { FaEdit, FaTrash } from 'react-icons/fa';
+import { 
+  FaEdit, 
+  FaTrash, 
+  FaMoneyBillWave, 
+  FaWallet, 
+  FaUniversity, 
+  FaAppleAlt, 
+  FaCar, 
+  FaCreditCard, 
+  FaBolt, 
+  FaGift, 
+  FaShoppingCart, 
+  FaHospital, 
+  FaExchangeAlt 
+} from 'react-icons/fa';
 import * as Icons from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import { ActionButton } from '../../components/ActionButton';
@@ -31,6 +45,26 @@ const MovimientosRecurrentes = () => {
     const [categorias, setCategorias] = useState<{id:number, nombre:string}[]>([]);
     const [cuentasMap, setCuentasMap] = useState<Record<number,string>>({});
     const [categoriasMap, setCategoriasMap] = useState<Record<number,string>>({});
+
+    // Helper para renderizar iconos desde nombres de string
+    const renderIcon = (iconName: string, style?: any) => {
+        const iconMap: Record<string, any> = {
+            'FaMoneyBillWave': FaMoneyBillWave,
+            'FaWallet': FaWallet,
+            'FaUniversity': FaUniversity,
+            'FaAppleAlt': FaAppleAlt,
+            'FaCar': FaCar,
+            'FaCreditCard': FaCreditCard,
+            'FaBolt': FaBolt,
+            'FaLightning': FaBolt, // Alias para compatibilidad
+            'FaGift': FaGift,
+            'FaShoppingCart': FaShoppingCart,
+            'FaHospital': FaHospital,
+            'FaExchangeAlt': FaExchangeAlt
+        };
+        const IconComponent = iconMap[iconName] || FaMoneyBillWave;
+        return React.createElement(IconComponent as any, { style });
+    };
 
     useEffect(() => {
         cargarMovimientos();
@@ -176,7 +210,7 @@ const MovimientosRecurrentes = () => {
                             <option value="FaAppleAlt" ${mov.icon === 'FaAppleAlt' ? 'selected' : ''}>Comida</option>
                             <option value="FaCar" ${mov.icon === 'FaCar' ? 'selected' : ''}>Transporte</option>
                             <option value="FaCreditCard" ${mov.icon === 'FaCreditCard' ? 'selected' : ''}>Tarjeta</option>
-                            <option value="FaLightning" ${mov.icon === 'FaLightning' ? 'selected' : ''}>Servicios</option>
+                            <option value="FaBolt" ${mov.icon === 'FaBolt' || mov.icon === 'FaLightning' ? 'selected' : ''}>Servicios</option>
                             <option value="FaGift" ${mov.icon === 'FaGift' ? 'selected' : ''}>Regalo</option>
                             <option value="FaShoppingCart" ${mov.icon === 'FaShoppingCart' ? 'selected' : ''}>Compras</option>
                             <option value="FaHospital" ${mov.icon === 'FaHospital' ? 'selected' : ''}>Salud</option>
@@ -390,7 +424,7 @@ const MovimientosRecurrentes = () => {
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#e0f2fe' }}>{mov.indefinido ? 'Sí' : 'No'}</td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#fbbf24' }}>{mov.categoria_id ? (categoriasMap[mov.categoria_id] ?? mov.categoria_id) : '-'}</td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px', color: '#fbbf24' }}>
-                                            {mov.icon && (Icons as any)[mov.icon] ? React.createElement((Icons as any)[mov.icon], { size: 20, style: { color: mov.color || '#fbbf24' } }) : (mov.icon || '-')}
+                                            {mov.icon ? renderIcon(mov.icon, { fontSize: 20, color: mov.color || '#fbbf24' }) : '-'}
                                         </td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '12px 14px' }}>
                                             <span

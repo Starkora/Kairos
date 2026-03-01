@@ -134,16 +134,16 @@ export default function Categorias() {
       return;
     }
 
-    // Validar duplicados
+    // Validar duplicados (mismo nombre y mismo tipo)
     const nombreExiste = categorias.some(
-      cat => cat.nombre.toLowerCase() === form.nombre.toLowerCase()
+      cat => cat.nombre.toLowerCase() === form.nombre.toLowerCase() && cat.tipo === form.tipo
     );
     
     if (nombreExiste) {
       Swal.fire({ 
         icon: 'error', 
         title: 'Categoría duplicada', 
-        text: 'Ya existe una categoría con ese nombre.' 
+        text: 'Ya existe una categoría con ese nombre y tipo.' 
       });
       return;
     }
@@ -297,6 +297,17 @@ export default function Categorias() {
       preConfirm: () => {
   const nombre = (document.getElementById('nombre') as HTMLInputElement).value;
   const tipo = (document.getElementById('tipo') as HTMLSelectElement).value;
+        
+        // Validar que no exista otra categoría con el mismo nombre y tipo (excluyendo la actual)
+        const nombreExiste = categorias.some(
+          cat => cat.id !== id && cat.nombre.toLowerCase() === nombre.toLowerCase() && cat.tipo === tipo
+        );
+        
+        if (nombreExiste) {
+          Swal.showValidationMessage('Ya existe una categoría con ese nombre y tipo.');
+          return false;
+        }
+        
         return { nombre, tipo };
       }
     }).then(result => {

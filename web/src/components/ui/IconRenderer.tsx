@@ -11,7 +11,7 @@ interface IconRendererProps {
   tipo: string;
   size?: number;
   color?: string;
-  defaultIcon?: string;
+  defaultIcon?: React.ComponentType<any>;
 }
 
 /**
@@ -22,7 +22,7 @@ export const IconRenderer: React.FC<IconRendererProps> = ({
   tipo, 
   size = 24, 
   color = 'currentColor',
-  defaultIcon = '💰'
+  defaultIcon = FaWallet
 }) => {
   const iconStyle = { fontSize: size, color };
 
@@ -65,8 +65,8 @@ export const IconRenderer: React.FC<IconRendererProps> = ({
     return iconMap[tipoLower];
   }
 
-  // Fallback a emoji por defecto
-  return <span style={{ fontSize: size }}>{defaultIcon}</span>;
+  // Fallback al icono por defecto
+  return React.createElement(defaultIcon as any, { style: iconStyle });
 };
 
 /**

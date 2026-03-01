@@ -37,21 +37,11 @@ export default function Calendario() {
       'FaCar': FaCar,
       'FaCreditCard': FaCreditCard,
       'FaLightning': FaLightning,
+      'FaBolt': FaLightning, // Alias para compatibilidad
       'FaGift': FaGift,
       'FaShoppingCart': FaShoppingCart,
       'FaHospital': FaHospital,
-      'FaExchangeAlt': FaExchangeAlt,
-      '💸': FaMoneyBillWave,
-      '💰': FaWallet,
-      '🏦': FaUniversity,
-      '🍎': FaAppleAlt,
-      '🚗': FaCar,
-      '💳': FaCreditCard,
-      '🔌': FaLightning,
-      '🎁': FaGift,
-      '🛒': FaShoppingCart,
-      '🏥': FaHospital,
-      '🔁': FaExchangeAlt
+      'FaExchangeAlt': FaExchangeAlt
     };
     const IconComponent = iconMap[iconName] || FaMoneyBillWave;
     return React.createElement(IconComponent as any, { style });

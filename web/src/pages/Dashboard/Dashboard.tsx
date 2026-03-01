@@ -458,6 +458,9 @@ export default function Dashboard() {
 
     // Deudas próximas a vencer
     deudas.forEach(d => {
+      // Excluir deudas ya pagadas
+      if (d.pagada) return;
+      
       if (d.fecha_vencimiento) {
         const vencimiento = new Date(d.fecha_vencimiento);
         const hoy = new Date();

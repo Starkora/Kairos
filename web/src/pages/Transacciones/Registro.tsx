@@ -140,21 +140,11 @@ export default function Registro() {
       'FaCar': FaCar,
       'FaCreditCard': FaCreditCard,
       'FaLightning': FaLightning,
+      'FaBolt': FaBolt,
       'FaGift': FaGift,
       'FaShoppingCart': FaShoppingCart,
       'FaHospital': FaHospital,
-      'FaExchangeAlt': FaExchangeAlt,
-      '💸': FaMoneyBillWave,
-      '💰': FaWallet,
-      '🏦': FaUniversity,
-      '🍎': FaAppleAlt,
-      '🚗': FaCar,
-      '💳': FaCreditCard,
-      '🔌': FaLightning,
-      '🎁': FaGift,
-      '🛒': FaShoppingCart,
-      '🏥': FaHospital,
-      '🔁': FaExchangeAlt
+      'FaExchangeAlt': FaExchangeAlt
     };
     const IconComponent = iconMap[iconName] || FaMoneyBillWave;
     return React.createElement(IconComponent as any, { style });
