@@ -31,7 +31,7 @@ const Cuenta = {
       return { id: result.insertId, nombre, esTarjetaCredito: false };
     }
   },
-  update: async ({ id, usuario_id, nombre, tipo, plataforma }) => {
+  update: async ({ id, usuario_id, nombre, tipo, plataforma, limite_credito }) => {
     // Verificar duplicado por nombre dentro del mismo usuario y plataforma
     if (!id || !usuario_id || !nombre || !tipo) {
       throw new Error('Faltan campos requeridos');
@@ -46,8 +46,75 @@ const Cuenta = {
       err.code = 'NOMBRE_DUPLICADO';
       throw err;
     }
+    
+    // Si se proporciona límite de crédito, actualizarlo también
+    if (limite_credito !== undefined) {
+      const [result] = await db.query(
+        'UPDATE cuentas SET nombre = ?, tipo = ?, limite_credito = ?, saldo_disponible = ? - COALESCE(deuda_actual, 0) WHERE id = ? AND usuario_id = ?',
+        [nombre, tipo, limite_credito, limite_credito, id, usuario_id]
+      );
+      return result;
+    }
+    
     const [result] = await db.query('UPDATE cuentas SET nombre = ?, tipo = ? WHERE id = ? AND usuario_id = ?', [nombre, tipo, id, usuario_id]);
     return result;
+  },
+  
+  // Sincronizar deuda de tarjeta basándose en movimientos existentes
+  sincronizarTarjeta: async (cuenta_id, usuario_id) => {
+    // Verificar que la cuenta existe y pertenece al usuario
+    const [cuentas] = await db.query(
+      'SELECT id, tipo, limite_credito FROM cuentas WHERE id = ? AND usuario_id = ?',
+      [cuenta_id, usuario_id]
+    );
+    
+    if (!cuentas || cuentas.length === 0) {
+      throw new Error('Cuenta no encontrada');
+    }
+    
+    const cuenta = cuentas[0];
+    const esTarjeta = cuenta.tipo && (cuenta.tipo.toLowerCase().includes('tarjeta') || cuenta.tipo.toLowerCase().includes('crédito'));
+    
+    if (!esTarjeta) {
+      throw new Error('Esta cuenta no es una tarjeta de crédito');
+    }
+    
+    if (!cuenta.limite_credito || cuenta.limite_credito === 0) {
+      throw new Error('Primero debes configurar el límite de crédito de la tarjeta');
+    }
+    
+    // Calcular deuda: sumar todos los egresos y restar todos los pagos (transferencias con "pago")
+    const [movimientos] = await db.query(
+      'SELECT tipo, monto, descripcion FROM movimientos WHERE cuenta_id = ? AND applied = 1',
+      [cuenta_id]
+    );
+    
+    let deuda = 0;
+    movimientos.forEach(mov => {
+      const tipo = (mov.tipo || '').toLowerCase();
+      const desc = (mov.descripcion || '').toLowerCase();
+      const monto = Number(mov.monto || 0);
+      
+      if (tipo === 'egreso') {
+        // Gastos aumentan la deuda
+        deuda += monto;
+      } else if (tipo === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'))) {
+        // Pagos reducen la deuda
+        deuda -= monto;
+      }
+    });
+    
+    // Asegurar que la deuda no sea negativa
+    deuda = Math.max(0, deuda);
+    const saldo_disponible = cuenta.limite_credito - deuda;
+    
+    // Actualizar la cuenta
+    const [result] = await db.query(
+      'UPDATE cuentas SET deuda_actual = ?, saldo_disponible = ? WHERE id = ?',
+      [deuda, saldo_disponible, cuenta_id]
+    );
+    
+    return { deuda_actual: deuda, saldo_disponible, limite_credito: cuenta.limite_credito };
   }
 };
 

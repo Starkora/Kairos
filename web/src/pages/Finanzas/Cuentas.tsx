@@ -15,7 +15,7 @@ export default function Cuentas() {
   const [form, setForm] = React.useState({ nombre: '', saldo: '', tipo: '', limiteCredito: '' });
   const [tiposCuenta, setTiposCuenta] = React.useState([{ value: '', label: 'Tipo de cuenta' }]);
   const [editing, setEditing] = React.useState(null); // {id, nombre, tipo}
-  const [editData, setEditData] = React.useState({ nombre: '', tipo: '' });
+  const [editData, setEditData] = React.useState({ nombre: '', tipo: '', limiteCredito: '' });
   
   // Nuevos estados para mejoras
   const [busqueda, setBusqueda] = React.useState('');
@@ -381,8 +381,13 @@ export default function Cuentas() {
   };
 
   const openEdit = (cuenta) => {
-    setEditing({ id: cuenta.id });
-    setEditData({ nombre: cuenta.nombre || '', tipo: cuenta.tipo || '' });
+    const esTarjeta = cuenta.tipo && (cuenta.tipo.toLowerCase().includes('tarjeta') || cuenta.tipo.toLowerCase().includes('crédito'));
+    setEditing({ id: cuenta.id, esTarjeta });
+    setEditData({ 
+      nombre: cuenta.nombre || '', 
+      tipo: cuenta.tipo || '',
+      limiteCredito: esTarjeta ? (cuenta.limite_credito || '') : ''
+    });
   };
 
   const closeEdit = () => {
@@ -395,6 +400,16 @@ export default function Cuentas() {
       Swal.fire({ icon: 'warning', title: 'Completa los campos', text: 'Nombre y tipo son requeridos.' });
       return;
     }
+    
+    // Validar límite de crédito para tarjetas
+    if (editing.esTarjeta && editData.limiteCredito) {
+      const limite = Number(editData.limiteCredito);
+      if (isNaN(limite) || limite <= 0) {
+        Swal.fire({ icon: 'warning', title: 'Límite inválido', text: 'El límite de crédito debe ser mayor a 0.' });
+        return;
+      }
+    }
+    
     // evitar duplicados por nombre (case-insensitive) excepto la misma cuenta
     const dup = cuentas.some(c => c.id !== editing.id && c.nombre.trim().toLowerCase() === editData.nombre.trim().toLowerCase());
     if (dup) {
@@ -402,13 +417,24 @@ export default function Cuentas() {
       return;
     }
     try {
+      const body: any = {
+        nombre: editData.nombre,
+        tipo: editData.tipo,
+        plataforma: 'web'
+      };
+      
+      // Si es tarjeta y tiene límite, incluirlo
+      if (editing.esTarjeta && editData.limiteCredito) {
+        body.limite_credito = Number(editData.limiteCredito);
+      }
+      
       const res = await fetch(`${API_BASE}/api/cuentas/${editing.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + getToken()
         },
-        body: JSON.stringify({ nombre: editData.nombre, tipo: editData.tipo, plataforma: 'web' })
+        body: JSON.stringify(body)
       });
       if (res.status === 409) {
         Swal.fire({ icon: 'error', title: 'Nombre repetido', text: 'Ya existe una cuenta con ese nombre.' });
@@ -416,11 +442,72 @@ export default function Cuentas() {
       }
       if (!res.ok) throw new Error('No autorizado');
       await res.json();
-      setCuentas(prev => prev.map(c => c.id === editing.id ? { ...c, nombre: editData.nombre, tipo: editData.tipo } : c));
+      
+      // Si se actualizó el límite, ofrecer sincronizar
+      if (editing.esTarjeta && editData.limiteCredito) {
+        const result = await Swal.fire({
+          icon: 'question',
+          title: '¿Sincronizar tarjeta?',
+          text: 'El límite se actualizó. ¿Quieres calcular la deuda automáticamente basándose en tus movimientos?',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, sincronizar',
+          cancelButtonText: 'No, gracias'
+        });
+        
+        if (result.isConfirmed) {
+          await sincronizarTarjeta(editing.id);
+        }
+      }
+      
+      // Recargar cuentas
+      const resCuentas = await fetch(`${API_BASE}/api/cuentas?plataforma=web`, {
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      });
+      const data = await resCuentas.json();
+      setCuentas(Array.isArray(data) ? data : []);
+      
       closeEdit();
       Swal.fire({ icon: 'success', title: 'Cuenta actualizada', timer: 1200, showConfirmButton: false });
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'No se pudo actualizar', text: err.message });
+    }
+  };
+  
+  const sincronizarTarjeta = async (cuentaId) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/cuentas/${cuentaId}/sincronizar-tarjeta`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + getToken()
+        }
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Error al sincronizar');
+      }
+      
+      const data = await res.json();
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'Tarjeta sincronizada',
+        html: `<div style="text-align: left;">
+          <p><strong>Deuda actual:</strong> S/ ${data.deuda_actual.toFixed(2)}</p>
+          <p><strong>Disponible:</strong> S/ ${data.saldo_disponible.toFixed(2)}</p>
+          <p><strong>Límite:</strong> S/ ${data.limite_credito.toFixed(2)}</p>
+        </div>`
+      });
+      
+      // Recargar cuentas
+      const resCuentas = await fetch(`${API_BASE}/api/cuentas?plataforma=web`, {
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      });
+      const cuentasData = await resCuentas.json();
+      setCuentas(Array.isArray(cuentasData) ? cuentasData : []);
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     }
   };
 
@@ -1524,6 +1611,22 @@ export default function Cuentas() {
                   <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
               </select>
+              {editing.esTarjeta && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label style={{ fontSize: 13, fontWeight: 500 }}>Límite de crédito (S/):</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    placeholder="Ej: 5000.00" 
+                    value={editData.limiteCredito} 
+                    onChange={(e)=>setEditData(s=>({...s, limiteCredito: e.target.value}))} 
+                    style={{ padding:8, borderRadius:6 }} 
+                  />
+                  <p style={{ fontSize: 11, color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>
+                    💡 Después de guardar el límite, podrás sincronizar la deuda automáticamente
+                  </p>
+                </div>
+              )}
               <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:8 }}>
                 <button type="button" onClick={closeEdit} style={{ padding:'8px 12px', borderRadius:8, border:'1px solid var(--color-border)', background:'var(--color-card)', color:'var(--color-text)' }}>Cancelar</button>
                 <button type="submit" style={{ padding:'8px 12px', borderRadius:8, border:'none', background:'var(--color-primary)', color:'var(--color-on-primary)', fontWeight:600 }}>Guardar</button>

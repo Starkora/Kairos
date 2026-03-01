@@ -92,24 +92,53 @@ exports.deleteById = async (req, res) => {
   }
 };
 
-// Actualizar nombre y tipo de una cuenta
+// Actualizar nombre, tipo y límite de crédito de una cuenta
 exports.update = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   const id = req.params.id;
-  const { nombre, tipo, plataforma } = req.body;
+  const { nombre, tipo, plataforma, limite_credito } = req.body;
 
   if (!id || !nombre || !tipo) {
     return res.status(400).json({ error: 'Faltan campos requeridos' });
   }
   try {
-    await Cuenta.update({ id, usuario_id, nombre: nombre.trim(), tipo: tipo.trim(), plataforma });
+    await Cuenta.update({ 
+      id, 
+      usuario_id, 
+      nombre: nombre.trim(), 
+      tipo: tipo.trim(), 
+      plataforma,
+      limite_credito: limite_credito !== undefined ? Number(limite_credito) : undefined
+    });
     res.json({ message: 'Cuenta actualizada' });
   } catch (err) {
     
     if (err.code === 'NOMBRE_DUPLICADO' || err.message === 'NOMBRE_DUPLICADO') {
       return res.status(409).json({ error: 'Ya existe una cuenta con ese nombre' });
     }
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Sincronizar deuda de tarjeta de crédito basándose en movimientos
+exports.sincronizarTarjeta = async (req, res) => {
+  const usuario_id = req.user && req.user.id;
+  if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  const id = req.params.id;
+  
+  if (!id) {
+    return res.status(400).json({ error: 'ID de cuenta requerido' });
+  }
+  
+  try {
+    const resultado = await Cuenta.sincronizarTarjeta(id, usuario_id);
+    res.json({ 
+      message: 'Tarjeta sincronizada correctamente', 
+      ...resultado 
+    });
+  } catch (err) {
+    
     res.status(500).json({ error: err.message });
   }
 };

@@ -595,25 +595,49 @@ export default function Registro() {
             <option value="egreso">Egreso</option>
             <option value="ahorro">Ahorro</option>
             <option value="transferencia">Transferencia</option>
+            <option value="pago_tarjeta">Pago de tarjeta de crédito</option>
           </select>
         </div>
         <div>
-          <label>{form.tipo === 'transferencia' ? 'Cuenta origen:' : 'Cuenta:'}&nbsp;</label>
+          <label>{form.tipo === 'transferencia' || form.tipo === 'pago_tarjeta' ? 'Cuenta origen:' : 'Cuenta:'}&nbsp;</label>
           <select name="cuenta" value={form.cuenta} onChange={handleChange} style={{ padding: 6, borderRadius: 6, width: '100%' }} required>
-            {cuentas.map((cuenta) => (
-              <option key={cuenta.id} value={cuenta.id}>{cuenta.nombre}</option>
-            ))}
+            {form.tipo === 'pago_tarjeta' 
+              ? cuentas.filter(c => !c.tipo || !(c.tipo.toLowerCase().includes('tarjeta') || c.tipo.toLowerCase().includes('crédito'))).map((cuenta) => (
+                  <option key={cuenta.id} value={cuenta.id}>{cuenta.nombre} (S/ {Number(cuenta.saldo_actual || 0).toFixed(2)})</option>
+                ))
+              : cuentas.map((cuenta) => (
+                  <option key={cuenta.id} value={cuenta.id}>{cuenta.nombre}</option>
+                ))
+            }
           </select>
         </div>
-        {(form.tipo === 'transferencia' || form.tipo === 'ahorro') && (
+        {(form.tipo === 'transferencia' || form.tipo === 'ahorro' || form.tipo === 'pago_tarjeta') && (
           <div>
-            <label>{form.tipo === 'ahorro' ? 'Ahorrar para (cuenta destino):' : 'Cuenta destino:'}&nbsp;</label>
-            <select name="cuentaDestino" value={form.cuentaDestino} onChange={handleChange} style={{ padding: 6, borderRadius: 6, width: '100%' }} required disabled={!hasTwoAccounts}>
-              {!hasTwoAccounts && <option value="">— Necesitas otra cuenta —</option>}
+            <label>
+              {form.tipo === 'ahorro' 
+                ? 'Ahorrar para (cuenta destino):' 
+                : form.tipo === 'pago_tarjeta'
+                ? 'Tarjeta de crédito a pagar:'
+                : 'Cuenta destino:'}
+              &nbsp;
+            </label>
+            <select name="cuentaDestino" value={form.cuentaDestino} onChange={handleChange} style={{ padding: 6, borderRadius: 6, width: '100%' }} required disabled={form.tipo !== 'pago_tarjeta' && !hasTwoAccounts}>
+              {form.tipo !== 'pago_tarjeta' && !hasTwoAccounts && <option value="">— Necesitas otra cuenta —</option>}
               {form.tipo === 'ahorro' && <option value={form.cuenta}>Misma cuenta</option>}
-              {cuentas.map((cuenta) => (
-                <option key={cuenta.id} value={cuenta.id}>{cuenta.nombre}</option>
-              ))}
+              {form.tipo === 'pago_tarjeta'
+                ? cuentas.filter(c => c.tipo && (c.tipo.toLowerCase().includes('tarjeta') || c.tipo.toLowerCase().includes('crédito'))).map((cuenta) => {
+                    const deuda = Number(cuenta.deuda_actual || 0);
+                    const disponible = Number(cuenta.saldo_disponible || 0);
+                    return (
+                      <option key={cuenta.id} value={cuenta.id}>
+                        {cuenta.nombre} (Deuda: S/ {deuda.toFixed(2)} | Disp: S/ {disponible.toFixed(2)})
+                      </option>
+                    );
+                  })
+                : cuentas.map((cuenta) => (
+                    <option key={cuenta.id} value={cuenta.id}>{cuenta.nombre}</option>
+                  ))
+              }
             </select>
           </div>
         )}

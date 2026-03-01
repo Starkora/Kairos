@@ -8,6 +8,7 @@ const auth = require('../utils/auth/jwt');
 router.get('/', auth, cuentaController.getAll);
 router.post('/', auth, cuentaController.create);
 router.put('/:id', auth, cuentaController.update);
+router.post('/:id/sincronizar-tarjeta', auth, cuentaController.sincronizarTarjeta);
 router.delete('/:id', auth, cuentaController.deleteById);
 
 module.exports = router;
