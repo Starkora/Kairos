@@ -10,9 +10,26 @@ const Cuenta = {
     return result;
   },
   create: async (data) => {
-    const { usuario_id, nombre, saldo_inicial, tipo, plataforma } = data;
-    const [result] = await db.query('INSERT INTO cuentas (usuario_id, nombre, saldo_inicial, saldo_actual, tipo, activa, plataforma) VALUES (?, ?, ?, ?, ?, 1, ?)', [usuario_id, nombre, saldo_inicial, saldo_inicial, tipo, plataforma || 'web']);
-    return { id: result.insertId, nombre };
+    const { usuario_id, nombre, saldo_inicial, tipo, plataforma, limite_credito } = data;
+    
+    // Si es tarjeta de crédito, usar lógica diferente
+    const esTarjetaCredito = tipo && (tipo.toLowerCase().includes('tarjeta') || tipo.toLowerCase().includes('crédito'));
+    
+    if (esTarjetaCredito && limite_credito) {
+      // Para tarjetas de crédito: saldo_inicial = 0, limite_credito y saldo_disponible
+      const [result] = await db.query(
+        'INSERT INTO cuentas (usuario_id, nombre, saldo_inicial, saldo_actual, tipo, activa, plataforma, limite_credito, deuda_actual, saldo_disponible) VALUES (?, ?, 0, 0, ?, 1, ?, ?, 0, ?)',
+        [usuario_id, nombre, tipo, plataforma || 'web', limite_credito, limite_credito]
+      );
+      return { id: result.insertId, nombre, esTarjetaCredito: true };
+    } else {
+      // Para cuentas normales
+      const [result] = await db.query(
+        'INSERT INTO cuentas (usuario_id, nombre, saldo_inicial, saldo_actual, tipo, activa, plataforma) VALUES (?, ?, ?, ?, ?, 1, ?)',
+        [usuario_id, nombre, saldo_inicial, saldo_inicial, tipo, plataforma || 'web']
+      );
+      return { id: result.insertId, nombre, esTarjetaCredito: false };
+    }
   },
   update: async ({ id, usuario_id, nombre, tipo, plataforma }) => {
     // Verificar duplicado por nombre dentro del mismo usuario y plataforma

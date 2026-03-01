@@ -12,7 +12,7 @@ import {
 
 export default function Cuentas() {
   const [cuentas, setCuentas] = React.useState([]);
-  const [form, setForm] = React.useState({ nombre: '', saldo: '', tipo: '' });
+  const [form, setForm] = React.useState({ nombre: '', saldo: '', tipo: '', limiteCredito: '' });
   const [tiposCuenta, setTiposCuenta] = React.useState([{ value: '', label: 'Tipo de cuenta' }]);
   const [editing, setEditing] = React.useState(null); // {id, nombre, tipo}
   const [editData, setEditData] = React.useState({ nombre: '', tipo: '' });
@@ -76,24 +76,7 @@ export default function Cuentas() {
 
   // Cargar cuentas desde la API al montar
   React.useEffect(() => {
-  fetch(`${API_BASE}/api/cuentas`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + getToken()
-      },
-      body: JSON.stringify({ plataforma: 'web' })
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('No autorizado');
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data)) setCuentas(data);
-        else setCuentas([]);
-      })
-
-  fetch(`${API_BASE}/api/cuentas?plataforma=web`, {
+    fetch(`${API_BASE}/api/cuentas?plataforma=web`, {
       headers: {
         'Authorization': 'Bearer ' + getToken()
       }
@@ -106,6 +89,7 @@ export default function Cuentas() {
         if (Array.isArray(data)) setCuentas(data);
         else setCuentas([]);
       })
+      .catch(() => setCuentas([]));
   }, []);
 
   // Listener para refrescar cuentas desde otros componentes
@@ -128,7 +112,11 @@ export default function Cuentas() {
 
   // Calcular estadísticas
   const estadisticas = React.useMemo(() => {
-    const total = cuentas.reduce((sum, c) => sum + (Number(c.saldo_actual) || 0), 0);
+    // Excluir tarjetas de crédito del balance total
+    const total = cuentas
+      .filter(c => !c.tipo || !(c.tipo.toLowerCase().includes('tarjeta') || c.tipo.toLowerCase().includes('crédito')))
+      .reduce((sum, c) => sum + (Number(c.saldo_actual) || 0), 0);
+      
     const cuentaMayorSaldo = cuentas.length > 0 
       ? cuentas.reduce((max, c) => (Number(c.saldo_actual) || 0) > (Number(max.saldo_actual) || 0) ? c : max, cuentas[0])
       : null;
@@ -184,7 +172,19 @@ export default function Cuentas() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    
+    // Si cambió el tipo, limpiar campos que no aplican
+    if (name === 'tipo') {
+      const esTarjetaCredito = value && (value.toLowerCase().includes('tarjeta') || value.toLowerCase().includes('crédito'));
+      setForm((prev) => ({ 
+        ...prev, 
+        [name]: value,
+        saldo: esTarjetaCredito ? '' : prev.saldo,
+        limiteCredito: esTarjetaCredito ? prev.limiteCredito : ''
+      }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
     
     // Validación en tiempo real
     const errores: {[key: string]: string} = {};
@@ -206,20 +206,46 @@ export default function Cuentas() {
       }
     }
     
+    if (name === 'limiteCredito' && value !== '') {
+      const num = Number(value);
+      if (isNaN(num)) {
+        errores.limiteCredito = 'Debe ser un número válido';
+      } else if (num <= 0) {
+        errores.limiteCredito = 'Debe ser mayor que 0';
+      } else if (num > 100000) {
+        errores.limiteCredito = 'El límite es demasiado alto';
+      }
+    }
+    
     setErroresValidacion(prev => ({...prev, ...errores, [name]: errores[name] || ''}));
   };
 
 
-  const handleSubmit = (e) => {
+ const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.nombre || form.saldo === '' || !form.tipo) {
-      Swal.fire({ icon: 'warning', title: 'Campos requeridos', text: 'Debes ingresar el nombre, saldo inicial y tipo de cuenta.' });
+    const esTarjetaCredito = form.tipo && (form.tipo.toLowerCase().includes('tarjeta') || form.tipo.toLowerCase().includes('crédito'));
+    
+    if (!form.nombre || !form.tipo) {
+      Swal.fire({ icon: 'warning', title: 'Campos requeridos', text: 'Debes ingresar el nombre y tipo de cuenta.' });
       return;
     }
-    if (Number(form.saldo) < 0) {
-      Swal.fire({ icon: 'error', title: 'Saldo inválido', text: 'El saldo inicial no puede ser negativo.' });
-      return;
+    
+    if (esTarjetaCredito) {
+      if (!form.limiteCredito || Number(form.limiteCredito) <= 0) {
+        Swal.fire({ icon: 'warning', title: 'Límite requerido', text: 'Para tarjetas de crédito debes ingresar el límite de crédito.' });
+        return;
+      }
+    } else {
+      if (form.saldo === '') {
+        Swal.fire({ icon: 'warning', title: 'Saldo requerido', text: 'Debes ingresar el saldo inicial.' });
+        return;
+      }
+      if (Number(form.saldo) < 0) {
+        Swal.fire({ icon: 'error', title: 'Saldo inválido', text: 'El saldo inicial no puede ser negativo.' });
+        return;
+      }
     }
+    
     if (cuentas.some(c => c.nombre.trim().toLowerCase() === form.nombre.trim().toLowerCase())) {
       Swal.fire({ icon: 'error', title: 'Nombre repetido', text: 'Ya existe una cuenta con ese nombre.' });
       return;
@@ -233,33 +259,50 @@ export default function Cuentas() {
       confirmButtonColor: '#6c4fa1',
     }).then((result) => {
       if (result.isConfirmed) {
-  fetch(`${API_BASE}/api/cuentas`, {
+        const esTarjetaCredito = form.tipo && (form.tipo.toLowerCase().includes('tarjeta') || form.tipo.toLowerCase().includes('crédito'));
+        
+        const payload: any = {
+          nombre: form.nombre,
+          tipo: form.tipo,
+          plataforma: 'web'
+        };
+        
+        if (esTarjetaCredito) {
+          payload.limite_credito = Number(form.limiteCredito);
+        } else {
+          payload.saldo_inicial = Number(form.saldo);
+        }
+        
+        fetch(`${API_BASE}/api/cuentas`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + getToken()
           },
-          body: JSON.stringify({
-            nombre: form.nombre,
-              saldo_inicial: Number(form.saldo),
-            tipo: form.tipo,
-            plataforma: 'web' // Asegúrate de incluir este campo
-          })
+          body: JSON.stringify(payload)
         })
           .then(res => {
             if (!res.ok) throw new Error('No autorizado');
             return res.json();
           })
           .then(data => {
+            const esTarjetaCredito = form.tipo && (form.tipo.toLowerCase().includes('tarjeta') || form.tipo.toLowerCase().includes('crédito'));
+            
             setCuentas(prevCuentas => [...prevCuentas, {
               id: data.id,
               nombre: form.nombre,
-                saldo_inicial: Number(form.saldo),
-                saldo_actual: Number(form.saldo),
               tipo: form.tipo,
-              plataforma: 'web'
-            }]); // Actualizar el estado local con datos consistentes
-            setForm({ nombre: '', saldo: '', tipo: '' });
+              plataforma: 'web',
+              ...(esTarjetaCredito ? {
+                limite_credito: Number(form.limiteCredito),
+                deuda_actual: 0,
+                saldo_disponible: Number(form.limiteCredito)
+              } : {
+                saldo_inicial: Number(form.saldo),
+                saldo_actual: Number(form.saldo)
+              })
+            }]);
+            setForm({ nombre: '', saldo: '', tipo: '', limiteCredito: '' });
             Swal.fire({ icon: 'success', title: 'Cuenta agregada', showConfirmButton: false, timer: 1200 });
           })
           .catch(err => {
@@ -585,50 +628,101 @@ export default function Cuentas() {
             )}
           </div>
           
-          <div style={{ position: 'relative' }}>
-            <input
-              type="number"
-              name="saldo"
-              placeholder="Saldo inicial"
-              value={form.saldo}
-              onChange={handleChange}
-              required
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              pattern="[0-9]+([\.,][0-9]+)?"
-              style={{ 
-                width: '100%', 
-                padding: '10px 36px 10px 12px', 
-                borderRadius: 8, 
-                border: `1px solid ${erroresValidacion.saldo ? '#d32f2f' : 'var(--color-border)'}`,
-                outline: 'none',
-                background: 'var(--color-bg)',
-                color: 'var(--color-text)'
-              }}
-            />
-            {form.saldo && !erroresValidacion.saldo && (
-              <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#388e3c' }}>
-                {React.createElement(FaCheckCircle as any, { style: { fontSize: 16 } })}
-              </div>
-            )}
-            {erroresValidacion.saldo && (
-              <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#d32f2f' }}>
-                {React.createElement(FaTimesCircle as any, { style: { fontSize: 16 } })}
-              </div>
-            )}
-            {erroresValidacion.saldo && (
-              <div style={{ fontSize: 12, color: '#d32f2f', marginTop: 4 }}>
-                {erroresValidacion.saldo}
-              </div>
-            )}
-            {/* Preview del saldo */}
-            {form.saldo && !erroresValidacion.saldo && (
-              <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 4 }}>
-                Saldo inicial: S/ {Number(form.saldo).toFixed(2)}
-              </div>
-            )}
-          </div>
+          {/* Campo de saldo inicial para cuentas normales */}
+          {(!form.tipo || !(form.tipo.toLowerCase().includes('tarjeta') || form.tipo.toLowerCase().includes('crédito'))) && (
+            <div style={{ position: 'relative' }}>
+              <input
+                type="number"
+                name="saldo"
+                placeholder="Saldo inicial"
+                value={form.saldo}
+                onChange={handleChange}
+                required
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                pattern="[0-9]+([\.,][0-9]+)?"
+                style={{ 
+                  width: '100%', 
+                  padding: '10px 36px 10px 12px', 
+                  borderRadius: 8, 
+                  border: `1px solid ${erroresValidacion.saldo ? '#d32f2f' : 'var(--color-border)'}`,
+                  outline: 'none',
+                  background: 'var(--color-bg)',
+                  color: 'var(--color-text)'
+                }}
+              />
+              {form.saldo && !erroresValidacion.saldo && (
+                <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#388e3c' }}>
+                  {React.createElement(FaCheckCircle as any, { style: { fontSize: 16 } })}
+                </div>
+              )}
+              {erroresValidacion.saldo && (
+                <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#d32f2f' }}>
+                  {React.createElement(FaTimesCircle as any, { style: { fontSize: 16 } })}
+                </div>
+              )}
+              {erroresValidacion.saldo && (
+                <div style={{ fontSize: 12, color: '#d32f2f', marginTop: 4 }}>
+                  {erroresValidacion.saldo}
+                </div>
+              )}
+              {/* Preview del saldo */}
+              {form.saldo && !erroresValidacion.saldo && (
+                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 4 }}>
+                  Saldo inicial: S/ {Number(form.saldo).toFixed(2)}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Campo de límite de crédito para tarjetas */}
+          {form.tipo && (form.tipo.toLowerCase().includes('tarjeta') || form.tipo.toLowerCase().includes('crédito')) && (
+            <div style={{ position: 'relative' }}>
+              <input
+                type="number"
+                name="limiteCredito"
+                placeholder="Límite de crédito"
+                value={form.limiteCredito}
+                onChange={handleChange}
+                required
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                pattern="[0-9]+([\.,][0-9]+)?"
+                style={{ 
+                  width: '100%', 
+                  padding: '10px 36px 10px 12px', 
+                  borderRadius: 8, 
+                  border: `1px solid ${erroresValidacion.limiteCredito ? '#d32f2f' : 'var(--color-border)'}`,
+                  outline: 'none',
+                  background: 'var(--color-bg)',
+                  color: 'var(--color-text)'
+                }}
+              />
+              {form.limiteCredito && !erroresValidacion.limiteCredito && (
+                <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#388e3c' }}>
+                  {React.createElement(FaCheckCircle as any, { style: { fontSize: 16 } })}
+                </div>
+              )}
+              {erroresValidacion.limiteCredito && (
+                <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#d32f2f' }}>
+                  {React.createElement(FaTimesCircle as any, { style: { fontSize: 16 } })}
+                </div>
+              )}
+              {erroresValidacion.limiteCredito && (
+                <div style={{ fontSize: 12, color: '#d32f2f', marginTop: 4 }}>
+                  {erroresValidacion.limiteCredito}
+                </div>
+              )}
+              {/* Preview del límite */}
+              {form.limiteCredito && !erroresValidacion.limiteCredito && (
+                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 4 }}>
+                  Límite de crédito: S/ {Number(form.limiteCredito).toFixed(2)}
+                </div>
+              )}
+            </div>
+          )}
           
           <select
             name="tipo"
@@ -855,8 +949,11 @@ export default function Cuentas() {
             </tr>
           ) : (
             cuentasFiltradas.map((cuenta) => {
-              const saldo = Number(cuenta.saldo_actual) || 0;
-              const saldoBajo = saldo < 20 && saldo >= 0;
+              const esTarjetaCredito = cuenta.tipo && (cuenta.tipo.toLowerCase().includes('tarjeta') || cuenta.tipo.toLowerCase().includes('crédito'));
+              const saldo = esTarjetaCredito ? (Number(cuenta.saldo_disponible) || 0) : (Number(cuenta.saldo_actual) || 0);
+              const deuda = esTarjetaCredito ? (Number(cuenta.deuda_actual) || 0) : 0;
+              const limiteCredito = esTarjetaCredito ? (Number(cuenta.limite_credito) || 0) : 0;
+              const saldoBajo = !esTarjetaCredito && saldo < 20 && saldo >= 0;
               const porcentajeTotal = estadisticas.balanceTotal > 0 ? (saldo / estadisticas.balanceTotal) * 100 : 0;
               const colorTipo = getColorTipo(cuenta.tipo || '');
               
@@ -922,21 +1019,40 @@ export default function Cuentas() {
                     </span>
                   </td>
                   <td style={{ 
-                    color: saldo < 0 ? '#d32f2f' : '#388e3c', 
+                    color: esTarjetaCredito ? (deuda > limiteCredito * 0.8 ? '#d32f2f' : '#f57c00') : (saldo < 0 ? '#d32f2f' : '#388e3c'), 
                     fontWeight: 700, 
                     textAlign: 'right', 
                     padding: 12,
                     fontSize: 16
                   }}>
-                    S/ {saldo.toFixed(2)}
-                    <div style={{ 
-                      fontSize: 11, 
-                      color: 'var(--color-text-secondary)', 
-                      fontWeight: 400,
-                      marginTop: 2
-                    }}>
-                      {porcentajeTotal.toFixed(1)}% del total
-                    </div>
+                    {esTarjetaCredito ? (
+                      <>
+                        <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', fontWeight: 400 }}>
+                          Deuda
+                        </div>
+                        S/ {deuda.toFixed(2)}
+                        <div style={{ 
+                          fontSize: 11, 
+                          color: 'var(--color-text-secondary)', 
+                          fontWeight: 400,
+                          marginTop: 2
+                        }}>
+                          Disponible: S/ {saldo.toFixed(2)}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        S/ {saldo.toFixed(2)}
+                        <div style={{ 
+                          fontSize: 11, 
+                          color: 'var(--color-text-secondary)', 
+                          fontWeight: 400,
+                          marginTop: 2
+                        }}>
+                          {porcentajeTotal.toFixed(1)}% del total
+                        </div>
+                      </>
+                    )}
                   </td>
                   <td style={{ textAlign: 'center', padding: 12 }}>
                     <div className="cuenta-acciones" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -1049,8 +1165,11 @@ export default function Cuentas() {
             </div>
           ) : (
             cuentasFiltradas.map((cuenta) => {
-              const saldo = Number(cuenta.saldo_actual) || 0;
-              const saldoBajo = saldo < 20 && saldo >= 0;
+              const esTarjetaCredito = cuenta.tipo && (cuenta.tipo.toLowerCase().includes('tarjeta') || cuenta.tipo.toLowerCase().includes('crédito'));
+              const saldo = esTarjetaCredito ? (Number(cuenta.saldo_disponible) || 0) : (Number(cuenta.saldo_actual) || 0);
+              const deuda = esTarjetaCredito ? (Number(cuenta.deuda_actual) || 0) : 0;
+              const limiteCredito = esTarjetaCredito ? (Number(cuenta.limite_credito) || 0) : 0;
+              const saldoBajo = !esTarjetaCredito && saldo < 20 && saldo >= 0;
               const porcentajeTotal = estadisticas.balanceTotal > 0 ? (saldo / estadisticas.balanceTotal) * 100 : 0;
               const colorTipo = getColorTipo(cuenta.tipo || '');
               
@@ -1139,21 +1258,50 @@ export default function Cuentas() {
                     </div>
                   </div>
 
-                  {/* Saldo */}
+                  {/* Saldo o Información de Tarjeta */}
                   <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 4 }}>
-                      Saldo Actual
-                    </div>
-                    <div style={{
-                      fontSize: 28,
-                      fontWeight: 700,
-                      color: saldo < 0 ? '#d32f2f' : '#388e3c'
-                    }}>
-                      S/ {saldo.toFixed(2)}
-                    </div>
+                    {esTarjetaCredito ? (
+                      <>
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 4 }}>
+                            Deuda Actual
+                          </div>
+                          <div style={{
+                            fontSize: 24,
+                            fontWeight: 700,
+                            color: deuda > limiteCredito * 0.8 ? '#d32f2f' : '#f57c00'
+                          }}>
+                            S/ {deuda.toFixed(2)}
+                          </div>
+                        </div>
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          fontSize: 13,
+                          color: 'var(--color-text-secondary)'
+                        }}>
+                          <span>Disponible: S/ {saldo.toFixed(2)}</span>
+                          <span>Límite: S/ {limiteCredito.toFixed(2)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 4 }}>
+                          Saldo Actual
+                        </div>
+                        <div style={{
+                          fontSize: 28,
+                          fontWeight: 700,
+                          color: saldo < 0 ? '#d32f2f' : '#388e3c'
+                        }}>
+                          S/ {saldo.toFixed(2)}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Barra de progreso */}
+                  {!esTarjetaCredito && (
                   <div style={{ marginBottom: 16 }}>
                     <div style={{
                       display: 'flex',
@@ -1182,6 +1330,39 @@ export default function Cuentas() {
                       }} />
                     </div>
                   </div>
+                  )}
+                  
+                  {/* Barra de uso de crédito para tarjetas */}
+                  {esTarjetaCredito && (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 6,
+                      fontSize: 12,
+                      color: 'var(--color-text-secondary)'
+                    }}>
+                      <span>Uso de Crédito</span>
+                      <span style={{ fontWeight: 600 }}>{limiteCredito > 0 ? ((deuda / limiteCredito) * 100).toFixed(1) : 0}%</span>
+                    </div>
+                    <div style={{
+                      width: '100%',
+                      height: 8,
+                      background: 'var(--color-border)',
+                      borderRadius: 4,
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${limiteCredito > 0 ? Math.min((deuda / limiteCredito) * 100, 100) : 0}%`,
+                        height: '100%',
+                        background: deuda > limiteCredito * 0.8 ? 'linear-gradient(90deg, #d32f2f, #f44336)' : 'linear-gradient(90deg, #f57c00, #ff9800)',
+                        transition: 'width 0.3s',
+                        borderRadius: 4
+                      }} />
+                    </div>
+                  </div>
+                  )}
 
                   {/* Acciones */}
                   <div style={{

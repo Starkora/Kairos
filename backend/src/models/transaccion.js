@@ -1,5 +1,42 @@
 ﻿const db = require('../../config/database');
 
+// Helper para verificar si una cuenta es tarjeta de crédito
+const esTarjetaCredito = async (cuenta_id) => {
+  const [rows] = await db.query('SELECT tipo FROM cuentas WHERE id = ?', [cuenta_id]);
+  if (!rows || rows.length === 0) return false;
+  const tipo = rows[0].tipo || '';
+  return tipo.toLowerCase().includes('tarjeta') || tipo.toLowerCase().includes('crédito');
+};
+
+// Helper para actualizar saldo de cuenta normal o tarjeta de crédito
+const actualizarSaldo = async (cuenta_id, monto, esIngreso, esPagoTarjeta = false) => {
+  const isTarjeta = await esTarjetaCredito(cuenta_id);
+  
+  if (isTarjeta) {
+    if (esPagoTarjeta) {
+      // Pago de tarjeta: reduce deuda, aumenta disponible
+      await db.query(
+        'UPDATE cuentas SET deuda_actual = GREATEST(0, deuda_actual - ?), saldo_disponible = limite_credito - GREATEST(0, deuda_actual - ?) WHERE id = ?',
+        [monto, monto, cuenta_id]
+      );
+    } else if (!esIngreso) {
+      // Gasto con tarjeta: aumenta deuda, reduce disponible
+      await db.query(
+        'UPDATE cuentas SET deuda_actual = deuda_actual + ?, saldo_disponible = limite_credito - (deuda_actual + ?) WHERE id = ?',
+        [monto, monto, cuenta_id]
+      );
+    }
+    // Ingresos no se registran en tarjetas de crédito
+  } else {
+    // Cuenta normal
+    if (esIngreso) {
+      await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, cuenta_id]);
+    } else {
+      await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, cuenta_id]);
+    }
+  }
+};
+
 const Transaccion = {
   getAllByUsuario: async (usuario_id, plataforma) => {
     const sql = `
@@ -16,24 +53,25 @@ const Transaccion = {
   create: async (data) => {
     const { usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color } = data;
     const tipoNorm = (tipo || '').toLowerCase();
+    const desc = (descripcion || '').toLowerCase();
+    
     // Decide si aplicar ahora: si fecha <= hoy (date only) aplicamos
     const todayStr = new Date().toISOString().slice(0,10);
     const fechaStr = String(fecha).slice(0,10);
     const applied = fechaStr <= todayStr ? 1 : 0;
+    
     const [result] = await db.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [usuario_id, cuenta_id, tipoNorm, monto, descripcion, fecha, categoria_id || null, plataforma || 'web', icon || null, color || null, applied]
     );
+    
     // Actualizar saldo solo si se aplica de inmediato
     if (applied) {
-      // Tratar 'ahorro' como ingreso (positivo)
       const isIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
-      if (isIngreso) {
-        await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, cuenta_id]);
-      } else {
-        await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, cuenta_id]);
-      }
+      const esPagoTarjeta = tipoNorm === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'));
+      await actualizarSaldo(cuenta_id, monto, isIngreso, esPagoTarjeta);
     }
+    
     return { insertId: result.insertId };
   },
   // Eliminar movimiento y revertir su efecto sobre la cuenta
@@ -43,16 +81,37 @@ const Transaccion = {
     const [rows] = await db.query('SELECT * FROM movimientos WHERE id = ?', [id]);
     if (!rows || rows.length === 0) throw new Error('Movimiento no encontrado');
     const mov = rows[0];
-    const { cuenta_id, tipo, monto, applied } = mov;
+    const { cuenta_id, tipo, monto, applied, descripcion } = mov;
     const tipoNorm = (tipo || '').toLowerCase();
+    const desc = (descripcion || '').toLowerCase();
+    
     // Revertir efecto en la cuenta solo si estaba aplicado
     if (applied) {
-      // Tratar 'ahorro' como ingreso (revertir como resto)
+      const isTarjeta = await esTarjetaCredito(cuenta_id);
       const wasIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
-      if (wasIngreso) {
-        await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, cuenta_id]);
+      const wasPagoTarjeta = tipoNorm === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'));
+      
+      if (isTarjeta) {
+        if (wasPagoTarjeta) {
+          // Revertir pago: aumenta deuda de nuevo
+          await db.query(
+            'UPDATE cuentas SET deuda_actual = deuda_actual + ?, saldo_disponible = limite_credito - (deuda_actual + ?) WHERE id = ?',
+            [monto, monto, cuenta_id]
+          );
+        } else if (!wasIngreso) {
+          // Revertir gasto: reduce deuda
+          await db.query(
+            'UPDATE cuentas SET deuda_actual = GREATEST(0, deuda_actual - ?), saldo_disponible = limite_credito - GREATEST(0, deuda_actual - ?) WHERE id = ?',
+            [monto, monto, cuenta_id]
+          );
+        }
       } else {
-        await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, cuenta_id]);
+        // Cuenta normal
+        if (wasIngreso) {
+          await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, cuenta_id]);
+        } else {
+          await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, cuenta_id]);
+        }
       }
     }
     // Eliminar movimiento
@@ -63,35 +122,57 @@ const Transaccion = {
   update: async (data) => {
     const { id, usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma } = data;
     if (!id) throw new Error('ID requerido');
-    // Normalizar tipo una sola vez para utilizarlo tanto en la lógica como en el UPDATE
     const tipoNorm = (tipo || '').toLowerCase();
+    const desc = (descripcion || '').toLowerCase();
+    
     // Obtener movimiento anterior
     const [rows] = await db.query('SELECT * FROM movimientos WHERE id = ?', [id]);
     if (!rows || rows.length === 0) throw new Error('Movimiento no encontrado');
     const old = rows[0];
+    
     // Revertir efecto del movimiento antiguo solo si estaba aplicado
     if (old.applied) {
       const oldTipoNorm = (old.tipo || '').toLowerCase();
+      const oldDesc = (old.descripcion || '').toLowerCase();
       const wasIngreso = oldTipoNorm === 'ingreso' || oldTipoNorm === 'ahorro';
-      if (wasIngreso) {
-        await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [old.monto, old.cuenta_id]);
+      const wasPagoTarjeta = oldTipoNorm === 'transferencia' && (oldDesc.includes('pago') || oldDesc.includes('tarjeta'));
+      const isTarjeta = await esTarjetaCredito(old.cuenta_id);
+      
+      if (isTarjeta) {
+        if (wasPagoTarjeta) {
+          // Revertir pago: aumenta deuda
+          await db.query(
+            'UPDATE cuentas SET deuda_actual = deuda_actual + ?, saldo_disponible = limite_credito - (deuda_actual + ?) WHERE id = ?',
+            [old.monto, old.monto, old.cuenta_id]
+          );
+        } else if (!wasIngreso) {
+          // Revertir gasto: reduce deuda
+          await db.query(
+            'UPDATE cuentas SET deuda_actual = GREATEST(0, deuda_actual - ?), saldo_disponible = limite_credito - GREATEST(0, deuda_actual - ?) WHERE id = ?',
+            [old.monto, old.monto, old.cuenta_id]
+          );
+        }
       } else {
-        await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [old.monto, old.cuenta_id]);
+        if (wasIngreso) {
+          await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [old.monto, old.cuenta_id]);
+        } else {
+          await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [old.monto, old.cuenta_id]);
+        }
       }
     }
+    
     // Decidir si el nuevo movimiento debe aplicarse ahora
     const todayStr = new Date().toISOString().slice(0,10);
     const fechaStr = String(fecha).slice(0,10);
     const newApplied = fechaStr <= todayStr ? 1 : 0;
+    
     // Aplicar efecto del nuevo movimiento solo si corresponde
     if (newApplied) {
       const isIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
-      if (isIngreso) {
-        await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, cuenta_id]);
-      } else {
-        await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, cuenta_id]);
-      }
+      const esPagoTarjeta = tipoNorm === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'));
+      await actualizarSaldo(cuenta_id, monto, isIngreso, esPagoTarjeta);
     }
+    
     // Actualizar fila de movimientos
     const [res] = await db.query(
       'UPDATE movimientos SET cuenta_id = ?, tipo = ?, monto = ?, descripcion = ?, fecha = ?, categoria_id = ?, icon = ?, color = ?, applied = ? WHERE id = ?',
@@ -106,15 +187,14 @@ const Transaccion = {
     for (const mov of rows) {
       try {
         const tipoNorm = (mov.tipo || '').toLowerCase();
+        const desc = (mov.descripcion || '').toLowerCase();
         const isIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
-        if (isIngreso) {
-          await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [mov.monto, mov.cuenta_id]);
-        } else {
-          await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [mov.monto, mov.cuenta_id]);
-        }
+        const esPagoTarjeta = tipoNorm === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'));
+        
+        await actualizarSaldo(mov.cuenta_id, mov.monto, isIngreso, esPagoTarjeta);
         await db.query('UPDATE movimientos SET applied = 1 WHERE id = ?', [mov.id]);
       } catch (e) {
-        
+        console.error('Error applying movement:', e);
       }
     }
     return rows.length;

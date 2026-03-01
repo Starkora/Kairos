@@ -330,8 +330,10 @@ export default function Calendario() {
     const movimientosReales = movimientosDelDia.filter(m => !esMovimientoInterno(m));
     
     const ingresos = movimientosReales.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + Number(m.monto || 0), 0);
-    const egresos = movimientosReales.filter(m => m.tipo === 'egreso' || m.tipo === 'ahorro').reduce((sum, m) => sum + Number(m.monto || 0), 0);
+    const egresos = movimientosReales.filter(m => m.tipo === 'egreso').reduce((sum, m) => sum + Number(m.monto || 0), 0);
+    const ahorros = movimientosReales.filter(m => m.tipo === 'ahorro').reduce((sum, m) => sum + Number(m.monto || 0), 0);
     const transferencias = movimientosDelDia.filter(m => esMovimientoInterno(m)).length;
+    // Balance = ingresos - egresos (los ahorros no afectan el balance)
     const balance = ingresos - egresos;
     const cantidad = movimientosReales.length;
     

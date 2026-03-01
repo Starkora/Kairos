@@ -134,11 +134,12 @@ exports.list = async (req, res) => {
     } catch (_) {}
 
     // TOTALES del mes (applied=1)
+    // Los ahorros NO se cuentan como ingresos ni egresos, son una categoría independiente
     let incRow = { total: 0 };
     try {
       const [[row]] = await timedQuery(
       `SELECT COALESCE(SUM(monto),0) AS total FROM movimientos
-       WHERE usuario_id = ? AND applied = 1 AND tipo IN ('ingreso','ahorro') AND DATE(fecha) BETWEEN ? AND ?`,
+       WHERE usuario_id = ? AND applied = 1 AND tipo = 'ingreso' AND DATE(fecha) BETWEEN ? AND ?`,
       [usuario_id, first, last],
   Math.min(3000, quickMode ? timeLeftQuick() : timeLeft())
     );
@@ -154,8 +155,19 @@ exports.list = async (req, res) => {
     );
       expRow = row || expRow;
     } catch (_) { /* fallback 0 */ }
+    let ahorroRow = { total: 0 };
+    try {
+      const [[row]] = await timedQuery(
+      `SELECT COALESCE(SUM(monto),0) AS total FROM movimientos
+       WHERE usuario_id = ? AND applied = 1 AND tipo = 'ahorro' AND DATE(fecha) BETWEEN ? AND ?`,
+      [usuario_id, first, last],
+  Math.min(3000, quickMode ? timeLeftQuick() : timeLeft())
+    );
+      ahorroRow = row || ahorroRow;
+    } catch (_) { /* fallback 0 */ }
     const ingresos = Number((incRow && incRow.total) || 0);
     const egresos = Number((expRow && expRow.total) || 0);
+    const ahorros = Number((ahorroRow && ahorroRow.total) || 0);
 
     // Promedio diario de egresos y proyección
     const daysElapsed = Math.max(1, Math.min(day, daysInMonth));
@@ -163,14 +175,19 @@ exports.list = async (req, res) => {
     const projectedEgresos = dailyAvgEgreso * daysInMonth;
 
     // KPI Tasa de ahorro
+    // ahorroNeto = diferencia entre ingresos y egresos (sin contar ahorros explícitos)
     const ahorroNeto = Math.max(0, ingresos - egresos);
     const ahorroRate = ingresos > 0 ? (ahorroNeto / ingresos) : null;
+    // totalDinero = ingresos (los ahorros no suman ni restan)
+    const totalDinero = ingresos;
 
     const kpis = {
       ingresosMes: ingresos,
       egresosMes: egresos,
-      ahorroNeto,
+      ahorrosMes: ahorros, // Total de ahorros registrados
+      ahorroNeto, // Diferencia ingresos - egresos
       ahorroRate, // 0..1 o null si ingresos=0
+      totalDinero, // Total disponible = ingresos
       runRate: {
         dailyAvgEgreso,
         projectedEgresos,

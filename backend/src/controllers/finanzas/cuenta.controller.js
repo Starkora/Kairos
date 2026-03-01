@@ -1,17 +1,27 @@
 ﻿exports.create = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
-  const { nombre, saldo_inicial, tipo, plataforma } = req.body;
+  const { nombre, saldo_inicial, tipo, plataforma, limite_credito } = req.body;
 
-  if (!nombre || saldo_inicial === undefined || !tipo || !plataforma) {
-    // Depuración
-    return res.status(400).json({ error: 'Faltan campos requeridos' });
+  // Para tarjetas de crédito, limite_credito es requerido
+  const esTarjetaCredito = tipo && (tipo.toLowerCase().includes('tarjeta') || tipo.toLowerCase().includes('crédito'));
+  
+  if (!nombre || !tipo || !plataforma) {
+    return res.status(400).json({ error: 'Faltan campos requeridos (nombre, tipo, plataforma)' });
   }
+  
+  if (esTarjetaCredito && !limite_credito) {
+    return res.status(400).json({ error: 'Para tarjetas de crédito se requiere el límite de crédito' });
+  }
+  
+  if (!esTarjetaCredito && saldo_inicial === undefined) {
+    return res.status(400).json({ error: 'Para cuentas normales se requiere el saldo inicial' });
+  }
+  
   try {
-    const result = await Cuenta.create({ usuario_id, nombre, saldo_inicial, tipo, plataforma });
-    res.status(201).json({ message: 'Cuenta creada', id: result.id });
+    const result = await Cuenta.create({ usuario_id, nombre, saldo_inicial: saldo_inicial || 0, tipo, plataforma, limite_credito });
+    res.status(201).json({ message: 'Cuenta creada', id: result.id, esTarjetaCredito: result.esTarjetaCredito });
   } catch (err) {
-    // Depuración
     res.status(500).json({ error: err.message });
   }
 };
