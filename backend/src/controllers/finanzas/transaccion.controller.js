@@ -2,6 +2,33 @@
 const XLSX = require('xlsx');
 const ExcelJS = require('exceljs');
 
+// Helper para obtener o crear categoría de transferencia interna
+// Necesario porque TiDB Cloud no soporta funciones almacenadas
+async function obtenerOCrearCategoriaTransferencia(conn, usuario_id, plataforma, tipo) {
+  try {
+    // Buscar categoría existente
+    const [categorias] = await conn.query(
+      'SELECT id FROM categorias WHERE usuario_id = ? AND plataforma = ? AND tipo = ? AND nombre = ? LIMIT 1',
+      [usuario_id, plataforma, tipo, 'Transferencia Interna']
+    );
+    
+    if (categorias && categorias.length > 0) {
+      return categorias[0].id;
+    }
+    
+    // Si no existe, crearla
+    const [result] = await conn.query(
+      'INSERT INTO categorias (usuario_id, nombre, tipo, plataforma) VALUES (?, ?, ?, ?)',
+      [usuario_id, 'Transferencia Interna', tipo, plataforma]
+    );
+    
+    return result.insertId;
+  } catch (err) {
+    console.error('Error creando categoría interna:', err);
+    return null;
+  }
+}
+
 function todayISO() {
   const d = new Date();
   const tz = d.getTimezoneOffset() * 60000;
@@ -107,13 +134,22 @@ exports.transferir = async (req, res) => {
     const colorFinal = esAhorro ? (color || '#4caf50') : (color || '#1976d2');
     const code = (esAhorro ? 'A' : 'T') + Date.now();
 
+    // Obtener o crear categoría especial de transferencia interna
+    let categoriaIdEgreso = categoria_id;
+    let categoriaIdIngreso = categoria_id;
+    if (!categoria_id) {
+      const tipoEgreso = esAhorro ? 'ahorro' : 'egreso';
+      categoriaIdEgreso = await obtenerOCrearCategoriaTransferencia(conn, usuario_id, plataforma || 'web', tipoEgreso);
+      categoriaIdIngreso = await obtenerOCrearCategoriaTransferencia(conn, usuario_id, plataforma || 'web', 'ingreso');
+    }
+
     // Insert egreso en origen
     const descEgreso = esAhorro 
       ? `Ahorro para ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''}`
       : `Transferencia a ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''}`;
     const [resEgreso] = await conn.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [usuario_id, origen_id, esAhorro ? 'ahorro' : 'egreso', monto, descEgreso, fechaStr, categoria_id || null, plataforma || 'web', iconFinal, colorFinal, applied]
+      [usuario_id, origen_id, esAhorro ? 'ahorro' : 'egreso', monto, descEgreso, fechaStr, categoriaIdEgreso, plataforma || 'web', iconFinal, colorFinal, applied]
     );
     if (applied) {
       await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, origen_id]);
@@ -125,7 +161,7 @@ exports.transferir = async (req, res) => {
       : `Transferencia desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''}`;
     const [resIngreso] = await conn.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [usuario_id, destino_id, 'ingreso', monto, descIngreso, fechaStr, categoria_id || null, plataforma || 'web', iconFinal, colorFinal, applied]
+      [usuario_id, destino_id, 'ingreso', monto, descIngreso, fechaStr, categoriaIdIngreso, plataforma || 'web', iconFinal, colorFinal, applied]
     );
     if (applied) {
       await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, destino_id]);

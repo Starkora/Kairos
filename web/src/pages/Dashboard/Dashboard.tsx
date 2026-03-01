@@ -158,11 +158,25 @@ export default function Dashboard() {
       }
     });
   }, [movimientos, year, month, cuentaSeleccionada, today]);
-  const [incluirTransferencias, setIncluirTransferencias] = React.useState(false);
+  
+  // Función helper para identificar movimientos internos (transferencias, pagos de deudas, aportes a metas)
+  const esMovimientoInterno = React.useCallback((mov: any): boolean => {
+    const desc = String(mov.descripcion || '').toLowerCase();
+    // Verificar marcadores y patrones de descripción
+    return (
+      /\[transfer#/i.test(desc) ||
+      desc.includes('transferencia a') ||
+      desc.includes('transferencia desde') ||
+      desc.includes('ahorro para') ||
+      desc.includes('ahorro desde') ||
+      desc.includes('[deuda#') ||
+      desc.includes('[meta#')
+    );
+  }, []);
+
   const filteredMovs = React.useMemo(() => {
-    if (incluirTransferencias) return visibleMovimientos;
-    return visibleMovimientos.filter(m => !/\[TRANSFER#/i.test(String(m.descripcion || '')));
-  }, [visibleMovimientos, incluirTransferencias]);
+    return visibleMovimientos.filter(m => !esMovimientoInterno(m));
+  }, [visibleMovimientos, esMovimientoInterno]);
 
   // Calcular totales
   const totalIngreso = filteredMovs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
@@ -982,14 +996,8 @@ export default function Dashboard() {
             <input type="checkbox" name="Ingreso" checked={segmentos.Ingreso} onChange={handleSegmentoChange} />
             <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Ingresos</span>
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
-            <input type="checkbox" checked={incluirTransferencias} onChange={e => setIncluirTransferencias(e.target.checked)} />
-            <span style={{ fontSize: 12, color: 'var(--color-text)' }}>Incluir transferencias</span>
-          </label>
-          {!incluirTransferencias && (
-            <div style={{ fontSize: 12, color: '#888' }}>Transferencias excluidas de totales y gráficos.</div>
-          )}
         </div>
+        <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Transferencias y movimientos internos excluidos de totales y gráficos.</div>
   <ResponsiveContainer width="100%" height={600}>
           <BarChart data={data} layout="vertical" margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -1176,7 +1184,8 @@ export default function Dashboard() {
             today.setHours(0, 0, 0, 0);
             const pendientesTotal = movimientos.filter(m => {
               try {
-                if (!incluirTransferencias && /\[TRANSFER#/i.test(String(m.descripcion || ''))) return false;
+                // Excluir movimientos internos
+                if (esMovimientoInterno(m)) return false;
                 if (cuentaSeleccionada !== 'all') {
                   const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
                   if (!isNaN(cid) && cid !== Number(cuentaSeleccionada)) return false;
@@ -1211,8 +1220,8 @@ export default function Dashboard() {
           today.setHours(0, 0, 0, 0);
           const pendientes = movimientos.filter(m => {
             try {
-              // Excluir transferencias si el toggle no las incluye
-              if (!incluirTransferencias && /\[TRANSFER#/i.test(String(m.descripcion || ''))) return false;
+              // Excluir movimientos internos
+              if (esMovimientoInterno(m)) return false;
               // Filtro por cuenta seleccionada (si no es 'all')
               if (cuentaSeleccionada !== 'all') {
                 const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);

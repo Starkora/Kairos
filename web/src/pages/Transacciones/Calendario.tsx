@@ -312,11 +312,28 @@ export default function Calendario() {
 
   // Estadísticas del día seleccionado
   const estadisticasDia = React.useMemo(() => {
-    const ingresos = movimientosDelDia.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + Number(m.monto || 0), 0);
-    const egresos = movimientosDelDia.filter(m => m.tipo === 'egreso' || m.tipo === 'ahorro').reduce((sum, m) => sum + Number(m.monto || 0), 0);
-    const transferencias = movimientosDelDia.filter(m => m.tipo === 'transferencia').length;
+    // Función helper para identificar movimientos internos (transferencias, pagos de deudas, aportes a metas)
+    const esMovimientoInterno = (mov: any): boolean => {
+      const desc = String(mov.descripcion || '').toLowerCase();
+      return (
+        /\[transfer#/i.test(desc) ||
+        desc.includes('transferencia a') ||
+        desc.includes('transferencia desde') ||
+        desc.includes('ahorro para') ||
+        desc.includes('ahorro desde') ||
+        desc.includes('[deuda#') ||
+        desc.includes('[meta#')
+      );
+    };
+    
+    // Filtrar movimientos reales (excluir internos)
+    const movimientosReales = movimientosDelDia.filter(m => !esMovimientoInterno(m));
+    
+    const ingresos = movimientosReales.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + Number(m.monto || 0), 0);
+    const egresos = movimientosReales.filter(m => m.tipo === 'egreso' || m.tipo === 'ahorro').reduce((sum, m) => sum + Number(m.monto || 0), 0);
+    const transferencias = movimientosDelDia.filter(m => esMovimientoInterno(m)).length;
     const balance = ingresos - egresos;
-    const cantidad = movimientosDelDia.length;
+    const cantidad = movimientosReales.length;
     
     // Calcular promedio diario del mes
     const mesActual = selectedDate.getMonth();
