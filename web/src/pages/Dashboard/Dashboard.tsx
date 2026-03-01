@@ -458,8 +458,9 @@ export default function Dashboard() {
 
     // Deudas próximas a vencer
     deudas.forEach(d => {
-      // Excluir deudas ya pagadas
-      if (d.pagada) return;
+      // Excluir deudas ya pagadas (verificar true, 1, o si monto_pagado >= monto_total)
+      if (d.pagada === true || d.pagada === 1) return;
+      if (d.monto_pagado && d.monto_total && parseFloat(d.monto_pagado) >= parseFloat(d.monto_total)) return;
       
       if (d.fecha_vencimiento) {
         const vencimiento = new Date(d.fecha_vencimiento);
