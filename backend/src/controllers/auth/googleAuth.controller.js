@@ -3,8 +3,8 @@ const jwt = require('jsonwebtoken');
 const db = require('../../../config/database');
 
 // Permitir múltiples audiencias (client IDs) para validar idToken, separados por comas.
-// Preferimos el Client ID de tipo Web como fallback seguro.
-const RAW_GOOGLE_IDS = process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || '351324441687-39sdmfov119bqa28d703aqodo181jpih.apps.googleusercontent.com';
+// Incluimos tanto el Web Client ID como el Android Client ID.
+const RAW_GOOGLE_IDS = process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || '119093532026-ff270uadcukc0i8ljogusm4ucp218q3p.apps.googleusercontent.com,119093532026-3nkfftq76h8nfpcslehfu4vasojuv410.apps.googleusercontent.com';
 const GOOGLE_AUDIENCES = String(RAW_GOOGLE_IDS).split(',').map(s => s.trim()).filter(Boolean);
 if (!process.env.GOOGLE_CLIENT_ID && !process.env.GOOGLE_CLIENT_IDS) {
   console.warn('No se han configurado los Client IDs de Google. Configura la variable de entorno en producción.');
