@@ -319,8 +319,6 @@ export default function Calendario() {
         /\[transfer#/i.test(desc) ||
         desc.includes('transferencia a') ||
         desc.includes('transferencia desde') ||
-        desc.includes('ahorro para') ||
-        desc.includes('ahorro desde') ||
         desc.includes('[deuda#') ||
         desc.includes('[meta#')
       );

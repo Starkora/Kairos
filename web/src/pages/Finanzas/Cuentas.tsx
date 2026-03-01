@@ -926,14 +926,21 @@ export default function Cuentas() {
 
       {/* Vista de Tabla */}
       {vistaActual === 'tabla' && (
-  <div className="table-responsive" style={{ background: 'var(--color-card)', borderRadius: 12, padding: 20, boxShadow: '0 2px 8px var(--card-shadow)' }}>
+  <div className="table-responsive" style={{ 
+    background: 'var(--color-card)', 
+    borderRadius: 12, 
+    padding: 20, 
+    boxShadow: '0 2px 8px var(--card-shadow)',
+    maxHeight: '70vh',
+    overflowY: 'auto'
+  }}>
   <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse', marginTop: 12 }}>
         <thead>
           <tr style={{ background: 'var(--color-table-header-bg)' }}>
-           <th style={{ textAlign: 'left', padding: 8, width: '45%' }}>Cuenta</th>
-            <th style={{ textAlign: 'left', padding: 8, width: '20%' }}>Tipo</th>
-            <th style={{ textAlign: 'right', padding: 8, width: '25%' }}>Monto Actual</th>
-            <th style={{ textAlign: 'center', padding: 8, width: '15%', whiteSpace: 'nowrap' }}>Funciones</th>
+           <th style={{ textAlign: 'left', padding: 8, width: '45%', position: 'sticky', top: 0, background: 'var(--color-table-header-bg)', zIndex: 1, boxShadow: '0 1px 0 var(--color-border)' }}>Cuenta</th>
+            <th style={{ textAlign: 'left', padding: 8, width: '20%', position: 'sticky', top: 0, background: 'var(--color-table-header-bg)', zIndex: 1, boxShadow: '0 1px 0 var(--color-border)' }}>Tipo</th>
+            <th style={{ textAlign: 'right', padding: 8, width: '25%', position: 'sticky', top: 0, background: 'var(--color-table-header-bg)', zIndex: 1, boxShadow: '0 1px 0 var(--color-border)' }}>Monto Actual</th>
+            <th style={{ textAlign: 'center', padding: 8, width: '15%', whiteSpace: 'nowrap', position: 'sticky', top: 0, background: 'var(--color-table-header-bg)', zIndex: 1, boxShadow: '0 1px 0 var(--color-border)' }}>Funciones</th>
           </tr>
         </thead>
         <tbody>
@@ -1147,7 +1154,10 @@ export default function Cuentas() {
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: 16
+          gap: 16,
+          maxHeight: '70vh',
+          overflowY: 'auto',
+          padding: '4px'
         }}>
           {cuentasFiltradas.length === 0 ? (
             <div style={{
@@ -1476,6 +1486,28 @@ export default function Cuentas() {
         .accounts-card .table-responsive { max-width: 100%; overflow-x: auto; max-height: 60vh; overflow-y: auto; }
         .accounts-card table { min-width: 640px; }
         .accounts-card thead th { position: sticky; top: 0; z-index: 1; background: var(--color-table-header-bg); box-shadow: 0 1px 0 var(--color-border); }
+        
+        /* Scroll personalizado para vistas */
+        .table-responsive::-webkit-scrollbar,
+        div[style*="overflowY: 'auto'"]::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        .table-responsive::-webkit-scrollbar-track,
+        div[style*="overflowY: 'auto'"]::-webkit-scrollbar-track {
+          background: var(--color-border);
+          border-radius: 4px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb,
+        div[style*="overflowY: 'auto'"]::-webkit-scrollbar-thumb {
+          background: #6c4fa1;
+          border-radius: 4px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb:hover,
+        div[style*="overflowY: 'auto'"]::-webkit-scrollbar-thumb:hover {
+          background: #5a3f89;
+        }
+        
         @media (max-width: 480px) {
           .accounts-card table { min-width: 520px; }
           .accounts-card th, .accounts-card td { padding: 6px !important; }
