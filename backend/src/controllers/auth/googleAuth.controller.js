@@ -35,8 +35,8 @@ exports.loginGoogle = async (req, res) => {
         console.log('[GoogleAuth] Token audience (aud):', payloadPreview.aud);
         console.log('[GoogleAuth] Token email:', payloadPreview.email);
         if (payloadPreview && payloadPreview.aud && !GOOGLE_AUDIENCES.includes(payloadPreview.aud)) {
-          console.warn(`[GoogleAuth] ⚠️ Token con audiencia NO permitida: ${payloadPreview.aud}`);
-          console.warn(`[GoogleAuth] ⚠️ Audiencias permitidas:`, GOOGLE_AUDIENCES);
+          console.warn(`[GoogleAuth] Token con audiencia NO permitida: ${payloadPreview.aud}`);
+          console.warn(`[GoogleAuth] Audiencias permitidas:`, GOOGLE_AUDIENCES);
         }
       } else {
         console.warn('Token de Google con formato inválido');
@@ -53,15 +53,15 @@ exports.loginGoogle = async (req, res) => {
         console.log('[GoogleAuth] Intentando validar con audiencia:', aud);
         const ticket = await client.verifyIdToken({ idToken: credential, audience: aud });
         payload = ticket.getPayload();
-        console.log('[GoogleAuth] ✅ Token validado exitosamente con audiencia:', aud);
+        console.log('[GoogleAuth] Token validado exitosamente con audiencia:', aud);
         break;
       } catch (e) {
-        console.log('[GoogleAuth] ❌ Error validando con audiencia', aud, ':', e.message);
+        console.log('[GoogleAuth] Error validando con audiencia', aud, ':', e.message);
         lastErr = e;
       }
     }
     if (!payload) {
-      console.error('[GoogleAuth] ❌ No se pudo validar el token con ninguna audiencia');
+      console.error('[GoogleAuth] No se pudo validar el token con ninguna audiencia');
       throw lastErr || new Error('Wrong recipient, payload audience not allowed');
     }
     const email = payload.email;
