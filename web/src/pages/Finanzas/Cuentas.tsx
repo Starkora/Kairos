@@ -494,9 +494,9 @@ export default function Cuentas() {
         icon: 'success',
         title: 'Tarjeta sincronizada',
         html: `<div style="text-align: left;">
-          <p><strong>Deuda actual:</strong> S/ ${data.deuda_actual.toFixed(2)}</p>
-          <p><strong>Disponible:</strong> S/ ${data.saldo_disponible.toFixed(2)}</p>
-          <p><strong>Límite:</strong> S/ ${data.limite_credito.toFixed(2)}</p>
+          <p><strong>Deuda actual:</strong> S/ ${Number(data.deuda_actual || 0).toFixed(2)}</p>
+          <p><strong>Disponible:</strong> S/ ${Number(data.saldo_disponible || 0).toFixed(2)}</p>
+          <p><strong>Límite:</strong> S/ ${Number(data.limite_credito || 0).toFixed(2)}</p>
         </div>`
       });
       
@@ -1623,7 +1623,7 @@ export default function Cuentas() {
                     style={{ padding:8, borderRadius:6 }} 
                   />
                   <p style={{ fontSize: 11, color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>
-                    💡 Después de guardar el límite, podrás sincronizar la deuda automáticamente
+                    Después de guardar el límite, podrás sincronizar la deuda automáticamente
                   </p>
                 </div>
               )}
