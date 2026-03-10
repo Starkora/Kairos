@@ -172,6 +172,8 @@ export default function Dashboard() {
       /\[transfer#/i.test(desc) ||
       desc.includes('transferencia a') ||
       desc.includes('transferencia desde') ||
+      desc.includes('ahorro para') ||
+      desc.includes('ahorro desde') ||
       desc.includes('[deuda#') ||
       desc.includes('[meta#')
     );
@@ -266,7 +268,7 @@ export default function Dashboard() {
       if (!m.fecha) return false;
       const d = new Date(m.fecha);
       return d.getFullYear() === comparisonCurrentYear && d.getMonth() === comparisonCurrentMonth;
-    });
+    }).filter(m => !esMovimientoInterno(m));
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const ahorro = movs.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + parseMonto(m.monto), 0);
@@ -278,7 +280,7 @@ export default function Dashboard() {
       if (!m.fecha) return false;
       const d = new Date(m.fecha);
       return d.getFullYear() === comparisonPreviousYear && d.getMonth() === comparisonPreviousMonth;
-    });
+    }).filter(m => !esMovimientoInterno(m));
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const ahorro = movs.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + parseMonto(m.monto), 0);

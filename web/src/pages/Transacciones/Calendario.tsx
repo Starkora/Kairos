@@ -314,13 +314,15 @@ export default function Calendario() {
 
   // Estadísticas del día seleccionado
   const estadisticasDia = React.useMemo(() => {
-    // Función helper para identificar movimientos internos (transferencias, pagos de deudas, aportes a metas)
+    // Función helper para identificar movimientos internos (transferencias, ahorros, pagos de deudas, aportes a metas)
     const esMovimientoInterno = (mov: any): boolean => {
       const desc = String(mov.descripcion || '').toLowerCase();
       return (
         /\[transfer#/i.test(desc) ||
         desc.includes('transferencia a') ||
         desc.includes('transferencia desde') ||
+        desc.includes('ahorro para') ||
+        desc.includes('ahorro desde') ||
         desc.includes('[deuda#') ||
         desc.includes('[meta#')
       );

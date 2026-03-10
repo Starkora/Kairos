@@ -23,8 +23,25 @@ interface TimelineViewProps {
  * Muestra burbujas proporcionales al monto en un timeline horizontal
  */
 export const TimelineView: React.FC<TimelineViewProps> = ({ movimientos, onMovimientoClick }) => {
+  // Identificar movimientos internos (transferencias, ahorros, pagos de deudas, metas)
+  const esMovimientoInterno = (mov: TimelineMovimiento): boolean => {
+    const desc = String(mov.descripcion || '').toLowerCase();
+    return (
+      /\[transfer#/i.test(desc) ||
+      desc.includes('transferencia a') ||
+      desc.includes('transferencia desde') ||
+      desc.includes('ahorro para') ||
+      desc.includes('ahorro desde') ||
+      desc.includes('[deuda#') ||
+      desc.includes('[meta#')
+    );
+  };
+
+  // Filtrar movimientos reales (excluir internos)
+  const movimientosReales = movimientos.filter(m => !esMovimientoInterno(m));
+
   // Ordenar por hora si existe, sino por monto
-  const movimientosOrdenados = [...movimientos].sort((a, b) => {
+  const movimientosOrdenados = [...movimientosReales].sort((a, b) => {
     if (a.hora && b.hora) {
       return a.hora.localeCompare(b.hora);
     }
@@ -32,7 +49,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ movimientos, onMovim
   });
 
   // Calcular el tamaño máximo y mínimo de burbuja
-  const montos = movimientos.map(m => Number(m.monto));
+  const montos = movimientosReales.map(m => Number(m.monto));
   const montoMax = Math.max(...montos, 1);
   const montoMin = Math.min(...montos, 0);
 
@@ -43,7 +60,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ movimientos, onMovim
     return minSize + (maxSize - minSize) * ratio;
   };
 
-  if (movimientos.length === 0) {
+  if (movimientosReales.length === 0) {
     return (
       <div style={{ 
         textAlign: 'center', 
@@ -237,20 +254,20 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ movimientos, onMovim
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 4 }}>Total Ingresos</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: '#4caf50' }}>
-            +S/ {movimientos.filter(m => m.tipo === 'ingreso' || m.tipo === 'ahorro').reduce((sum, m) => sum + Number(m.monto), 0).toFixed(2)}
+            +S/ {movimientosReales.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + Number(m.monto), 0).toFixed(2)}
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 4 }}>Total Egresos</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: '#f44336' }}>
-            -S/ {movimientos.filter(m => m.tipo === 'egreso').reduce((sum, m) => sum + Number(m.monto), 0).toFixed(2)}
+            -S/ {movimientosReales.filter(m => m.tipo === 'egreso').reduce((sum, m) => sum + Number(m.monto), 0).toFixed(2)}
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 4 }}>Balance</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)' }}>
-            S/ {movimientos.reduce((sum, m) => {
-              const signo = (m.tipo === 'ingreso' || m.tipo === 'ahorro') ? 1 : -1;
+            S/ {movimientosReales.reduce((sum, m) => {
+              const signo = m.tipo === 'ingreso' ? 1 : -1;
               return sum + (Number(m.monto) * signo);
             }, 0).toFixed(2)}
           </div>
