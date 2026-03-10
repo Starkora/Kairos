@@ -48,7 +48,8 @@ export default function Dashboard() {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
   const [year, setYear] = React.useState(currentYear);
-  const [month, setMonth] = React.useState<number | 'all'>('all');
+  // Por defecto mostrar el mes anterior al actual
+  const [month, setMonth] = React.useState<number | 'all'>(currentMonth > 0 ? currentMonth - 1 : 11);
   // Permitir selección múltiple de segmentos
   const [segmentos, setSegmentos] = React.useState({ Ahorro: true, Gasto: true, Ingreso: true });
   const [categoriaModal, setCategoriaModal] = React.useState<any>(null);
@@ -222,87 +223,9 @@ export default function Dashboard() {
     };
   }, [cuentaSeleccionada, saldoActual, saldoInicial]);
 
-  // Tendencia mes actual vs mes anterior (por año seleccionado)
-  const currentMonthIdx = React.useMemo(() => (new Date().getFullYear() === year ? new Date().getMonth() : 11), [year]);
-  const prevMonthIdx = currentMonthIdx > 0 ? currentMonthIdx - 1 : null;
-  const monthTotals = React.useCallback((monthIdx) => {
-    const movs = filteredMovs.filter(m => {
-      if (!m.fecha) return false;
-      const d = new Date(m.fecha);
-      return d.getFullYear() === year && d.getMonth() === monthIdx;
-    });
-    const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto || 0), 0);
-    const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto || 0), 0);
-    const ahorro = movs.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + Number(m.monto || 0), 0);
-    return { ingreso, gasto, ahorro };
-  }, [filteredMovs, year]);
-  const curr = monthTotals(currentMonthIdx);
-  const prev = prevMonthIdx !== null ? monthTotals(prevMonthIdx) : { ingreso: 0, gasto: 0, ahorro: 0 };
-  const trend = React.useMemo(() => {
-    const calc = (a, b) => {
-      const delta = a - b;
-      const sign = delta > 0 ? '+' : delta < 0 ? '-' : '';
-      const abs = Math.abs(delta);
-      const perc = b !== 0 ? (delta / b) * 100 : null;
-      const color = delta > 0 ? '#2e7d32' : delta < 0 ? '#e53935' : '#888';
-      const percText = perc === null ? '' : ` (${perc.toFixed(1)}%)`;
-      return { text: `${sign}S/ ${abs.toLocaleString(undefined, { minimumFractionDigits: 2 })}${percText}`, color };
-    };
-    return { ingreso: calc(curr.ingreso, prev.ingreso), gasto: calc(curr.gasto, prev.gasto), ahorro: calc(curr.ahorro, prev.ahorro) };
-  }, [curr, prev]);
-
-  const indicadores = [
-    {
-      IconComponent: FaWallet,
-      color: saldoNegativo ? '#e53935' : '#7e57c2',
-      titulo: cuentaSeleccionada === 'all' ? 'Saldo total' : 'Saldo actual',
-      valor: `S/ ${saldoActual.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-      subtitle: cuentaSeleccionada !== 'all' && cuentaTipo ? `Tipo: ${cuentaTipo}` : '',
-      subtitle2: cuentaSeleccionada !== 'all' && saldoInicial !== null ? `Saldo inicial: S/ ${Number(saldoInicial).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '',
-      subtitle3: variacion ? variacion.text : '',
-      subtitle3Color: variacion ? variacion.color : undefined,
-      isAmount: true,
-    },
-    {
-      IconComponent: FaArrowDown,
-      color: '#ff9800',
-      titulo: 'Indicadores Egresos',
-      valor: filteredMovs.filter(m => m.tipo === 'egreso').length,
-    },
-    {
-      IconComponent: FaArrowUp,
-      color: '#388e3c',
-      titulo: 'Indicadores Ingresos',
-      valor: filteredMovs.filter(m => m.tipo === 'ingreso').length,
-    },
-    {
-      IconComponent: FaUniversity,
-      color: '#ff7043',
-      titulo: 'Ingreso',
-      valor: `S/ ${totalIngreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-      subtitle3: trend.ingreso.text,
-      subtitle3Color: trend.ingreso.color,
-      isAmount: true,
-    },
-    {
-      IconComponent: FaMoneyBillWave,
-      color: '#26c6da',
-      titulo: 'Gastos',
-      valor: `S/ ${totalEgreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-      subtitle3: trend.gasto.text,
-      subtitle3Color: trend.gasto.color,
-      isAmount: true,
-    },
-    {
-      IconComponent: FaPiggyBank,
-      color: '#6c4fa1',
-      titulo: 'Ahorro',
-      valor: `S/ ${totalAhorro.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-      subtitle3: trend.ahorro.text,
-      subtitle3Color: trend.ahorro.color,
-      isAmount: true,
-    },
-  ];
+  // NOTA: Las tendencias ahora se calculan más abajo usando comparisonMonth y previousComparisonMonth
+  // para que sean coherentes con el mes seleccionado en el dropdown
+  // El array indicadores se mueve después del cálculo de trend
 
   // Resumen para tarjetas
   const resumen = {
@@ -386,6 +309,78 @@ export default function Dashboard() {
 
   const currentMonthData = getCurrentMonthData();
   const previousMonthData = getPreviousMonthData();
+
+  // Calcular tendencias para las tarjetas de indicadores
+  const trend = React.useMemo(() => {
+    const calc = (a, b) => {
+      const delta = a - b;
+      const sign = delta > 0 ? '+' : delta < 0 ? '-' : '';
+      const abs = Math.abs(delta);
+      const perc = b !== 0 ? (delta / b) * 100 : null;
+      const color = delta > 0 ? '#2e7d32' : delta < 0 ? '#e53935' : '#888';
+      const percText = perc === null ? '' : ` (${perc.toFixed(1)}%)`;
+      return { text: `${sign}S/ ${abs.toLocaleString(undefined, { minimumFractionDigits: 2 })}${percText}`, color };
+    };
+    return { 
+      ingreso: calc(currentMonthData.ingreso, previousMonthData.ingreso), 
+      gasto: calc(currentMonthData.gasto, previousMonthData.gasto), 
+      ahorro: calc(currentMonthData.ahorro, previousMonthData.ahorro) 
+    };
+  }, [currentMonthData, previousMonthData]);
+
+  // Array de indicadores (después de calcular trend)
+  const indicadores = [
+    {
+      IconComponent: FaWallet,
+      color: saldoNegativo ? '#e53935' : '#7e57c2',
+      titulo: cuentaSeleccionada === 'all' ? 'Saldo total' : 'Saldo actual',
+      valor: `S/ ${saldoActual.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      subtitle: cuentaSeleccionada !== 'all' && cuentaTipo ? `Tipo: ${cuentaTipo}` : '',
+      subtitle2: cuentaSeleccionada !== 'all' && saldoInicial !== null ? `Saldo inicial: S/ ${Number(saldoInicial).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '',
+      subtitle3: variacion ? variacion.text : '',
+      subtitle3Color: variacion ? variacion.color : undefined,
+      isAmount: true,
+    },
+    {
+      IconComponent: FaArrowDown,
+      color: '#ff9800',
+      titulo: 'Indicadores Egresos',
+      valor: filteredMovs.filter(m => m.tipo === 'egreso').length,
+    },
+    {
+      IconComponent: FaArrowUp,
+      color: '#388e3c',
+      titulo: 'Indicadores Ingresos',
+      valor: filteredMovs.filter(m => m.tipo === 'ingreso').length,
+    },
+    {
+      IconComponent: FaUniversity,
+      color: '#ff7043',
+      titulo: 'Ingreso',
+      valor: `S/ ${totalIngreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      subtitle3: trend.ingreso.text,
+      subtitle3Color: trend.ingreso.color,
+      isAmount: true,
+    },
+    {
+      IconComponent: FaMoneyBillWave,
+      color: '#26c6da',
+      titulo: 'Gastos',
+      valor: `S/ ${totalEgreso.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      subtitle3: trend.gasto.text,
+      subtitle3Color: trend.gasto.color,
+      isAmount: true,
+    },
+    {
+      IconComponent: FaPiggyBank,
+      color: '#6c4fa1',
+      titulo: 'Ahorro',
+      valor: `S/ ${totalAhorro.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      subtitle3: trend.ahorro.text,
+      subtitle3Color: trend.ahorro.color,
+      isAmount: true,
+    },
+  ];
 
   const calculateChange = (current: number, previous: number) => {
     if (previous === 0) return { percentage: 0, isPositive: current >= 0, text: 'N/A' };
