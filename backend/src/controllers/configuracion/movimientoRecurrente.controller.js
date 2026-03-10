@@ -60,12 +60,12 @@ exports.crear = async (req, res) => {
         });
       }
     } catch (e) {
-      
+      console.error('Error al materializar transacción inicial del recurrente:', e);
     }
     res.status(201).json(nuevo);
   } catch (err) {
-    
-    res.status(500).json({ error: 'No se pudo crear el movimiento recurrente.' });
+    console.error('Error creando movimiento recurrente:', err);
+    res.status(500).json({ error: 'No se pudo crear el movimiento recurrente.', detalle: err.message });
   }
 };
 
