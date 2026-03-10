@@ -1415,24 +1415,21 @@ export default function Calendario() {
               
               return (
                 <div style={{ 
-                  position: 'absolute', 
-                  bottom: 2, 
-                  left: 0,
-                  right: 0,
                   display: 'flex', 
                   justifyContent: 'center',
-                  gap: 3,
+                  gap: 2,
+                  marginTop: 2,
                   pointerEvents: 'none'
                 }}>
                   {tieneIngreso && (
                     <div 
                       style={{ 
-                        width: 8, 
-                        height: 8, 
+                        width: 6, 
+                        height: 6, 
                         borderRadius: '50%', 
                         background: '#4caf50',
-                        border: '1px solid rgba(255,255,255,0.8)',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                        border: '1px solid rgba(255,255,255,0.9)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.4)'
                       }} 
                       title="Ingreso" 
                     />
@@ -1440,12 +1437,12 @@ export default function Calendario() {
                   {tieneEgreso && (
                     <div 
                       style={{ 
-                        width: 8, 
-                        height: 8, 
+                        width: 6, 
+                        height: 6, 
                         borderRadius: '50%', 
                         background: '#f44336',
-                        border: '1px solid rgba(255,255,255,0.8)',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                        border: '1px solid rgba(255,255,255,0.9)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.4)'
                       }} 
                       title="Egreso" 
                     />
@@ -1453,12 +1450,12 @@ export default function Calendario() {
                   {tieneAhorro && (
                     <div 
                       style={{ 
-                        width: 8, 
-                        height: 8, 
+                        width: 6, 
+                        height: 6, 
                         borderRadius: '50%', 
                         background: '#9c27b0',
-                        border: '1px solid rgba(255,255,255,0.8)',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                        border: '1px solid rgba(255,255,255,0.9)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.4)'
                       }} 
                       title="Ahorro" 
                     />
@@ -1466,12 +1463,12 @@ export default function Calendario() {
                   {tieneTransferencia && (
                     <div 
                       style={{ 
-                        width: 8, 
-                        height: 8, 
+                        width: 6, 
+                        height: 6, 
                         borderRadius: '50%', 
                         background: '#2196f3',
-                        border: '1px solid rgba(255,255,255,0.8)',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                        border: '1px solid rgba(255,255,255,0.9)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.4)'
                       }} 
                       title="Transferencia" 
                     />
@@ -1479,12 +1476,12 @@ export default function Calendario() {
                   {tienePagoTarjeta && (
                     <div 
                       style={{ 
-                        width: 8, 
-                        height: 8, 
+                        width: 6, 
+                        height: 6, 
                         borderRadius: '50%', 
                         background: '#ff6b6b',
-                        border: '1px solid rgba(255,255,255,0.8)',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                        border: '1px solid rgba(255,255,255,0.9)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.4)'
                       }} 
                       title="Pago Tarjeta" 
                     />
