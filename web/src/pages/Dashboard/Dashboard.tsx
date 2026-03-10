@@ -168,12 +168,13 @@ export default function Dashboard() {
   const esMovimientoInterno = React.useCallback((mov: any): boolean => {
     const desc = String(mov.descripcion || '').toLowerCase();
     // Verificar marcadores y patrones de descripción
+    // Para ahorros: solo excluir el ORIGEN (ahorro para), dejar visible el DESTINO (ahorro desde)
     return (
       /\[transfer#/i.test(desc) ||
       desc.includes('transferencia a') ||
       desc.includes('transferencia desde') ||
-      desc.includes('ahorro para') ||
-      desc.includes('ahorro desde') ||
+      desc.includes('ahorro para') ||  // Excluir origen de ahorro
+      // NO EXCLUIR 'ahorro desde' - este es el destino que queremos contar
       desc.includes('[deuda#') ||
       desc.includes('[meta#')
     );

@@ -24,14 +24,15 @@ interface TimelineViewProps {
  */
 export const TimelineView: React.FC<TimelineViewProps> = ({ movimientos, onMovimientoClick }) => {
   // Identificar movimientos internos (transferencias, ahorros, pagos de deudas, metas)
+  // Para ahorros: solo excluir el ORIGEN (ahorro para), dejar visible el DESTINO (ahorro desde)
   const esMovimientoInterno = (mov: TimelineMovimiento): boolean => {
     const desc = String(mov.descripcion || '').toLowerCase();
     return (
       /\[transfer#/i.test(desc) ||
       desc.includes('transferencia a') ||
       desc.includes('transferencia desde') ||
-      desc.includes('ahorro para') ||
-      desc.includes('ahorro desde') ||
+      desc.includes('ahorro para') ||  // Excluir origen de ahorro
+      // NO EXCLUIR 'ahorro desde' - este es el destino que queremos contar
       desc.includes('[deuda#') ||
       desc.includes('[meta#')
     );
