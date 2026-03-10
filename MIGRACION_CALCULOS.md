@@ -17,9 +17,10 @@
 - **Impacto**: Solo los ahorros desde cuentas principales (ej: cuenta sueldo) se contabilizan en estadísticas
 
 ### 4. Exclusión de Transferencias
-- **Cambio**: Las transferencias internas ya no se consideran como ingresos/egresos en cálculos
+- **Cambio**: Las transferencias internas y pagos de tarjeta ya no se consideran como ingresos/egresos en cálculos
 - **Lógica**: Se excluyen movimientos con categoría "Transferencia Interna"
 - **Impacto**: Los cálculos de ingresos y egresos reales son más precisos
+- **Nota Importante**: Los pagos de tarjeta de crédito SIEMPRE usan "Transferencia Interna" como categoría para no inflar los ingresos
 
 ### 5. Filtrado por Cuentas Marcadas
 - **Cambio**: Todos los cálculos de insights solo consideran movimientos de cuentas con `incluir_en_calculos = TRUE`
@@ -126,10 +127,16 @@ npm start
 
 ### 3. Verificar Transferencias
 - Crea una transferencia entre cuentas
-- Verifica que NO aparezca como ingreso/egreso en estadísticas
+- Verifica que NO aparezca como ingreso/egreso en estatísticas
 - Verifica que el saldo de ambas cuentas se actualice correctamente
 
-### 4. Verificar Ahorro
+### 4. Verificar Pagos de Tarjeta
+- Crea un pago de tarjeta de crédito
+- Verifica que NO aparezca como ingreso en estadísticas
+- La categoría debe ser automáticamente "Transferencia Interna"
+- En el Excel exportado, el tipo debe mostrar "Transferencia Interna"
+
+### 5. Verificar Ahorro
 - Crea un movimiento de tipo "Ahorro" desde tu cuenta sueldo
 - Verifica que aparezca en el total de ahorros
 - Crea un ahorro desde una cuenta NO marcada

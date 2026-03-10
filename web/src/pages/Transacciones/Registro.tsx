@@ -152,10 +152,11 @@ export default function Registro() {
 
   // Cargar categorías desde la API según el tipo
   React.useEffect(() => {
-    if (form.tipo === 'transferencia') { setCategorias([]); return; }
-    // Para pagos de tarjeta, usar categorías de egreso
-    const tipoCategoria = form.tipo === 'pago_tarjeta' ? 'egreso' : form.tipo;
-    fetch(`${API_BASE}/api/categorias/${tipoCategoria}?plataforma=web`, {
+    if (form.tipo === 'transferencia' || form.tipo === 'pago_tarjeta') { 
+      setCategorias([]); 
+      return; 
+    }
+    fetch(`${API_BASE}/api/categorias/${form.tipo}?plataforma=web`, {
       headers: {
         'Authorization': 'Bearer ' + getToken()
       }
@@ -466,6 +467,7 @@ export default function Registro() {
           });
         } else if (form.tipo === 'pago_tarjeta') {
           // Pago de tarjeta de crédito (transferencia que reduce deuda)
+          // NO enviar categoria_id para que use "Transferencia Interna" automáticamente
           res = await apiFetch(`${API_BASE}/api/transacciones/transferir`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -475,7 +477,7 @@ export default function Registro() {
               monto: Number(form.monto),
               fecha: form.fecha,
               descripcion: form.descripcion || 'Pago de tarjeta de crédito',
-              categoria_id: form.categoria || null, // Categoría opcional para el pago
+              // No se envía categoria_id para forzar el uso de "Transferencia Interna"
               icon: form.icon,
               color: form.color
             })
@@ -693,7 +695,7 @@ export default function Registro() {
             </div>
           </div>
         </div>
-        {form.tipo !== 'transferencia' && (
+        {form.tipo !== 'transferencia' && form.tipo !== 'pago_tarjeta' && (
           <div>
             <label>Categoría:&nbsp;</label>
             <select name="categoria" value={form.categoria} onChange={handleChange} style={{ padding: 6, borderRadius: 6, width: '100%' }}>
@@ -702,11 +704,6 @@ export default function Registro() {
                 <option key={cat.id} value={cat.id}>{cat.nombre}</option>
               ))}
             </select>
-            {form.tipo === 'pago_tarjeta' && (
-              <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 4 }}>
-                Categoriza el pago (ej: "Deudas Bancos / Personales" o crea "Pago Tarjeta de Crédito")
-              </div>
-            )}
           </div>
         )}
         {/* Vista Previa del Saldo */}
