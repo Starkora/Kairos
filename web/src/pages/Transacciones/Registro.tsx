@@ -704,7 +704,7 @@ export default function Registro() {
             </select>
             {form.tipo === 'pago_tarjeta' && (
               <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 4 }}>
-                💡 Categoriza el pago (ej: "Deudas Bancos / Personales" o crea "Pago Tarjeta de Crédito")
+                Categoriza el pago (ej: "Deudas Bancos / Personales" o crea "Pago Tarjeta de Crédito")
               </div>
             )}
           </div>
