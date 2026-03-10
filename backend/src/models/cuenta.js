@@ -10,28 +10,31 @@ const Cuenta = {
     return result;
   },
   create: async (data) => {
-    const { usuario_id, nombre, saldo_inicial, tipo, plataforma, limite_credito } = data;
+    const { usuario_id, nombre, saldo_inicial, tipo, plataforma, limite_credito, incluir_en_calculos } = data;
     
     // Si es tarjeta de crédito, usar lógica diferente
     const esTarjetaCredito = tipo && (tipo.toLowerCase().includes('tarjeta') || tipo.toLowerCase().includes('crédito'));
     
+    // Por defecto, incluir en cálculos es true
+    const incluirEnCalc = incluir_en_calculos !== undefined ? incluir_en_calculos : true;
+    
     if (esTarjetaCredito && limite_credito) {
       // Para tarjetas de crédito: saldo_inicial = 0, limite_credito y saldo_disponible
       const [result] = await db.query(
-        'INSERT INTO cuentas (usuario_id, nombre, saldo_inicial, saldo_actual, tipo, activa, plataforma, limite_credito, deuda_actual, saldo_disponible) VALUES (?, ?, 0, 0, ?, 1, ?, ?, 0, ?)',
-        [usuario_id, nombre, tipo, plataforma || 'web', limite_credito, limite_credito]
+        'INSERT INTO cuentas (usuario_id, nombre, saldo_inicial, saldo_actual, tipo, activa, plataforma, limite_credito, deuda_actual, saldo_disponible, incluir_en_calculos) VALUES (?, ?, 0, 0, ?, 1, ?, ?, 0, ?, ?)',
+        [usuario_id, nombre, tipo, plataforma || 'web', limite_credito, limite_credito, incluirEnCalc]
       );
       return { id: result.insertId, nombre, esTarjetaCredito: true };
     } else {
       // Para cuentas normales
       const [result] = await db.query(
-        'INSERT INTO cuentas (usuario_id, nombre, saldo_inicial, saldo_actual, tipo, activa, plataforma) VALUES (?, ?, ?, ?, ?, 1, ?)',
-        [usuario_id, nombre, saldo_inicial, saldo_inicial, tipo, plataforma || 'web']
+        'INSERT INTO cuentas (usuario_id, nombre, saldo_inicial, saldo_actual, tipo, activa, plataforma, incluir_en_calculos) VALUES (?, ?, ?, ?, ?, 1, ?, ?)',
+        [usuario_id, nombre, saldo_inicial, saldo_inicial, tipo, plataforma || 'web', incluirEnCalc]
       );
       return { id: result.insertId, nombre, esTarjetaCredito: false };
     }
   },
-  update: async ({ id, usuario_id, nombre, tipo, plataforma, limite_credito }) => {
+  update: async ({ id, usuario_id, nombre, tipo, plataforma, limite_credito, incluir_en_calculos }) => {
     // Verificar duplicado por nombre dentro del mismo usuario y plataforma
     if (!id || !usuario_id || !nombre || !tipo) {
       throw new Error('Faltan campos requeridos');
@@ -47,16 +50,26 @@ const Cuenta = {
       throw err;
     }
     
-    // Si se proporciona límite de crédito, actualizarlo también
+    // Construir la query dinámicamente según los campos presentes
+    let updateFields = ['nombre = ?', 'tipo = ?'];
+    let updateValues = [nombre, tipo];
+    
     if (limite_credito !== undefined) {
-      const [result] = await db.query(
-        'UPDATE cuentas SET nombre = ?, tipo = ?, limite_credito = ?, saldo_disponible = ? - COALESCE(deuda_actual, 0) WHERE id = ? AND usuario_id = ?',
-        [nombre, tipo, limite_credito, limite_credito, id, usuario_id]
-      );
-      return result;
+      updateFields.push('limite_credito = ?', 'saldo_disponible = ? - COALESCE(deuda_actual, 0)');
+      updateValues.push(limite_credito, limite_credito);
     }
     
-    const [result] = await db.query('UPDATE cuentas SET nombre = ?, tipo = ? WHERE id = ? AND usuario_id = ?', [nombre, tipo, id, usuario_id]);
+    if (incluir_en_calculos !== undefined) {
+      updateFields.push('incluir_en_calculos = ?');
+      updateValues.push(incluir_en_calculos);
+    }
+    
+    updateValues.push(id, usuario_id);
+    
+    const [result] = await db.query(
+      `UPDATE cuentas SET ${updateFields.join(', ')} WHERE id = ? AND usuario_id = ?`,
+      updateValues
+    );
     return result;
   },
   

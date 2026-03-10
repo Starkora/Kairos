@@ -1,7 +1,7 @@
 ﻿exports.create = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
-  const { nombre, saldo_inicial, tipo, plataforma, limite_credito } = req.body;
+  const { nombre, saldo_inicial, tipo, plataforma, limite_credito, incluir_en_calculos } = req.body;
 
   // Para tarjetas de crédito, limite_credito es requerido
   const esTarjetaCredito = tipo && (tipo.toLowerCase().includes('tarjeta') || tipo.toLowerCase().includes('crédito'));
@@ -19,7 +19,15 @@
   }
   
   try {
-    const result = await Cuenta.create({ usuario_id, nombre, saldo_inicial: saldo_inicial || 0, tipo, plataforma, limite_credito });
+    const result = await Cuenta.create({ 
+      usuario_id, 
+      nombre, 
+      saldo_inicial: saldo_inicial || 0, 
+      tipo, 
+      plataforma, 
+      limite_credito,
+      incluir_en_calculos 
+    });
     res.status(201).json({ message: 'Cuenta creada', id: result.id, esTarjetaCredito: result.esTarjetaCredito });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -97,7 +105,7 @@ exports.update = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
   const id = req.params.id;
-  const { nombre, tipo, plataforma, limite_credito } = req.body;
+  const { nombre, tipo, plataforma, limite_credito, incluir_en_calculos } = req.body;
 
   if (!id || !nombre || !tipo) {
     return res.status(400).json({ error: 'Faltan campos requeridos' });
@@ -109,7 +117,8 @@ exports.update = async (req, res) => {
       nombre: nombre.trim(), 
       tipo: tipo.trim(), 
       plataforma,
-      limite_credito: limite_credito !== undefined ? Number(limite_credito) : undefined
+      limite_credito: limite_credito !== undefined ? Number(limite_credito) : undefined,
+      incluir_en_calculos
     });
     res.json({ message: 'Cuenta actualizada' });
   } catch (err) {

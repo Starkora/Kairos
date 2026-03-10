@@ -12,10 +12,10 @@ import {
 
 export default function Cuentas() {
   const [cuentas, setCuentas] = React.useState([]);
-  const [form, setForm] = React.useState({ nombre: '', saldo: '', tipo: '', limiteCredito: '' });
+  const [form, setForm] = React.useState({ nombre: '', saldo: '', tipo: '', limiteCredito: '', incluirEnCalculos: true });
   const [tiposCuenta, setTiposCuenta] = React.useState([{ value: '', label: 'Tipo de cuenta' }]);
   const [editing, setEditing] = React.useState(null); // {id, nombre, tipo}
-  const [editData, setEditData] = React.useState({ nombre: '', tipo: '', limiteCredito: '' });
+  const [editData, setEditData] = React.useState({ nombre: '', tipo: '', limiteCredito: '', incluirEnCalculos: true });
   
   // Nuevos estados para mejoras
   const [busqueda, setBusqueda] = React.useState('');
@@ -171,7 +171,8 @@ export default function Cuentas() {
   }, [cuentas, busqueda, filtroTipo, ordenamiento]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    const val = type === 'checkbox' ? checked : value;
     
     // Si cambió el tipo, limpiar campos que no aplican
     if (name === 'tipo') {
@@ -183,7 +184,7 @@ export default function Cuentas() {
         limiteCredito: esTarjetaCredito ? prev.limiteCredito : ''
       }));
     } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
+      setForm((prev) => ({ ...prev, [name]: val }));
     }
     
     // Validación en tiempo real
@@ -264,7 +265,8 @@ export default function Cuentas() {
         const payload: any = {
           nombre: form.nombre,
           tipo: form.tipo,
-          plataforma: 'web'
+          plataforma: 'web',
+          incluir_en_calculos: form.incluirEnCalculos
         };
         
         if (esTarjetaCredito) {
@@ -292,7 +294,7 @@ export default function Cuentas() {
               id: data.id,
               nombre: form.nombre,
               tipo: form.tipo,
-              plataforma: 'web',
+              incluir_en_calculos: form.incluirEnCalculos,
               ...(esTarjetaCredito ? {
                 limite_credito: Number(form.limiteCredito),
                 deuda_actual: 0,
@@ -302,7 +304,7 @@ export default function Cuentas() {
                 saldo_actual: Number(form.saldo)
               })
             }]);
-            setForm({ nombre: '', saldo: '', tipo: '', limiteCredito: '' });
+            setForm({ nombre: '', saldo: '', tipo: '', limiteCredito: '', incluirEnCalculos: true });
             Swal.fire({ icon: 'success', title: 'Cuenta agregada', showConfirmButton: false, timer: 1200 });
           })
           .catch(err => {
@@ -386,7 +388,8 @@ export default function Cuentas() {
     setEditData({ 
       nombre: cuenta.nombre || '', 
       tipo: cuenta.tipo || '',
-      limiteCredito: esTarjeta ? (cuenta.limite_credito || '') : ''
+      limiteCredito: esTarjeta ? (cuenta.limite_credito || '') : '',
+      incluirEnCalculos: cuenta.incluir_en_calculos !== undefined ? cuenta.incluir_en_calculos : true
     });
   };
 
@@ -420,7 +423,8 @@ export default function Cuentas() {
       const body: any = {
         nombre: editData.nombre,
         tipo: editData.tipo,
-        plataforma: 'web'
+        plataforma: 'web',
+        incluir_en_calculos: editData.incluirEnCalculos
       };
       
       // Si es tarjeta y tiene límite, incluirlo
@@ -830,6 +834,29 @@ export default function Cuentas() {
               <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
             ))}
           </select>
+          
+          {/* Checkbox para incluir en cálculos */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 8,
+            padding: '10px 12px',
+            borderRadius: 8,
+            background: 'var(--color-bg)',
+            border: '1px solid var(--color-border)'
+          }}>
+            <input
+              type="checkbox"
+              name="incluirEnCalculos"
+              id="incluirEnCalculos"
+              checked={form.incluirEnCalculos}
+              onChange={handleChange}
+              style={{ cursor: 'pointer', width: 18, height: 18 }}
+            />
+            <label htmlFor="incluirEnCalculos" style={{ cursor: 'pointer', fontSize: 14, userSelect: 'none', color: 'var(--color-text)' }}>
+              Incluir en cálculos de ingresos/egresos
+            </label>
+          </div>
           
           <button 
             type="submit" 
@@ -1627,6 +1654,26 @@ export default function Cuentas() {
                   </p>
                 </div>
               )}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 8,
+                padding: '8px 12px',
+                borderRadius: 8,
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)'
+              }}>
+                <input
+                  type="checkbox"
+                  id="editIncluirEnCalculos"
+                  checked={editData.incluirEnCalculos}
+                  onChange={(e)=>setEditData(s=>({...s, incluirEnCalculos: e.target.checked}))}
+                  style={{ cursor: 'pointer', width: 18, height: 18 }}
+                />
+                <label htmlFor="editIncluirEnCalculos" style={{ cursor: 'pointer', fontSize: 14, userSelect: 'none', color: 'var(--color-text)' }}>
+                  Incluir en cálculos de ingresos/egresos
+                </label>
+              </div>
               <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:8 }}>
                 <button type="button" onClick={closeEdit} style={{ padding:'8px 12px', borderRadius:8, border:'1px solid var(--color-border)', background:'var(--color-card)', color:'var(--color-text)' }}>Cancelar</button>
                 <button type="submit" style={{ padding:'8px 12px', borderRadius:8, border:'none', background:'var(--color-primary)', color:'var(--color-on-primary)', fontWeight:600 }}>Guardar</button>

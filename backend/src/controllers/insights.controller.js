@@ -135,11 +135,17 @@ exports.list = async (req, res) => {
 
     // TOTALES del mes (applied=1)
     // Los ahorros NO se cuentan como ingresos ni egresos, son una categoría independiente
+    // Solo considerar movimientos de cuentas marcadas con incluir_en_calculos = true
+    // Excluir transferencias internas de los cálculos
     let incRow = { total: 0 };
     try {
       const [[row]] = await timedQuery(
-      `SELECT COALESCE(SUM(monto),0) AS total FROM movimientos
-       WHERE usuario_id = ? AND applied = 1 AND tipo = 'ingreso' AND DATE(fecha) BETWEEN ? AND ?`,
+      `SELECT COALESCE(SUM(m.monto),0) AS total FROM movimientos m
+       INNER JOIN cuentas c ON m.cuenta_id = c.id
+       LEFT JOIN categorias cat ON m.categoria_id = cat.id
+       WHERE m.usuario_id = ? AND m.applied = 1 AND m.tipo = 'ingreso' 
+       AND DATE(m.fecha) BETWEEN ? AND ? AND c.incluir_en_calculos = 1
+       AND (cat.nombre IS NULL OR cat.nombre != 'Transferencia Interna')`,
       [usuario_id, first, last],
   Math.min(3000, quickMode ? timeLeftQuick() : timeLeft())
     );
@@ -148,8 +154,12 @@ exports.list = async (req, res) => {
     let expRow = { total: 0 };
     try {
       const [[row]] = await timedQuery(
-      `SELECT COALESCE(SUM(monto),0) AS total FROM movimientos
-       WHERE usuario_id = ? AND applied = 1 AND tipo = 'egreso' AND DATE(fecha) BETWEEN ? AND ?`,
+      `SELECT COALESCE(SUM(m.monto),0) AS total FROM movimientos m
+       INNER JOIN cuentas c ON m.cuenta_id = c.id
+       LEFT JOIN categorias cat ON m.categoria_id = cat.id
+       WHERE m.usuario_id = ? AND m.applied = 1 AND m.tipo = 'egreso' 
+       AND DATE(m.fecha) BETWEEN ? AND ? AND c.incluir_en_calculos = 1
+       AND (cat.nombre IS NULL OR cat.nombre != 'Transferencia Interna')`,
       [usuario_id, first, last],
   Math.min(3000, quickMode ? timeLeftQuick() : timeLeft())
     );
@@ -158,8 +168,12 @@ exports.list = async (req, res) => {
     let ahorroRow = { total: 0 };
     try {
       const [[row]] = await timedQuery(
-      `SELECT COALESCE(SUM(monto),0) AS total FROM movimientos
-       WHERE usuario_id = ? AND applied = 1 AND tipo = 'ahorro' AND DATE(fecha) BETWEEN ? AND ?`,
+      `SELECT COALESCE(SUM(m.monto),0) AS total FROM movimientos m
+       INNER JOIN cuentas c ON m.cuenta_id = c.id
+       LEFT JOIN categorias cat ON m.categoria_id = cat.id
+       WHERE m.usuario_id = ? AND m.applied = 1 AND m.tipo = 'ahorro' 
+       AND DATE(m.fecha) BETWEEN ? AND ? AND c.incluir_en_calculos = 1
+       AND (cat.nombre IS NULL OR cat.nombre != 'Transferencia Interna')`,
       [usuario_id, first, last],
   Math.min(3000, quickMode ? timeLeftQuick() : timeLeft())
     );
@@ -236,10 +250,14 @@ exports.list = async (req, res) => {
       let spentRows = [];
       try {
         const [srows] = await timedQuery(
-        `SELECT categoria_id, SUM(monto) AS gastado
-         FROM movimientos
-         WHERE usuario_id = ? AND tipo = 'egreso' AND applied = 1 AND DATE(fecha) BETWEEN ? AND ?
-         GROUP BY categoria_id`,
+        `SELECT m.categoria_id, SUM(m.monto) AS gastado
+         FROM movimientos m
+         INNER JOIN cuentas c ON m.cuenta_id = c.id
+         LEFT JOIN categorias cat ON m.categoria_id = cat.id
+         WHERE m.usuario_id = ? AND m.tipo = 'egreso' AND m.applied = 1 
+         AND DATE(m.fecha) BETWEEN ? AND ? AND c.incluir_en_calculos = 1
+         AND (cat.nombre IS NULL OR cat.nombre != 'Transferencia Interna')
+         GROUP BY m.categoria_id`,
         [usuario_id, first, last], Math.min(1800, quickMode ? timeLeftQuick() : timeLeft())
         );
         spentRows = srows || [];

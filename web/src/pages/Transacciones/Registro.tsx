@@ -549,64 +549,8 @@ export default function Registro() {
 
   return (
     <div style={{ maxWidth: 900, margin: '32px auto', padding: '0 16px' }}>
-      {/* Plantillas Rápidas */}
-      {plantillas.length > 0 && (
-        <div style={{ 
-          background: 'var(--color-card)', 
-          borderRadius: 12, 
-          boxShadow: '0 2px 8px var(--card-shadow)', 
-          padding: 24, 
-          marginBottom: 24 
-        }}>
-          <h3 style={{ marginBottom: 16, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
-            {React.createElement(FaBolt as any, { style: { fontSize: 20, color: '#f59e0b' } })}
-            Plantillas Rápidas
-          </h3>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
-            gap: 12 
-          }}>
-            {plantillas.map((plantilla, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => aplicarPlantilla(plantilla)}
-                style={{
-                  background: `linear-gradient(135deg, ${plantilla.color}15, ${plantilla.color}30)`,
-                  border: `2px solid ${plantilla.color}50`,
-                  borderRadius: 10,
-                  padding: 16,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  textAlign: 'left'
-                }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-              >
-                <div style={{ fontSize: 28, marginBottom: 8 }}>{renderIcon(plantilla.icon, { fontSize: 28 })}</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>
-                  {plantilla.descripcion}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
-                  ~S/ {plantilla.montoPromedio}
-                </div>
-                <div style={{ 
-                  fontSize: 10, 
-                  color: 'var(--color-text-secondary)', 
-                  marginTop: 6,
-                  opacity: 0.7 
-                }}>
-                  {plantilla.count} {plantilla.count === 1 ? 'vez' : 'veces'}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Formulario Principal */}
-      <div style={{ background: 'var(--color-card)', borderRadius: 12, boxShadow: '0 2px 8px var(--card-shadow)', padding: 32 }}>
+      <div style={{ background: 'var(--color-card)', borderRadius: 12, boxShadow: '0 2px 8px var(--card-shadow)', padding: 32, marginBottom: 24 }}>
         <div className="registro-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
           <h1 style={{ margin: 0 }}>Registro de Movimientos</h1>
         </div>
@@ -931,6 +875,62 @@ export default function Registro() {
         </button>
       </form>
       </div>
+
+      {/* Plantillas Rápidas */}
+      {plantillas.length > 0 && (
+        <div style={{ 
+          background: 'var(--color-card)', 
+          borderRadius: 12, 
+          boxShadow: '0 2px 8px var(--card-shadow)', 
+          padding: 24, 
+          marginTop: 24 
+        }}>
+          <h3 style={{ marginBottom: 16, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+            {React.createElement(FaBolt as any, { style: { fontSize: 20, color: '#f59e0b' } })}
+            Plantillas Rápidas
+          </h3>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
+            gap: 12 
+          }}>
+            {plantillas.map((plantilla, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => aplicarPlantilla(plantilla)}
+                style={{
+                  background: `linear-gradient(135deg, ${plantilla.color}15, ${plantilla.color}30)`,
+                  border: `2px solid ${plantilla.color}50`,
+                  borderRadius: 10,
+                  padding: 16,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  textAlign: 'left'
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div style={{ fontSize: 28, marginBottom: 8 }}>{renderIcon(plantilla.icon, { fontSize: 28 })}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>
+                  {plantilla.descripcion}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                  ~S/ {plantilla.montoPromedio}
+                </div>
+                <div style={{ 
+                  fontSize: 10, 
+                  color: 'var(--color-text-secondary)', 
+                  marginTop: 6,
+                  opacity: 0.7 
+                }}>
+                  {plantilla.count} {plantilla.count === 1 ? 'vez' : 'veces'}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
