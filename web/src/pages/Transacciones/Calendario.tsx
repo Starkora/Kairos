@@ -72,10 +72,10 @@ export default function Calendario() {
   const [movimientosRecurrentes, setMovimientosRecurrentes] = React.useState([]);
   const [exportMode, setExportMode] = React.useState(false);
   // Filtros y búsqueda
-  const defaultFilters = React.useMemo(() => ({ ingreso: true, egreso: true, ahorro: true, transferencia: true }), []);
-  const [filters, setFilters] = React.useState<{ ingreso: boolean; egreso: boolean; ahorro: boolean; transferencia: boolean }>(defaultFilters);
+  const defaultFilters = React.useMemo(() => ({ ingreso: true, egreso: true, ahorro: true, transferencia: true, pago_tarjeta: true }), []);
+  const [filters, setFilters] = React.useState<{ ingreso: boolean; egreso: boolean; ahorro: boolean; transferencia: boolean; pago_tarjeta: boolean }>(defaultFilters);
   const [search, setSearch] = React.useState('');
-  const [savedPresets, setSavedPresets] = React.useState<Array<{ name: string; filters: { ingreso: boolean; egreso: boolean; ahorro: boolean; transferencia: boolean } }>>([]);
+  const [savedPresets, setSavedPresets] = React.useState<Array<{ name: string; filters: { ingreso: boolean; egreso: boolean; ahorro: boolean; transferencia: boolean; pago_tarjeta: boolean } }>>([]);
   const [selectedPreset, setSelectedPreset] = React.useState<string>('');
   const [showExportMenu, setShowExportMenu] = React.useState(false);
   const [showQuickMenu, setShowQuickMenu] = React.useState(false);
@@ -1220,23 +1220,23 @@ export default function Calendario() {
           <button type="button" className="btn" onClick={() => { setShowQuickMenu(v => !v); setShowExportMenu(false); setShowPresetsMenu(false); }}>Vistas rápidas ▾</button>
           {showQuickMenu && (
             <div className="menu-popover" style={{ minWidth: 220 }}>
-              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: true }); setShowQuickMenu(false); }}>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: true, pago_tarjeta: true }); setShowQuickMenu(false); }}>
                 <span>{React.createElement(FaEye as any, { style: { fontSize: 14 } })}</span>
                 <span>Todos</span>
               </div>
-              <div className="menu-item" onClick={() => { setFilters({ ingreso: false, egreso: true, ahorro: false, transferencia: false }); setShowQuickMenu(false); }}>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: false, egreso: true, ahorro: false, transferencia: false, pago_tarjeta: false }); setShowQuickMenu(false); }}>
                 <span>{React.createElement(FaArrowDown as any, { style: { fontSize: 14, color: '#f44336' } })}</span>
                 <span>Solo egresos</span>
               </div>
-              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: false, ahorro: true, transferencia: false }); setShowQuickMenu(false); }}>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: false, ahorro: true, transferencia: false, pago_tarjeta: false }); setShowQuickMenu(false); }}>
                 <span>{React.createElement(FaCoins as any, { style: { fontSize: 14, color: '#4caf50' } })}</span>
                 <span>Ingresos/Ahorros</span>
               </div>
-              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: false }); setShowQuickMenu(false); }}>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: true, egreso: true, ahorro: true, transferencia: false, pago_tarjeta: false }); setShowQuickMenu(false); }}>
                 <span>{React.createElement(FaBan as any, { style: { fontSize: 14 } })}</span>
                 <span>Sin transferencias</span>
               </div>
-              <div className="menu-item" onClick={() => { setFilters({ ingreso: false, egreso: false, ahorro: false, transferencia: true }); setShowQuickMenu(false); }}>
+              <div className="menu-item" onClick={() => { setFilters({ ingreso: false, egreso: false, ahorro: false, transferencia: true, pago_tarjeta: false }); setShowQuickMenu(false); }}>
                 <span>{React.createElement(FaExchangeAlt as any, { style: { fontSize: 14 } })}</span>
                 <span>Solo transferencias</span>
               </div>
@@ -1518,7 +1518,7 @@ export default function Calendario() {
               </h3>
           {/* Controles de filtro (segmentado) */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 12 }}>
-            {(['ingreso','egreso','ahorro','transferencia'] as const).map(t => (
+            {(['ingreso','egreso','ahorro','transferencia','pago_tarjeta'] as const).map(t => (
               <button key={t}
                 onClick={() => setFilters(f => ({ ...f, [t]: !f[t] }))}
                 style={{
@@ -1526,7 +1526,7 @@ export default function Calendario() {
                   background: filters[t] ? 'var(--color-accent)' : 'var(--color-card)',
                   color: filters[t] ? '#fff' : 'var(--color-text)', fontWeight: 700
                 }}>
-                {t.charAt(0).toUpperCase() + t.slice(1)}
+                {t === 'pago_tarjeta' ? 'Pago Tarjeta' : t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
