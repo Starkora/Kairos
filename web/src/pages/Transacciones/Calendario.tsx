@@ -199,6 +199,17 @@ export default function Calendario() {
     }
   }, []);
 
+  const refreshCuentas = React.useCallback(async () => {
+    try {
+      const apiFetch = (await import('../../utils/apiFetch')).default;
+      const res = await apiFetch(`${API_BASE}/api/cuentas?plataforma=web`);
+      const data = res.ok ? await res.json() : [];
+      setCuentas(Array.isArray(data) ? data : []);
+    } catch {
+      setCuentas([]);
+    }
+  }, []);
+
   React.useEffect(() => {
     refreshMovimientos();
     // Escuchar evento para refrescar desde Registro
@@ -400,21 +411,21 @@ export default function Calendario() {
         agrupados.push(...arr);
         return;
       }
-      // Identificar origen (cuenta que paga) y destino (tarjeta que recibe pago) por descripción
-      const origen = arr.find(a => String(a.descripcion || '').toLowerCase().includes('pago de'));
-      const destino = arr.find(a => String(a.descripcion || '').toLowerCase().includes('pago desde'));
-      const monto = (origen || destino)?.monto || arr[0].monto;
-      const origenCuenta = origen?.cuenta || arr[0]?.cuenta || 'Origen';
-      const destinoCuenta = destino?.cuenta || arr[1]?.cuenta || 'Destino';
+      // Identificar origen ("Pago de" = cuenta que paga) y destino ("Pago desde" = tarjeta que recibe pago)
+      const pago = arr.find(a => String(a.descripcion || '').toLowerCase().includes('pago de'));
+      const desde = arr.find(a => String(a.descripcion || '').toLowerCase().includes('pago desde'));
+      const monto = (pago || desde)?.monto || arr[0].monto;
+      const tarjetaCuenta = pago?.cuenta || arr[0]?.cuenta || 'Tarjeta';
+      const origenCuenta = desde?.cuenta || arr[1]?.cuenta || 'Cuenta';
       agrupados.push({
         id: `pago-tarjeta-${code}`,
         tipo: 'pago_tarjeta',
         monto,
-        descripcion: `Pago Tarjeta: ${origenCuenta} → ${destinoCuenta}`,
+        descripcion: `Pago Tarjeta: ${origenCuenta} → ${tarjetaCuenta}`,
         icon: React.createElement(FaCreditCard as any),
         color: '#ff6b6b',
-        cuenta: `${origenCuenta} → ${destinoCuenta}`,
-        _pagoTarjeta: { code, origenId: origen?.id, destinoId: destino?.id }
+        cuenta: `${origenCuenta} → ${tarjetaCuenta}`,
+        _pagoTarjeta: { code, origenId: pago?.id, destinoId: desde?.id }
       });
     });
     
@@ -481,16 +492,17 @@ export default function Calendario() {
   }, [todosMovimientos]);
 
   // Agrupar movimientos por categoría (si el toggle está activo)
+  // IMPORTANTE: Usar movimientosDelDiaAgrupados para evitar duplicar ahorros y pagos de tarjeta
   const movimientosPorCategoria = React.useMemo(() => {
     if (!agruparPorCategoria) return null;
-    const grupos = new Map<string, typeof movimientosDelDia>();
-    movimientosDelDia.forEach(m => {
+    const grupos = new Map<string, typeof movimientosDelDiaAgrupados>();
+    movimientosDelDiaAgrupados.forEach(m => {
       const catNombre = m.categoria || m.categoria_nombre || 'Sin categoría';
       if (!grupos.has(catNombre)) grupos.set(catNombre, []);
       grupos.get(catNombre)!.push(m);
     });
     return grupos;
-  }, [movimientosDelDia, agruparPorCategoria]);
+  }, [movimientosDelDiaAgrupados, agruparPorCategoria]);
 
   // Calcular recordatorios de movimientos recurrentes pendientes
   const recordatoriosPendientes = React.useMemo(() => {
@@ -607,6 +619,26 @@ export default function Calendario() {
         window.location.href = '/movimientos-recurrentes';
       }
       return;
+    }
+    
+    // DETECTAR movimientos pareados por marcadores en descripción (incluso si no pasaron por agrupamiento)
+    const movDesc = String(mov?.descripcion || '');
+    const matchTransfer = movDesc.match(/\[TRANSFER#([^\]]+)\]/i);
+    const matchAhorro = movDesc.match(/\[AHORRO#([^\]]+)\]/i);
+    const matchPagoTarjeta = movDesc.match(/\[PAGO_TARJETA#([^\]]+)\]/i);
+    
+    // Si detectamos marcador pero no tiene las propiedades de agrupamiento, crearlas para bloquear edición
+    if (matchTransfer && !mov._transfer) {
+      mov._transfer = { code: matchTransfer[1] };
+      mov.tipo = 'transferencia';
+    }
+    if (matchAhorro && !mov._ahorro) {
+      mov._ahorro = { code: matchAhorro[1] };
+      mov.tipo = 'ahorro';
+    }
+    if (matchPagoTarjeta && !mov._pagoTarjeta) {
+      mov._pagoTarjeta = { code: matchPagoTarjeta[1] };
+      mov.tipo = 'pago_tarjeta';
     }
     
     // Si es un movimiento agrupado (transferencia, ahorro o pago de tarjeta), informar que debe editar individualmente
@@ -832,7 +864,7 @@ export default function Calendario() {
       
       if (res.ok) {
         Swal.fire({ icon: 'success', title: 'Movimiento actualizado', timer: 1200, showConfirmButton: false });
-        await refreshMovimientos();
+        await Promise.all([refreshMovimientos(), refreshCuentas()]);
       } else {
         const data = await res.json().catch(() => ({}));
         Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo actualizar el movimiento.' });
@@ -849,7 +881,7 @@ export default function Calendario() {
       const res = await apiFetch(`${API_BASE}/api/movimientos-recurrentes/${mov.id}/aplicar`, { method: 'POST' });
       if (res.ok) {
         Swal.fire({ icon: 'success', title: 'Aplicado hoy', timer: 1000, showConfirmButton: false });
-        await refreshMovimientos();
+        await Promise.all([refreshMovimientos(), refreshCuentas()]);
       } else {
         const data = await res.json().catch(() => ({}));
         Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo aplicar.' });
@@ -904,7 +936,7 @@ export default function Calendario() {
         const res = await apiFetch(`${API_BASE}/api/movimientos-recurrentes/${mov.id}`, { method: 'DELETE' });
         if (res.ok) {
           Swal.fire({ icon: 'success', title: 'Serie eliminada', timer: 1000, showConfirmButton: false });
-          await refreshMovimientos();
+          await Promise.all([refreshMovimientos(), refreshCuentas()]);
         } else {
           const data = await res.json().catch(() => ({}));
           Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo eliminar la serie.' });
@@ -914,6 +946,39 @@ export default function Calendario() {
       }
       return;
     }
+    
+    // DETECTAR movimientos pareados por marcadores en descripción (incluso si no pasaron por agrupamiento)
+    const movDesc = String(mov?.descripcion || '');
+    const matchTransfer = movDesc.match(/\[TRANSFER#([^\]]+)\]/i);
+    const matchAhorro = movDesc.match(/\[AHORRO#([^\]]+)\]/i);
+    const matchPagoTarjeta = movDesc.match(/\[PAGO_TARJETA#([^\]]+)\]/i);
+    
+    // Si detectamos marcador pero no tiene las propiedades de agrupamiento, crearlas
+    if (matchTransfer && !mov._transfer) {
+      const code = matchTransfer[1];
+      const matchBoth = todosMovimientos.filter((m: any) => String(m.descripcion || '').includes(`[TRANSFER#${code}]`));
+      const eg = matchBoth.find((x: any) => (String(x.tipo || '').toLowerCase()) === 'egreso');
+      const ing = matchBoth.find((x: any) => (String(x.tipo || '').toLowerCase()) === 'ingreso');
+      mov._transfer = { code, origenId: eg?.id, destinoId: ing?.id };
+      mov.tipo = 'transferencia';
+    }
+    if (matchAhorro && !mov._ahorro) {
+      const code = matchAhorro[1];
+      const matchBoth = todosMovimientos.filter((m: any) => String(m.descripcion || '').includes(`[AHORRO#${code}]`));
+      const origen = matchBoth.find((x: any) => String(x.descripcion || '').toLowerCase().includes('ahorro para'));
+      const destino = matchBoth.find((x: any) => String(x.descripcion || '').toLowerCase().includes('ahorro desde'));
+      mov._ahorro = { code, origenId: origen?.id, destinoId: destino?.id };
+      mov.tipo = 'ahorro';
+    }
+    if (matchPagoTarjeta && !mov._pagoTarjeta) {
+      const code = matchPagoTarjeta[1];
+      const matchBoth = todosMovimientos.filter((m: any) => String(m.descripcion || '').includes(`[PAGO_TARJETA#${code}]`));
+      const pago = matchBoth.find((x: any) => String(x.descripcion || '').toLowerCase().includes('pago de'));
+      const desde = matchBoth.find((x: any) => String(x.descripcion || '').toLowerCase().includes('pago desde'));
+      mov._pagoTarjeta = { code, origenId: pago?.id, destinoId: desde?.id };
+      mov.tipo = 'pago_tarjeta';
+    }
+    
     // Caso especial: transferencia agrupada
     if ((mov?.tipo || '').toLowerCase() === 'transferencia' && mov?._transfer) {
       // Preparar snapshot para deshacer (recrear transferencia)
@@ -967,7 +1032,7 @@ export default function Calendario() {
               }
             } catch {}
           }
-          await refreshMovimientos();
+          await Promise.all([refreshMovimientos(), refreshCuentas()]);
         } else {
           Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar completamente la transferencia.' });
         }
@@ -1031,7 +1096,7 @@ export default function Calendario() {
               }
             } catch {}
           }
-          await refreshMovimientos();
+          await Promise.all([refreshMovimientos(), refreshCuentas()]);
         } else {
           Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar completamente el ahorro.' });
         }
@@ -1094,7 +1159,7 @@ export default function Calendario() {
               }
             } catch {}
           }
-          await refreshMovimientos();
+          await Promise.all([refreshMovimientos(), refreshCuentas()]);
         } else {
           Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar completamente el pago de tarjeta.' });
         }
@@ -1157,7 +1222,7 @@ export default function Calendario() {
             }
           } catch {}
         }
-        await refreshMovimientos();
+        await Promise.all([refreshMovimientos(), refreshCuentas()]);
       } else {
         const data = await res.json().catch(() => ({}));
         Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo eliminar el movimiento.' });

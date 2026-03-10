@@ -164,10 +164,11 @@ export default function Dashboard() {
     });
   }, [movimientos, year, month, cuentaSeleccionada, today]);
   
-  // Función helper para identificar movimientos internos (transferencias, ahorros, pagos de tarjeta, pagos de deudas, aportes a metas)
+  // Función helper para identificar movimientos internos que NO deben contarse en indicadores de ingreso/egreso
+  // (transferencias, ahorros, pagos de tarjeta, pagos de deudas, aportes a metas)
   const esMovimientoInterno = React.useCallback((mov: any): boolean => {
     const desc = String(mov.descripcion || '').toLowerCase();
-    // Verificar marcadores - TODOS los lados de transferencias, ahorros y pagos de tarjeta están marcados y deben excluirse
+    // Verificar marcadores - TODOS los lados de transferencias, ahorros y pagos de tarjeta están marcados
     return (
       /\[transfer#/i.test(desc) ||
       /\[ahorro#/i.test(desc) ||
@@ -184,8 +185,11 @@ export default function Dashboard() {
   // Calcular totales
   const totalIngreso = filteredMovs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
   const totalEgreso = filteredMovs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto), 0);
-  // Ahorro registrado explícitamente (movimientos cuyo tipo es 'ahorro')
-  const totalAhorro = filteredMovs.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + Number(m.monto), 0);
+  // Ahorro: contar solo el lado del ORIGEN (descripción contiene "ahorro para") para no duplicar
+  // Usar visibleMovimientos (no filteredMovs) porque los ahorros tienen marcador [AHORRO#] y se excluyen en filteredMovs
+  const totalAhorro = visibleMovimientos
+    .filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro para'))
+    .reduce((acc, m) => acc + Number(m.monto), 0);
 
   // Indicadores
   const saldoActual = React.useMemo(() => {
@@ -262,26 +266,30 @@ export default function Dashboard() {
   // Los meses de comparación ya no se calculan automáticamente, se usan los estados comparisonCurrentMonth/Year y comparisonPreviousMonth/Year
 
   const getCurrentMonthData = () => {
-    const movs = movimientos.filter(m => {
+    const allMovs = movimientos.filter(m => {
       if (!m.fecha) return false;
       const d = new Date(m.fecha);
       return d.getFullYear() === comparisonCurrentYear && d.getMonth() === comparisonCurrentMonth;
-    }).filter(m => !esMovimientoInterno(m));
+    });
+    const movs = allMovs.filter(m => !esMovimientoInterno(m));
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
-    const ahorro = movs.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    // Ahorro: contar solo el lado del ORIGEN (descripción contiene "ahorro para") para no duplicar
+    const ahorro = allMovs.filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro para')).reduce((acc, m) => acc + parseMonto(m.monto), 0);
     return { ingreso, gasto, ahorro };
   };
 
   const getPreviousMonthData = () => {
-    const movs = movimientos.filter(m => {
+    const allMovs = movimientos.filter(m => {
       if (!m.fecha) return false;
       const d = new Date(m.fecha);
       return d.getFullYear() === comparisonPreviousYear && d.getMonth() === comparisonPreviousMonth;
-    }).filter(m => !esMovimientoInterno(m));
+    });
+    const movs = allMovs.filter(m => !esMovimientoInterno(m));
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
-    const ahorro = movs.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    // Ahorro: contar solo el lado del ORIGEN (descripción contiene "ahorro para") para no duplicar
+    const ahorro = allMovs.filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro para')).reduce((acc, m) => acc + parseMonto(m.monto), 0);
     return { ingreso, gasto, ahorro };
   };
 

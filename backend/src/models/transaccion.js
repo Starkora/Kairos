@@ -66,13 +66,15 @@ const Transaccion = {
     );
     
     // Actualizar saldo solo si se aplica de inmediato
-    if (applied) {
+    if (applied === 1) {
       // Para ahorros, distinguir entre origen (egreso) y destino (ingreso) por descripción
       let isIngreso = tipoNorm === 'ingreso';
       if (tipoNorm === 'ahorro') {
+        // "Ahorro para X" = origen (se debe restar del saldo)
+        // "Ahorro desde Y" = destino (se debe sumar al saldo)
         isIngreso = desc.includes('ahorro desde');  // Solo es ingreso si es el destino
       }
-      const esPagoTarjeta = tipoNorm === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'));
+      const esPagoTarjeta = tipoNorm === 'pago_tarjeta';
       await actualizarSaldo(cuenta_id, monto, isIngreso, esPagoTarjeta);
     }
     
@@ -90,7 +92,10 @@ const Transaccion = {
     const desc = (descripcion || '').toLowerCase();
     
     // Revertir efecto en la cuenta solo si estaba aplicado
-    if (applied) {
+    // Convertir applied a número para asegurar comparación correcta (puede venir como string, boolean o number)
+    const wasApplied = Number(applied) === 1 || applied === true;
+    
+    if (wasApplied) {
       const isTarjeta = await esTarjetaCredito(cuenta_id);
       
       // Para ahorros, distinguir entre origen (egreso) y destino (ingreso) por descripción
@@ -161,7 +166,9 @@ const Transaccion = {
     const old = rows[0];
     
     // Revertir efecto del movimiento antiguo solo si estaba aplicado
-    if (old.applied) {
+    const oldWasApplied = Number(old.applied) === 1 || old.applied === true;
+    
+    if (oldWasApplied) {
       const oldTipoNorm = (old.tipo || '').toLowerCase();
       const oldDesc = (old.descripcion || '').toLowerCase();
       
@@ -171,7 +178,7 @@ const Transaccion = {
         wasIngreso = oldDesc.includes('ahorro desde');  // Solo es ingreso si es el destino
       }
       
-      const wasPagoTarjeta = oldTipoNorm === 'transferencia' && (oldDesc.includes('pago') || oldDesc.includes('tarjeta'));
+      const wasPagoTarjeta = oldTipoNorm === 'pago_tarjeta';
       const isTarjeta = await esTarjetaCredito(old.cuenta_id);
       
       if (isTarjeta) {
@@ -203,13 +210,13 @@ const Transaccion = {
     const newApplied = fechaStr <= todayStr ? 1 : 0;
     
     // Aplicar efecto del nuevo movimiento solo si corresponde
-    if (newApplied) {
+    if (newApplied === 1) {
       // Para ahorros, distinguir entre origen (egreso) y destino (ingreso) por descripción
       let isIngreso = tipoNorm === 'ingreso';
       if (tipoNorm === 'ahorro') {
         isIngreso = desc.includes('ahorro desde');  // Solo es ingreso si es el destino
       }
-      const esPagoTarjeta = tipoNorm === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'));
+      const esPagoTarjeta = tipoNorm === 'pago_tarjeta';
       await actualizarSaldo(cuenta_id, monto, isIngreso, esPagoTarjeta);
     }
     
@@ -233,7 +240,7 @@ const Transaccion = {
         if (tipoNorm === 'ahorro') {
           isIngreso = desc.includes('ahorro desde');  // Solo es ingreso si es el destino
         }
-        const esPagoTarjeta = tipoNorm === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'));
+        const esPagoTarjeta = tipoNorm === 'pago_tarjeta';
         
         await actualizarSaldo(mov.cuenta_id, mov.monto, isIngreso, esPagoTarjeta);
         await db.query('UPDATE movimientos SET applied = 1 WHERE id = ?', [mov.id]);
