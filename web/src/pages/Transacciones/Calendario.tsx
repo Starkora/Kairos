@@ -656,7 +656,7 @@ export default function Calendario() {
     return individual;
   };
 
-  const handleEditMovimiento = async (mov) => {
+  const handleEditMovimiento = async (mov, skipGroupCheck = false) => {
     // Si es instancia de movimiento recurrente, redirigir/derivar a edición de serie
     if (mov && (mov._recurrente || mov.frecuencia)) {
       const result = await Swal.fire({
@@ -674,36 +674,38 @@ export default function Calendario() {
       return;
     }
     
-    // DETECTAR movimientos pareados por marcadores en descripción (incluso si no pasaron por agrupamiento)
-    const movDesc = String(mov?.descripcion || '');
-    const matchTransfer = movDesc.match(/\[TRANSFER#([^\]]+)\]/i);
-    const matchAhorro = movDesc.match(/\[AHORRO#([^\]]+)\]/i);
-    const matchPagoTarjeta = movDesc.match(/\[PAGO_TARJETA#([^\]]+)\]/i);
-    
-    // Si detectamos marcador pero no tiene las propiedades de agrupamiento, crearlas para bloquear edición
-    if (matchTransfer && !mov._transfer) {
-      mov._transfer = { code: matchTransfer[1] };
-      mov.tipo = 'transferencia';
-    }
-    if (matchAhorro && !mov._ahorro) {
-      mov._ahorro = { code: matchAhorro[1] };
-      mov.tipo = 'ahorro';
-    }
-    if (matchPagoTarjeta && !mov._pagoTarjeta) {
-      mov._pagoTarjeta = { code: matchPagoTarjeta[1] };
-      mov.tipo = 'pago_tarjeta';
-    }
-    
-    // Si es un movimiento agrupado (transferencia, ahorro o pago de tarjeta), informar que debe editar individualmente
-    if (mov && (mov._transfer || mov._ahorro || mov._pagoTarjeta)) {
-      const tipoMov = mov._transfer ? 'transferencia' : (mov._ahorro ? 'ahorro' : 'pago de tarjeta');
-      await Swal.fire({
-        title: `Movimiento agrupado (${tipoMov})`,
-        html: `<div style="font-size:1rem">Este ${tipoMov} está compuesto por dos movimientos vinculados. Para editar, haz clic directamente en cada movimiento individual en la lista sin agrupar, o elimínalo y créalo nuevamente.</div>`,
-        icon: 'info',
-        confirmButtonText: 'Entendido'
-      });
-      return;
+    if (!skipGroupCheck) {
+      // DETECTAR movimientos pareados por marcadores en descripción (incluso si no pasaron por agrupamiento)
+      const movDesc = String(mov?.descripcion || '');
+      const matchTransfer = movDesc.match(/\[TRANSFER#([^\]]+)\]/i);
+      const matchAhorro = movDesc.match(/\[AHORRO#([^\]]+)\]/i);
+      const matchPagoTarjeta = movDesc.match(/\[PAGO_TARJETA#([^\]]+)\]/i);
+      
+      // Si detectamos marcador pero no tiene las propiedades de agrupamiento, crearlas para bloquear edición
+      if (matchTransfer && !mov._transfer) {
+        mov._transfer = { code: matchTransfer[1] };
+        mov.tipo = 'transferencia';
+      }
+      if (matchAhorro && !mov._ahorro) {
+        mov._ahorro = { code: matchAhorro[1] };
+        mov.tipo = 'ahorro';
+      }
+      if (matchPagoTarjeta && !mov._pagoTarjeta) {
+        mov._pagoTarjeta = { code: matchPagoTarjeta[1] };
+        mov.tipo = 'pago_tarjeta';
+      }
+      
+      // Si es un movimiento agrupado (transferencia, ahorro o pago de tarjeta), informar que debe usar el desglose
+      if (mov && (mov._transfer || mov._ahorro || mov._pagoTarjeta)) {
+        const tipoMov = mov._transfer ? 'transferencia' : (mov._ahorro ? 'ahorro' : 'pago de tarjeta');
+        await Swal.fire({
+          title: `Movimiento agrupado (${tipoMov})`,
+          html: `<div style="font-size:1rem">Este ${tipoMov} está compuesto por dos movimientos vinculados.<br><br>Usa el botón <b>►</b> para desplegar el desglose y editar cada movimiento individualmente.</div>`,
+          icon: 'info',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
     }
     
     try {
@@ -2075,7 +2077,7 @@ export default function Calendario() {
                                       <span style={{ fontWeight: 600, fontSize: 14 }}>
                                         S/ {Number(indMov.monto).toFixed(2)}
                                       </span>
-                                      <button onClick={() => handleEditMovimiento(indMov)} style={{
+                                      <button onClick={() => handleEditMovimiento(indMov, true)} style={{
                                         background: 'var(--color-accent)',
                                         border: 'none',
                                         color: '#fff',
@@ -2174,7 +2176,7 @@ export default function Calendario() {
                                       <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--color-text)' }}>
                                         S/ {Number(indMov.monto).toFixed(2)}
                                       </span>
-                                      <button onClick={() => handleEditMovimiento(indMov)} style={{
+                                      <button onClick={() => handleEditMovimiento(indMov, true)} style={{
                                         background: 'var(--color-accent)',
                                         border: 'none',
                                         color: '#fff',
@@ -2306,7 +2308,7 @@ export default function Calendario() {
                                 <span style={{ fontWeight: 600, fontSize: 14 }}>
                                   S/ {Number(indMov.monto).toFixed(2)}
                                 </span>
-                                <button onClick={() => handleEditMovimiento(indMov)} style={{
+                                <button onClick={() => handleEditMovimiento(indMov, true)} style={{
                                   background: 'var(--color-accent)',
                                   border: 'none',
                                   color: '#fff',
@@ -2419,7 +2421,7 @@ export default function Calendario() {
                                 <span style={{ fontWeight: 800, fontSize: 18, color: 'var(--color-text)' }}>
                                   S/ {Number(indMov.monto).toFixed(2)}
                                 </span>
-                                <button onClick={() => handleEditMovimiento(indMov)} style={{
+                                <button onClick={() => handleEditMovimiento(indMov, true)} style={{
                                   background: 'var(--color-accent)',
                                   border: 'none',
                                   color: '#fff',
