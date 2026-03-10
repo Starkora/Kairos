@@ -44,12 +44,16 @@ export default function Dashboard() {
   const [presupuestos, setPresupuestos] = React.useState([]);
   const [metas, setMetas] = React.useState([]);
   const [deudas, setDeudas] = React.useState([]);
-  // Filtro de año y mes
+  // Filtro de año y mes (para el dashboard general)
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
   const [year, setYear] = React.useState(currentYear);
-  // Por defecto mostrar el mes anterior al actual
-  const [month, setMonth] = React.useState<number | 'all'>(currentMonth > 0 ? currentMonth - 1 : 11);
+  const [month, setMonth] = React.useState<number | 'all'>('all');
+  // Estados para la comparación independiente (por defecto: Febrero vs Enero)
+  const [comparisonCurrentMonth, setComparisonCurrentMonth] = React.useState<number>(1); // Febrero (índice 1)
+  const [comparisonCurrentYear, setComparisonCurrentYear] = React.useState<number>(currentYear);
+  const [comparisonPreviousMonth, setComparisonPreviousMonth] = React.useState<number>(0); // Enero (índice 0)
+  const [comparisonPreviousYear, setComparisonPreviousYear] = React.useState<number>(currentYear);
   // Permitir selección múltiple de segmentos
   const [segmentos, setSegmentos] = React.useState({ Ahorro: true, Gasto: true, Ingreso: true });
   const [categoriaModal, setCategoriaModal] = React.useState<any>(null);
@@ -255,39 +259,13 @@ export default function Dashboard() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 8); // Top 8 categorías
 
-  // Comparación mes actual vs mes anterior
-  const currentDate = new Date();
-  const currentMonthNow = currentDate.getMonth();
-  const currentYearNow = currentDate.getFullYear();
-  
-  // Si hay filtro de mes, usar ese mes. Si es 'all' y el año seleccionado es el actual, usar el mes actual.
-  // Si es 'all' y el año seleccionado es pasado, usar diciembre de ese año
-  let comparisonMonth: number;
-  let comparisonYear: number;
-  
-  if (month !== 'all') {
-    comparisonMonth = month;
-    comparisonYear = year;
-  } else {
-    // Si estamos viendo el año actual, comparar el mes actual
-    if (year === currentYearNow) {
-      comparisonMonth = currentMonthNow;
-      comparisonYear = year;
-    } else {
-      // Si es un año pasado o futuro, usar diciembre de ese año
-      comparisonMonth = 11; // Diciembre
-      comparisonYear = year;
-    }
-  }
-  
-  const previousComparisonMonth = comparisonMonth === 0 ? 11 : comparisonMonth - 1;
-  const previousComparisonYear = comparisonMonth === 0 ? comparisonYear - 1 : comparisonYear;
+  // Los meses de comparación ya no se calculan automáticamente, se usan los estados comparisonCurrentMonth/Year y comparisonPreviousMonth/Year
 
   const getCurrentMonthData = () => {
     const movs = movimientos.filter(m => {
       if (!m.fecha) return false;
       const d = new Date(m.fecha);
-      return d.getFullYear() === comparisonYear && d.getMonth() === comparisonMonth;
+      return d.getFullYear() === comparisonCurrentYear && d.getMonth() === comparisonCurrentMonth;
     });
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
@@ -299,7 +277,7 @@ export default function Dashboard() {
     const movs = movimientos.filter(m => {
       if (!m.fecha) return false;
       const d = new Date(m.fecha);
-      return d.getFullYear() === previousComparisonYear && d.getMonth() === previousComparisonMonth;
+      return d.getFullYear() === comparisonPreviousYear && d.getMonth() === comparisonPreviousMonth;
     });
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
@@ -396,9 +374,11 @@ export default function Dashboard() {
   const gastoChange = calculateChange(currentMonthData.gasto, previousMonthData.gasto);
   const ahorroChange = calculateChange(currentMonthData.ahorro, previousMonthData.ahorro);
 
-  // Balance proyectado fin de mes
+  // Balance proyectado fin de mes (usar el mes del filtro principal si está seleccionado, sino el mes actual)
   const getBalanceProyectado = () => {
-    const endOfMonth = new Date(comparisonYear, comparisonMonth + 1, 0);
+    const projMonth = month !== 'all' ? month : new Date().getMonth();
+    const projYear = year;
+    const endOfMonth = new Date(projYear, projMonth + 1, 0);
     const pendientes = movimientos.filter(m => {
       if (!m.fecha) return false;
       const d = new Date(m.fecha);
@@ -895,9 +875,50 @@ export default function Dashboard() {
 
       {/* Tarjetas de comparación mensual */}
       <div style={{ marginBottom: 32 }}>
-        <h3 style={{ marginBottom: 16, color: 'var(--color-text)' }}>
-          Comparación: {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][comparisonMonth]} vs {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][previousComparisonMonth]}
-        </h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+          <h3 style={{ margin: 0, color: 'var(--color-text)' }}>Comparación:</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <select 
+              value={comparisonCurrentYear} 
+              onChange={(e) => setComparisonCurrentYear(Number(e.target.value))}
+              style={{ padding: '6px 12px', fontSize: 14, borderRadius: 6, background: 'var(--color-input-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+            >
+              {Array.from({ length: 5 }, (_, i) => currentYear - 2 + i).map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <select 
+              value={comparisonCurrentMonth} 
+              onChange={(e) => setComparisonCurrentMonth(Number(e.target.value))}
+              style={{ padding: '6px 12px', fontSize: 14, borderRadius: 6, background: 'var(--color-input-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+            >
+              {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, idx) => (
+                <option key={idx} value={idx}>{m}</option>
+              ))}
+            </select>
+          </div>
+          <span style={{ color: 'var(--color-text-secondary)' }}>vs</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <select 
+              value={comparisonPreviousYear} 
+              onChange={(e) => setComparisonPreviousYear(Number(e.target.value))}
+              style={{ padding: '6px 12px', fontSize: 14, borderRadius: 6, background: 'var(--color-input-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+            >
+              {Array.from({ length: 5 }, (_, i) => currentYear - 2 + i).map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <select 
+              value={comparisonPreviousMonth} 
+              onChange={(e) => setComparisonPreviousMonth(Number(e.target.value))}
+              style={{ padding: '6px 12px', fontSize: 14, borderRadius: 6, background: 'var(--color-input-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+            >
+              {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, idx) => (
+                <option key={idx} value={idx}>{m}</option>
+              ))}
+            </select>
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
           {/* Tarjeta Ingresos */}
           <div className="card" style={{ flex: 1, minWidth: 250, borderLeft: '4px solid #388e3c' }}>
