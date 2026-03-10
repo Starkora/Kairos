@@ -667,7 +667,15 @@ exports.exportarExcel = async (req, res) => {
     const [rows] = await db.query(sql, params);
     const data = [
       ['id', 'tipo', 'monto', 'descripcion', 'fecha', 'cuenta', 'categoria'],
-      ...rows.map(r => [r.id, r.tipo, r.monto, r.descripcion || '', r.fecha, r.cuenta, r.categoria || ''])
+      ...rows.map(r => [
+        r.id, 
+        r.categoria === 'Transferencia Interna' ? 'Transferencia Interna' : r.tipo, 
+        r.monto, 
+        r.descripcion || '', 
+        r.fecha, 
+        r.cuenta, 
+        r.categoria || ''
+      ])
     ];
     const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
