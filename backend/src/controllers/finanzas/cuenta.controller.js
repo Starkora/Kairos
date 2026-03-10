@@ -65,35 +65,37 @@ exports.deleteById = async (req, res) => {
   const db = require('../../../config/database');
   try {
     // 1) Verificar que la cuenta pertenezca al usuario
-    const [owns] = await db.query('SELECT id FROM cuentas WHERE id = ? AND usuario_id = ? LIMIT 1', [id, usuario_id]);
+    const [owns] = await db.query('SELECT id FROM cuentas WHERE id = ? AND usuario_id = ? AND estado = "activo" LIMIT 1', [id, usuario_id]);
     if (!owns || owns.length === 0) {
       return res.status(404).json({ error: 'Cuenta no encontrada' });
     }
 
-    // 2) Verificar si hay movimientos asociados
-    const [movs] = await db.query('SELECT COUNT(*) AS total FROM movimientos WHERE cuenta_id = ?', [id]);
+    // 2) Verificar si hay movimientos asociados (activos)
+    const [movs] = await db.query('SELECT COUNT(*) AS total FROM movimientos WHERE cuenta_id = ? AND estado = "activo"', [id]);
     const total = (movs && movs[0] && Number(movs[0].total)) || 0;
     if (total > 0 && !cascade) {
       return res.status(409).json({ code: 'ACCOUNT_HAS_MOVEMENTS', message: 'La cuenta tiene movimientos registrados', count: total });
     }
 
-    // 3) Si cascade=true, eliminar movimientos primero dentro de una transacción
+    // 3) Si cascade=true, hacer soft delete de movimientos también
     if (total > 0 && cascade) {
       await db.query('START TRANSACTION');
       try {
-        await db.query('DELETE FROM movimientos WHERE cuenta_id = ?', [id]);
-        await db.query('DELETE FROM cuentas WHERE id = ?', [id]);
+        // Soft delete de movimientos
+        await db.query('UPDATE movimientos SET estado = "eliminado", eliminado_en = NOW() WHERE cuenta_id = ?', [id]);
+        // Soft delete de cuenta
+        await db.query('UPDATE cuentas SET estado = "eliminado", eliminado_en = NOW() WHERE id = ?', [id]);
         await db.query('COMMIT');
       } catch (e) {
         await db.query('ROLLBACK');
         throw e;
       }
-      return res.json({ message: 'Cuenta y movimientos eliminados', deletedMovements: total });
+      return res.json({ message: 'Cuenta y movimientos marcados como eliminados', deletedMovements: total });
     }
 
-    // 4) Sin movimientos, eliminar normalmente
+    // 4) Sin movimientos, eliminar normalmente (soft delete)
     await Cuenta.deleteById(id);
-    return res.json({ message: 'Cuenta eliminada' });
+    return res.json({ message: 'Cuenta marcada como eliminada' });
   } catch (err) {
     
     return res.status(500).json({ error: err.message || 'Error al eliminar cuenta' });
@@ -149,5 +151,33 @@ exports.sincronizarTarjeta = async (req, res) => {
   } catch (err) {
     
     res.status(500).json({ error: err.message });
+  }
+};
+
+// Obtener cuentas eliminadas (papelera)
+exports.getDeleted = async (req, res) => {
+  const usuario_id = req.user && req.user.id;
+  const plataforma = req.query.plataforma || 'web';
+  if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  
+  try {
+    const cuentas = await Cuenta.getDeletedByUsuario(usuario_id, plataforma);
+    res.json(cuentas);
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Error al obtener cuentas eliminadas' });
+  }
+};
+
+// Restaurar cuenta eliminada
+exports.restore = async (req, res) => {
+  const id = req.params.id;
+  const usuario_id = req.user && req.user.id;
+  if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  
+  try {
+    await Cuenta.restore(id);
+    res.json({ message: 'Cuenta restaurada exitosamente' });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Error al restaurar cuenta' });
   }
 };

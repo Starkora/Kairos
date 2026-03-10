@@ -44,7 +44,7 @@ const Transaccion = {
       FROM movimientos m
       JOIN cuentas c ON m.cuenta_id = c.id
       LEFT JOIN categorias cat ON m.categoria_id = cat.id
-      WHERE m.usuario_id = ? AND m.plataforma = ?
+      WHERE m.usuario_id = ? AND m.plataforma = ? AND m.estado = 'activo' AND c.estado = 'activo'
       ORDER BY m.fecha DESC, m.id DESC
     `;
     const [rows] = await db.query(sql, [usuario_id, plataforma]);
@@ -74,11 +74,11 @@ const Transaccion = {
     
     return { insertId: result.insertId };
   },
-  // Eliminar movimiento y revertir su efecto sobre la cuenta
+  // Eliminar movimiento (soft delete) y revertir su efecto sobre la cuenta
   deleteById: async (id) => {
     if (!id) throw new Error('ID requerido');
     // Obtener movimiento
-    const [rows] = await db.query('SELECT * FROM movimientos WHERE id = ?', [id]);
+    const [rows] = await db.query('SELECT * FROM movimientos WHERE id = ? AND estado = "activo"', [id]);
     if (!rows || rows.length === 0) throw new Error('Movimiento no encontrado');
     const mov = rows[0];
     const { cuenta_id, tipo, monto, applied, descripcion } = mov;
@@ -127,8 +127,11 @@ const Transaccion = {
         }
       }
     }
-    // Eliminar movimiento
-    const [res] = await db.query('DELETE FROM movimientos WHERE id = ?', [id]);
+    // Soft delete: cambiar estado a 'eliminado' en lugar de DELETE físico
+    const [res] = await db.query(
+      'UPDATE movimientos SET estado = "eliminado", eliminado_en = NOW() WHERE id = ?', 
+      [id]
+    );
     return res;
   },
   // Actualizar movimiento: revertir efecto anterior y aplicar el nuevo (maneja cambio de cuenta)
@@ -139,7 +142,7 @@ const Transaccion = {
     const desc = (descripcion || '').toLowerCase();
     
     // Obtener movimiento anterior
-    const [rows] = await db.query('SELECT * FROM movimientos WHERE id = ?', [id]);
+    const [rows] = await db.query('SELECT * FROM movimientos WHERE id = ? AND estado = "activo"', [id]);
     if (!rows || rows.length === 0) throw new Error('Movimiento no encontrado');
     const old = rows[0];
     
@@ -196,7 +199,7 @@ const Transaccion = {
   // Aplicar movimientos pendientes cuya fecha haya llegado o pasado
   applyPendingMovements: async () => {
     const todayStr = new Date().toISOString().slice(0,10);
-    const [rows] = await db.query('SELECT * FROM movimientos WHERE applied = 0 AND DATE(fecha) <= ?', [todayStr]);
+    const [rows] = await db.query('SELECT * FROM movimientos WHERE applied = 0 AND DATE(fecha) <= ? AND estado = "activo"', [todayStr]);
     for (const mov of rows) {
       try {
         const tipoNorm = (mov.tipo || '').toLowerCase();
@@ -211,6 +214,40 @@ const Transaccion = {
       }
     }
     return rows.length;
+  },
+  
+  // Obtener movimientos eliminados (para papelera/recuperación)
+  getDeletedByUsuario: async (usuario_id, plataforma) => {
+    const sql = `
+      SELECT m.id, m.tipo, m.monto, m.descripcion, m.fecha, m.cuenta_id, m.categoria_id, 
+             m.icon, m.color, m.applied, m.eliminado_en, c.nombre AS cuenta, cat.nombre AS categoria
+      FROM movimientos m
+      LEFT JOIN cuentas c ON m.cuenta_id = c.id
+      LEFT JOIN categorias cat ON m.categoria_id = cat.id
+      WHERE m.usuario_id = ? AND m.plataforma = ? AND m.estado = 'eliminado'
+      ORDER BY m.eliminado_en DESC, m.id DESC
+    `;
+    const [rows] = await db.query(sql, [usuario_id, plataforma]);
+    return rows;
+  },
+  
+  // Restaurar movimiento eliminado
+  restore: async (id) => {
+    if (!id) throw new Error('ID requerido');
+    const [result] = await db.query(
+      'UPDATE movimientos SET estado = "activo", eliminado_en = NULL, eliminado_por = NULL WHERE id = ? AND estado = "eliminado"',
+      [id]
+    );
+    if (result.affectedRows === 0) throw new Error('Movimiento no encontrado o no está eliminado');
+    return result;
+  },
+  
+  // Eliminar permanentemente (físico)
+  permanentDelete: async (id) => {
+    if (!id) throw new Error('ID requerido');
+    const [result] = await db.query('DELETE FROM movimientos WHERE id = ? AND estado = "eliminado"', [id]);
+    if (result.affectedRows === 0) throw new Error('Movimiento no encontrado o no está eliminado');
+    return result;
   }
 };
 

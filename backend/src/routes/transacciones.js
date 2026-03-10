@@ -24,6 +24,11 @@ router.post('/pagar-tarjeta', auth, transaccionController.pagarTarjeta);
 router.delete('/:id', auth, transaccionController.deleteById);
 router.put('/:id', auth, transaccionController.update);
 
+// Papelera y recuperación (rutas específicas antes de /:id genérico)
+router.get('/papelera/list', auth, transaccionController.getDeleted);
+router.post('/papelera/:id/restore', auth, transaccionController.restore);
+router.delete('/papelera/:id/permanent', auth, transaccionController.permanentDelete);
+
 // Descargar plantilla Excel para importación masiva
 router.get('/plantilla', auth, transaccionController.descargarPlantilla);
 

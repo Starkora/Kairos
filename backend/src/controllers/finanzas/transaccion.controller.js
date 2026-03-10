@@ -300,7 +300,7 @@ exports.deleteById = async (req, res) => {
   const db = require('../../../config/database');
   try {
     // Obtener info del movimiento para poder revertir pagos/aportes de deudas/metas si corresponde
-    const [rows] = await db.query('SELECT id, usuario_id, descripcion, monto FROM movimientos WHERE id = ?', [id]);
+    const [rows] = await db.query('SELECT id, usuario_id, descripcion, monto FROM movimientos WHERE id = ? AND estado = "activo"', [id]);
     if (!rows || rows.length === 0) return res.status(404).json({ error: 'Movimiento no encontrado' });
     const mov = rows[0];
     if (mov.usuario_id !== usuario_id) return res.status(403).json({ error: 'No autorizado' });
@@ -804,3 +804,46 @@ exports.exportarExcel = async (req, res) => {
     return res.status(500).json({ error: 'No se pudo generar la exportación' });
   }
 };
+
+// Obtener movimientos eliminados (papelera)
+exports.getDeleted = async (req, res) => {
+  const usuario_id = req.user && req.user.id;
+  const plataforma = req.query.plataforma || 'web';
+  if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  
+  try {
+    const movimientos = await Transaccion.getDeletedByUsuario(usuario_id, plataforma);
+    res.json(movimientos);
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Error al obtener movimientos eliminados' });
+  }
+};
+
+// Restaurar movimiento eliminado
+exports.restore = async (req, res) => {
+  const id = req.params.id;
+  const usuario_id = req.user && req.user.id;
+  if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  
+  try {
+    await Transaccion.restore(id);
+    res.json({ message: 'Movimiento restaurado exitosamente' });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Error al restaurar movimiento' });
+  }
+};
+
+// Eliminar permanentemente un movimiento
+exports.permanentDelete = async (req, res) => {
+  const id = req.params.id;
+  const usuario_id = req.user && req.user.id;
+  if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  
+  try {
+    await Transaccion.permanentDelete(id);
+    res.json({ message: 'Movimiento eliminado permanentemente' });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Error al eliminar permanentemente' });
+  }
+};
+

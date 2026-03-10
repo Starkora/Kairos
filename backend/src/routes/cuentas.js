@@ -11,5 +11,9 @@ router.put('/:id', auth, cuentaController.update);
 router.post('/:id/sincronizar-tarjeta', auth, cuentaController.sincronizarTarjeta);
 router.delete('/:id', auth, cuentaController.deleteById);
 
+// Papelera y recuperación
+router.get('/papelera/list', auth, cuentaController.getDeleted);
+router.post('/papelera/:id/restore', auth, cuentaController.restore);
+
 module.exports = router;
 

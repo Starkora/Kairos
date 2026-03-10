@@ -72,11 +72,11 @@ exports.delete = async (req, res) => {
   const usuario_id = req.user && req.user.id;
   const id = req.params.id;
   try {
-    // Eliminar movimientos relacionados antes de eliminar la categoría
-    await db.query('DELETE FROM movimientos WHERE categoria_id = ?', [id]);
-    const result = await Categoria.delete({ id, usuario_id });
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Categoría no encontrada' });
-    res.json({ message: 'Categoría eliminada' });
+    // Soft delete de movimientos relacionados antes de eliminar la categoría
+    await db.query('UPDATE movimientos SET estado = "eliminado", eliminado_en = NOW() WHERE categoria_id = ?', [id]);
+    // Soft delete de la categoría
+    await db.query('UPDATE categorias SET estado = "eliminado" WHERE id = ? AND usuario_id = ?', [id, usuario_id]);
+    res.json({ message: 'Categoría y movimientos relacionados marcados como eliminados' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

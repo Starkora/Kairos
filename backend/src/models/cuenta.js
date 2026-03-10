@@ -2,11 +2,15 @@
 
 const Cuenta = {
   getAllByUsuario: async (usuario_id, plataforma) => {
-    const [rows] = await db.query('SELECT * FROM cuentas WHERE usuario_id = ? AND plataforma = ? ORDER BY nombre', [usuario_id, plataforma]);
+    const [rows] = await db.query('SELECT * FROM cuentas WHERE usuario_id = ? AND plataforma = ? AND estado = "activo" ORDER BY nombre', [usuario_id, plataforma]);
     return rows;
   },
   deleteById: async (id) => {
-    const [result] = await db.query('DELETE FROM cuentas WHERE id = ?', [id]);
+    // Soft delete: cambiar estado a 'eliminado' en lugar de DELETE físico
+    const [result] = await db.query(
+      'UPDATE cuentas SET estado = "eliminado", eliminado_en = NOW() WHERE id = ?', 
+      [id]
+    );
     return result;
   },
   create: async (data) => {
@@ -98,7 +102,7 @@ const Cuenta = {
     
     // Calcular deuda: sumar todos los egresos y restar todos los pagos (transferencias con "pago")
     const [movimientos] = await db.query(
-      'SELECT tipo, monto, descripcion FROM movimientos WHERE cuenta_id = ? AND applied = 1',
+      'SELECT tipo, monto, descripcion FROM movimientos WHERE cuenta_id = ? AND applied = 1 AND estado = "activo"',
       [cuenta_id]
     );
     
@@ -128,6 +132,25 @@ const Cuenta = {
     );
     
     return { deuda_actual: deuda, saldo_disponible, limite_credito: cuenta.limite_credito };
+  },
+  
+  // Obtener cuentas eliminadas (para papelera/recuperación)
+  getDeletedByUsuario: async (usuario_id, plataforma) => {
+    const [rows] = await db.query(
+      'SELECT * FROM cuentas WHERE usuario_id = ? AND plataforma = ? AND estado = "eliminado" ORDER BY eliminado_en DESC',
+      [usuario_id, plataforma]
+    );
+    return rows;
+  },
+  
+  // Restaurar cuenta eliminada
+  restore: async (id) => {
+    const [result] = await db.query(
+      'UPDATE cuentas SET estado = "activo", eliminado_en = NULL, eliminado_por = NULL WHERE id = ? AND estado = "eliminado"',
+      [id]
+    );
+    if (result.affectedRows === 0) throw new Error('Cuenta no encontrada o no está eliminada');
+    return result;
   }
 };
 
