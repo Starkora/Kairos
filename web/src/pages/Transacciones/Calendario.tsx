@@ -18,7 +18,7 @@ import {
   FaUniversity, FaPiggyBank, FaList, FaBan, FaEye, FaSave, FaCalendarDay, FaFolder,
   FaStepBackward, FaEdit, FaMoneyBillWave, FaWallet, FaAppleAlt, FaCar, 
   FaCreditCard, FaBolt as FaLightning, FaGift, FaShoppingCart, FaHospital,
-  FaChevronDown, FaChevronRight
+  FaChevronDown, FaChevronRight, FaSearch, FaTimes
 } from 'react-icons/fa';
 
 type Value = Date | [Date, Date];
@@ -563,6 +563,27 @@ export default function Calendario() {
       return txt.includes(q);
     });
   }, [movimientosDelDiaAgrupados, filters, search]);
+
+  // Búsqueda global en TODOS los movimientos de todas las fechas
+  const resultadosBusquedaGlobal = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const porFecha = new Map<string, any[]>();
+    if (!q) return { total: 0, porFecha };
+    const resultados = todosMovimientos
+      .filter((m: any) => {
+        const tipo = String(m.tipo || '').toLowerCase();
+        if (!filters[tipo as keyof typeof filters]) return false;
+        const txt = `${m.descripcion || ''} ${m.cuenta || ''} ${m.categoria || ''} ${m.categoria_nombre || ''}`.toLowerCase();
+        return txt.includes(q);
+      })
+      .sort((a: any, b: any) => (b.fecha || '').localeCompare(a.fecha || ''));
+    resultados.forEach((m: any) => {
+      const f = (m.fecha || '').slice(0, 10);
+      if (!porFecha.has(f)) porFecha.set(f, []);
+      porFecha.get(f)!.push(m);
+    });
+    return { total: resultados.length, porFecha };
+  }, [todosMovimientos, search, filters]);
 
   // Handler para cambiar fecha mediante drag & drop
   const handleCambiarFecha = async (movimiento: any, nuevaFecha: Date) => {
@@ -1702,10 +1723,24 @@ export default function Calendario() {
           {React.createElement(FaClock as any, { style: { fontSize: 14 } })}
         </button>
 
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." className="input" style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', minWidth: 200 }} />
-          <button className="btn" onClick={() => { setFilters(defaultFilters); setSearch(''); setCuentaFiltro('all'); setFechaInicioManual(''); setFechaFinManual(''); }}>Limpiar</button>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 0 }}>
+          <span style={{ position: 'absolute', left: 10, color: search.trim() ? 'var(--color-accent)' : 'var(--color-muted)', pointerEvents: 'none', fontSize: 14, display: 'flex' }}>
+            {React.createElement(FaSearch as any)}
+          </span>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar en todos los movimientos..."
+            className="input"
+            style={{ padding: '6px 32px 6px 32px', borderRadius: 8, border: `1px solid ${search.trim() ? 'var(--color-accent)' : 'var(--color-input-border)'}`, minWidth: 240, transition: 'border-color 0.2s' }}
+          />
+          {search.trim() && (
+            <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-muted)', fontSize: 14, display: 'flex', alignItems: 'center', padding: 2 }}>
+              {React.createElement(FaTimes as any)}
+            </button>
+          )}
         </div>
+          <button className="btn" onClick={() => { setFilters(defaultFilters); setSearch(''); setCuentaFiltro('all'); setFechaInicioManual(''); setFechaFinManual(''); }}>Limpiar</button>
       </div>
       {exportMode && (
         <div style={{
@@ -1827,6 +1862,100 @@ export default function Calendario() {
           />
         </div>
         <div className="calendar-right">
+          {/* Búsqueda global: cuando hay texto muestra resultados de todas las fechas */}
+          {search.trim() ? (
+            <div style={{ maxHeight: 600, overflowY: 'auto' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 14
+              }}>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {React.createElement(FaList as any, { style: { fontSize: 15 } })}
+                  Resultados para &ldquo;{search.trim()}&rdquo;
+                </h3>
+                <span style={{ fontSize: 13, color: 'var(--color-muted)', fontWeight: 600 }}>
+                  {resultadosBusquedaGlobal.total || 0} resultado{resultadosBusquedaGlobal.total !== 1 ? 's' : ''}
+                </span>
+              </div>
+              {!resultadosBusquedaGlobal.total ? (
+                <div style={{ color: 'var(--color-muted)', fontSize: 16, textAlign: 'center', padding: '40px 0' }}>
+                  No se encontraron movimientos con esa descripción.
+                </div>
+              ) : (
+                Array.from((resultadosBusquedaGlobal.porFecha as Map<string, any[]>).entries()).map(([fecha, movs]) => (
+                  <div key={fecha} style={{ marginBottom: 18 }}>
+                    <button
+                      onClick={() => {
+                        const d = new Date(fecha + 'T12:00:00');
+                        setValue(d);
+                        setSearch('');
+                      }}
+                      style={{
+                        background: 'var(--color-accent)',
+                        border: 'none',
+                        color: '#fff',
+                        borderRadius: 8,
+                        padding: '4px 12px',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        marginBottom: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}
+                    >
+                      {React.createElement(FaCalendarDay as any, { style: { fontSize: 12 } })}
+                      {fecha.split('-').reverse().join('/')}
+                    </button>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {movs.map((mov: any) => {
+                        const colorTipo = mov.tipo === 'ingreso' ? '#4caf50' : mov.tipo === 'ahorro' ? '#26a69a' : mov.tipo === 'transferencia' ? '#2196f3' : mov.tipo === 'pago_tarjeta' ? '#ff6b6b' : '#f44336';
+                        const signo = (mov.tipo === 'ingreso' || mov.tipo === 'ahorro') ? '+' : mov.tipo === 'transferencia' ? '' : '-';
+                        const descLimpia = String(mov.descripcion || '').replace(/\[(TRANSFER|AHORRO|PAGO_TARJETA)#[^\]]+\]/gi, '').trim();
+                        // Highlight de coincidencia
+                        const q = search.trim();
+                        const idx = descLimpia.toLowerCase().indexOf(q.toLowerCase());
+                        const highlighted = idx >= 0
+                          ? <>{descLimpia.slice(0, idx)}<mark style={{ background: '#ffe082', borderRadius: 2, padding: '0 2px' }}>{descLimpia.slice(idx, idx + q.length)}</mark>{descLimpia.slice(idx + q.length)}</>
+                          : descLimpia;
+                        return (
+                          <li key={mov.id} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '10px 14px',
+                            marginBottom: 6,
+                            background: 'var(--color-card)',
+                            borderRadius: 10,
+                            borderLeft: `3px solid ${colorTipo}`,
+                            boxShadow: '0 1px 4px #0001'
+                          }}>
+                            <span style={{ fontSize: 20 }}>{getIconForTipo(mov.tipo, mov.icon)}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {highlighted}
+                              </div>
+                              <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{mov.cuenta}</div>
+                            </div>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              <div style={{ fontWeight: 700, fontSize: 15, color: colorTipo }}>
+                                {signo}S/ {Number(mov.monto).toFixed(2)}
+                              </div>
+                              <div style={{ fontSize: 11, color: 'var(--color-muted)', textTransform: 'capitalize' }}>{mov.tipo}</div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+          <>
           {/* Tarjeta de estadísticas del día */}
           <div style={{
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -2445,6 +2574,8 @@ export default function Calendario() {
             </div>
           )}
             </>
+          )}
+          </>
           )}
         </div>
       </div>
