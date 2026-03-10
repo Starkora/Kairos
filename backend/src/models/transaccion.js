@@ -67,7 +67,11 @@ const Transaccion = {
     
     // Actualizar saldo solo si se aplica de inmediato
     if (applied) {
-      const isIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
+      // Para ahorros, distinguir entre origen (egreso) y destino (ingreso) por descripción
+      let isIngreso = tipoNorm === 'ingreso';
+      if (tipoNorm === 'ahorro') {
+        isIngreso = desc.includes('ahorro desde');  // Solo es ingreso si es el destino
+      }
       const esPagoTarjeta = tipoNorm === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'));
       await actualizarSaldo(cuenta_id, monto, isIngreso, esPagoTarjeta);
     }
@@ -88,7 +92,15 @@ const Transaccion = {
     // Revertir efecto en la cuenta solo si estaba aplicado
     if (applied) {
       const isTarjeta = await esTarjetaCredito(cuenta_id);
-      const wasIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
+      
+      // Para ahorros, distinguir entre origen (egreso) y destino (ingreso) por descripción
+      let wasIngreso = tipoNorm === 'ingreso';
+      if (tipoNorm === 'ahorro') {
+        // "Ahorro para X" = origen (egreso, se restó) → al eliminar debe SUMAR
+        // "Ahorro desde Y" = destino (ingreso, se sumó) → al eliminar debe RESTAR
+        wasIngreso = desc.includes('ahorro desde');  // Solo es ingreso si es el destino
+      }
+      
       const wasPagoTarjeta = tipoNorm === 'pago_tarjeta';
       
       if (wasPagoTarjeta) {
@@ -121,8 +133,10 @@ const Transaccion = {
       } else {
         // Cuenta normal
         if (wasIngreso) {
+          // Si fue ingreso: al eliminar se RESTA
           await db.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, cuenta_id]);
         } else {
+          // Si fue egreso: al eliminar se SUMA
           await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, cuenta_id]);
         }
       }
@@ -150,7 +164,13 @@ const Transaccion = {
     if (old.applied) {
       const oldTipoNorm = (old.tipo || '').toLowerCase();
       const oldDesc = (old.descripcion || '').toLowerCase();
-      const wasIngreso = oldTipoNorm === 'ingreso' || oldTipoNorm === 'ahorro';
+      
+      // Para ahorros, distinguir entre origen y destino por descripción
+      let wasIngreso = oldTipoNorm === 'ingreso';
+      if (oldTipoNorm === 'ahorro') {
+        wasIngreso = oldDesc.includes('ahorro desde');  // Solo es ingreso si es el destino
+      }
+      
       const wasPagoTarjeta = oldTipoNorm === 'transferencia' && (oldDesc.includes('pago') || oldDesc.includes('tarjeta'));
       const isTarjeta = await esTarjetaCredito(old.cuenta_id);
       
@@ -184,7 +204,11 @@ const Transaccion = {
     
     // Aplicar efecto del nuevo movimiento solo si corresponde
     if (newApplied) {
-      const isIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
+      // Para ahorros, distinguir entre origen (egreso) y destino (ingreso) por descripción
+      let isIngreso = tipoNorm === 'ingreso';
+      if (tipoNorm === 'ahorro') {
+        isIngreso = desc.includes('ahorro desde');  // Solo es ingreso si es el destino
+      }
       const esPagoTarjeta = tipoNorm === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'));
       await actualizarSaldo(cuenta_id, monto, isIngreso, esPagoTarjeta);
     }
@@ -204,7 +228,11 @@ const Transaccion = {
       try {
         const tipoNorm = (mov.tipo || '').toLowerCase();
         const desc = (mov.descripcion || '').toLowerCase();
-        const isIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
+        // Para ahorros, distinguir entre origen (egreso) y destino (ingreso) por descripción
+        let isIngreso = tipoNorm === 'ingreso';
+        if (tipoNorm === 'ahorro') {
+          isIngreso = desc.includes('ahorro desde');  // Solo es ingreso si es el destino
+        }
         const esPagoTarjeta = tipoNorm === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'));
         
         await actualizarSaldo(mov.cuenta_id, mov.monto, isIngreso, esPagoTarjeta);

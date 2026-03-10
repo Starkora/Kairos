@@ -312,33 +312,143 @@ export default function Calendario() {
     setValue([inicio, fin]);
   };
 
+  // Agrupar transferencias, ahorros y pagos de tarjeta por token [TRANSFER#code], [AHORRO#code], [PAGO_TARJETA#code]
+  const movimientosDelDiaAgrupados = React.useMemo(() => {
+    const regexTransfer = /\[TRANSFER#([^\]]+)\]/i;
+    const regexAhorro = /\[AHORRO#([^\]]+)\]/i;
+    const regexPagoTarjeta = /\[PAGO_TARJETA#([^\]]+)\]/i;
+    const transfers = new Map();
+    const ahorros = new Map();
+    const pagosTarjeta = new Map();
+    const otros = [];
+    
+    for (const m of movimientosDelDia) {
+      const desc = String(m.descripcion || '');
+      const matchTransfer = desc.match(regexTransfer);
+      const matchAhorro = desc.match(regexAhorro);
+      const matchPagoTarjeta = desc.match(regexPagoTarjeta);
+      
+      if (matchTransfer) {
+        const code = matchTransfer[1];
+        if (!transfers.has(code)) transfers.set(code, []);
+        transfers.get(code).push(m);
+      } else if (matchAhorro) {
+        const code = matchAhorro[1];
+        if (!ahorros.has(code)) ahorros.set(code, []);
+        ahorros.get(code).push(m);
+      } else if (matchPagoTarjeta) {
+        const code = matchPagoTarjeta[1];
+        if (!pagosTarjeta.has(code)) pagosTarjeta.set(code, []);
+        pagosTarjeta.get(code).push(m);
+      } else {
+        otros.push(m);
+      }
+    }
+    
+    const agrupados = [];
+    
+    // Agrupar transferencias
+    transfers.forEach((arr, code) => {
+      if (arr.length < 2) {
+        agrupados.push(...arr);
+        return;
+      }
+      const egreso = arr.find(a => (a.tipo || '').toLowerCase() === 'egreso');
+      const ingreso = arr.find(a => (a.tipo || '').toLowerCase() === 'ingreso');
+      const monto = (egreso || ingreso)?.monto || arr[0].monto;
+      const origenCuenta = egreso?.cuenta || arr[0]?.cuenta || 'Origen';
+      const destinoCuenta = ingreso?.cuenta || arr[1]?.cuenta || 'Destino';
+      agrupados.push({
+        id: `transfer-${code}`,
+        tipo: 'transferencia',
+        monto,
+        descripcion: `Transferencia: ${origenCuenta} → ${destinoCuenta}`,
+        icon: React.createElement(FaExchangeAlt as any),
+        color: '#1976d2',
+        cuenta: `${origenCuenta} → ${destinoCuenta}`,
+        _transfer: { code, origenId: egreso?.id, destinoId: ingreso?.id }
+      });
+    });
+    
+    // Agrupar ahorros
+    ahorros.forEach((arr, code) => {
+      if (arr.length < 2) {
+        agrupados.push(...arr);
+        return;
+      }
+      // Identificar origen y destino por descripción
+      const origen = arr.find(a => String(a.descripcion || '').toLowerCase().includes('ahorro para'));
+      const destino = arr.find(a => String(a.descripcion || '').toLowerCase().includes('ahorro desde'));
+      const monto = (origen || destino)?.monto || arr[0].monto;
+      const origenCuenta = origen?.cuenta || arr[0]?.cuenta || 'Origen';
+      const destinoCuenta = destino?.cuenta || arr[1]?.cuenta || 'Destino';
+      agrupados.push({
+        id: `ahorro-${code}`,
+        tipo: 'ahorro',
+        monto,
+        descripcion: `Ahorro: ${origenCuenta} → ${destinoCuenta}`,
+        icon: React.createElement(FaWallet as any),
+        color: '#4caf50',
+        cuenta: `${origenCuenta} → ${destinoCuenta}`,
+        _ahorro: { code, origenId: origen?.id, destinoId: destino?.id }
+      });
+    });
+    
+    // Agrupar pagos de tarjeta
+    pagosTarjeta.forEach((arr, code) => {
+      if (arr.length < 2) {
+        agrupados.push(...arr);
+        return;
+      }
+      // Identificar origen (cuenta que paga) y destino (tarjeta que recibe pago) por descripción
+      const origen = arr.find(a => String(a.descripcion || '').toLowerCase().includes('pago de'));
+      const destino = arr.find(a => String(a.descripcion || '').toLowerCase().includes('pago desde'));
+      const monto = (origen || destino)?.monto || arr[0].monto;
+      const origenCuenta = origen?.cuenta || arr[0]?.cuenta || 'Origen';
+      const destinoCuenta = destino?.cuenta || arr[1]?.cuenta || 'Destino';
+      agrupados.push({
+        id: `pago-tarjeta-${code}`,
+        tipo: 'pago_tarjeta',
+        monto,
+        descripcion: `Pago Tarjeta: ${origenCuenta} → ${destinoCuenta}`,
+        icon: React.createElement(FaCreditCard as any),
+        color: '#ff6b6b',
+        cuenta: `${origenCuenta} → ${destinoCuenta}`,
+        _pagoTarjeta: { code, origenId: origen?.id, destinoId: destino?.id }
+      });
+    });
+    
+    return [...otros, ...agrupados];
+  }, [movimientosDelDia]);
+  const hayTransferenciasAgrupadas = React.useMemo(() => movimientosDelDiaAgrupados.some(m => (m.tipo || '').toLowerCase() === 'transferencia'), [movimientosDelDiaAgrupados]);
+
   // Estadísticas del día seleccionado
   const estadisticasDia = React.useMemo(() => {
-    // Función helper para identificar movimientos internos (transferencias, pagos de deudas, aportes a metas)
-    // Para ahorros: solo excluir el ORIGEN (ahorro para), dejar visible el DESTINO (ahorro desde)
+    // Función helper para identificar movimientos internos que ya están agrupados
+    // (transferencias, ahorros y pagos de tarjeta con marcadores [TRANSFER#], [AHORRO#], [PAGO_TARJETA#])
     const esMovimientoInterno = (mov: any): boolean => {
       const desc = String(mov.descripcion || '').toLowerCase();
       return (
         /\[transfer#/i.test(desc) ||
-        desc.includes('transferencia a') ||
-        desc.includes('transferencia desde') ||
-        desc.includes('ahorro para') ||  // Excluir origen de ahorro
-        // NO EXCLUIR 'ahorro desde' - este es el destino que queremos contar
+        /\[ahorro#/i.test(desc) ||
+        /\[pago_tarjeta#/i.test(desc) ||
         desc.includes('[deuda#') ||
         desc.includes('[meta#')
       );
     };
     
-    // Filtrar movimientos reales (excluir internos)
+    // Filtrar movimientos reales (excluir internos que ya están agrupados)
     const movimientosReales = movimientosDelDia.filter(m => !esMovimientoInterno(m));
     
-    const ingresos = movimientosReales.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + Number(m.monto || 0), 0);
-    const egresos = movimientosReales.filter(m => m.tipo === 'egreso').reduce((sum, m) => sum + Number(m.monto || 0), 0);
-    const ahorros = movimientosReales.filter(m => m.tipo === 'ahorro').reduce((sum, m) => sum + Number(m.monto || 0), 0);
-    const transferencias = movimientosDelDia.filter(m => esMovimientoInterno(m)).length;
-    // Balance = ingresos - egresos (los ahorros no afectan el balance)
+    // Calcular estadísticas desde movimientos agrupados para incluir transferencias y ahorros agrupados
+    const ingresos = movimientosDelDiaAgrupados.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + Number(m.monto || 0), 0);
+    const egresos = movimientosDelDiaAgrupados.filter(m => m.tipo === 'egreso').reduce((sum, m) => sum + Number(m.monto || 0), 0);
+    const ahorros = movimientosDelDiaAgrupados.filter(m => m.tipo === 'ahorro').reduce((sum, m) => sum + Number(m.monto || 0), 0);
+    const transferencias = movimientosDelDiaAgrupados.filter(m => m.tipo === 'transferencia').length;
+    const pagosTarjeta = movimientosDelDiaAgrupados.filter(m => m.tipo === 'pago_tarjeta').reduce((sum, m) => sum + Number(m.monto || 0), 0);
+    // Balance = ingresos - egresos (los ahorros, transferencias y pagos de tarjeta no afectan el balance total)
     const balance = ingresos - egresos;
-    const cantidad = movimientosReales.length;
+    const cantidad = movimientosDelDiaAgrupados.length;
     
     // Calcular promedio diario del mes
     const mesActual = selectedDate.getMonth();
@@ -350,8 +460,8 @@ export default function Calendario() {
     const diasConMovimientos = new Set(movimientosMes.map(m => m.fecha.slice(0, 10))).size;
     const promedioMes = diasConMovimientos > 0 ? movimientosMes.reduce((sum, m) => sum + Number(m.monto || 0), 0) / diasConMovimientos : 0;
     
-    return { ingresos, egresos, balance, cantidad, transferencias, promedioMes };
-  }, [movimientosDelDia, todosMovimientos, selectedDate]);
+    return { ingresos, egresos, balance, cantidad, transferencias, promedioMes, ahorros, pagosTarjeta };
+  }, [movimientosDelDia, movimientosDelDiaAgrupados, todosMovimientos, selectedDate]);
 
   // Calcular indicadores para cada día del calendario
   const indicadoresPorDia = React.useMemo(() => {
@@ -428,49 +538,6 @@ export default function Calendario() {
     return recordatorios;
   }, [movimientosRecurrentes]);
 
-  // Agrupar transferencias por token [TRANSFER#code] y generar un ítem único Origen -> Destino
-  const movimientosDelDiaAgrupados = React.useMemo(() => {
-    const regex = /\[TRANSFER#([^\]]+)\]/i;
-    const transfers = new Map();
-    const otros = [];
-    for (const m of movimientosDelDia) {
-      const desc = String(m.descripcion || '');
-      const match = desc.match(regex);
-      if (match) {
-        const code = match[1];
-        if (!transfers.has(code)) transfers.set(code, []);
-        transfers.get(code).push(m);
-      } else {
-        otros.push(m);
-      }
-    }
-    const agrupados = [];
-    transfers.forEach((arr, code) => {
-      if (arr.length < 2) {
-        // si no están ambas caras, mostrarlas tal cual
-        agrupados.push(...arr);
-        return;
-      }
-      const egreso = arr.find(a => (a.tipo || '').toLowerCase() === 'egreso');
-      const ingreso = arr.find(a => (a.tipo || '').toLowerCase() === 'ingreso');
-      const monto = (egreso || ingreso)?.monto || arr[0].monto;
-      const origenCuenta = egreso?.cuenta || arr[0]?.cuenta || 'Origen';
-      const destinoCuenta = ingreso?.cuenta || arr[1]?.cuenta || 'Destino';
-      agrupados.push({
-        id: `transfer-${code}`,
-        tipo: 'transferencia',
-        monto,
-        descripcion: `Transferencia: ${origenCuenta} → ${destinoCuenta}`,
-        icon: React.createElement(FaExchangeAlt as any),
-        color: '#1976d2',
-        cuenta: `${origenCuenta} → ${destinoCuenta}`,
-        _transfer: { code, origenId: egreso?.id, destinoId: ingreso?.id }
-      });
-    });
-    return [...otros, ...agrupados];
-  }, [movimientosDelDia]);
-  const hayTransferenciasAgrupadas = React.useMemo(() => movimientosDelDiaAgrupados.some(m => (m.tipo || '').toLowerCase() === 'transferencia'), [movimientosDelDiaAgrupados]);
-
   // Aplicar filtros y búsqueda sobre los movimientos del día
   const movimientosFiltrados = React.useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -541,6 +608,19 @@ export default function Calendario() {
       }
       return;
     }
+    
+    // Si es un movimiento agrupado (transferencia, ahorro o pago de tarjeta), informar que debe editar individualmente
+    if (mov && (mov._transfer || mov._ahorro || mov._pagoTarjeta)) {
+      const tipoMov = mov._transfer ? 'transferencia' : (mov._ahorro ? 'ahorro' : 'pago de tarjeta');
+      await Swal.fire({
+        title: `Movimiento agrupado (${tipoMov})`,
+        html: `<div style="font-size:1rem">Este ${tipoMov} está compuesto por dos movimientos vinculados. Para editar, haz clic directamente en cada movimiento individual en la lista sin agrupar, o elimínalo y créalo nuevamente.</div>`,
+        icon: 'info',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+    
     try {
       // Cargar cuentas y categorias
       const apiFetch = (await import('../../utils/apiFetch')).default;
@@ -896,6 +976,134 @@ export default function Calendario() {
       }
       return;
     }
+    
+    // Caso especial: ahorro agrupado
+    if ((mov?.tipo || '').toLowerCase() === 'ahorro' && mov?._ahorro) {
+      // Preparar snapshot para deshacer (recrear ahorro)
+      let undoPayload: any = null;
+      try {
+        const code = mov._ahorro.code;
+        const matchBoth = todosMovimientos.filter((m: any) => String(m.descripcion || '').includes(`[AHORRO#${code}]`));
+        const origen = matchBoth.find((x: any) => String(x.descripcion || '').toLowerCase().includes('ahorro para'));
+        const destino = matchBoth.find((x: any) => String(x.descripcion || '').toLowerCase().includes('ahorro desde'));
+        if (origen && destino) {
+          undoPayload = {
+            origen_id: origen.cuenta_id,
+            destino_id: destino.cuenta_id,
+            monto: Number(origen.monto || 0),
+            fecha: String(origen.fecha || '').slice(0, 10),
+            descripcion: '',
+            tipo_especial: 'ahorro'
+          };
+        }
+      } catch {}
+      const { origenId, destinoId } = mov._ahorro;
+      const confirmed = await Swal.fire({
+        title: '¿Eliminar ahorro?',
+        text: 'Se eliminarán ambos movimientos (origen y destino) asociados a este ahorro y se revertirán los saldos.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (!confirmed.isConfirmed) return;
+      try {
+        const apiFetch = (await import('../../utils/apiFetch')).default;
+        // Borrar ambos lados; si alguno falla, reportar
+        const results = await Promise.allSettled([
+          origenId ? apiFetch(`${API_BASE}/api/transacciones/${origenId}`, { method: 'DELETE' }) : Promise.resolve({ ok: true }),
+          destinoId ? apiFetch(`${API_BASE}/api/transacciones/${destinoId}`, { method: 'DELETE' }) : Promise.resolve({ ok: true })
+        ]);
+        const anyRejected = results.some(r => r.status === 'rejected');
+        const anyNotOk = results.some(r => r.status === 'fulfilled' && r.value && r.value.ok === false);
+        if (!anyRejected && !anyNotOk) {
+          // Ofrecer deshacer
+          const undo = await Swal.fire({ icon: 'success', title: 'Ahorro eliminado', text: 'Puedes deshacer esta acción.', showCancelButton: true, confirmButtonText: 'Deshacer', cancelButtonText: 'Cerrar', timer: 5000, timerProgressBar: true });
+          if (undo.isConfirmed && undoPayload) {
+            try {
+              const apiFetch2 = (await import('../../utils/apiFetch')).default;
+              const resUndo = await apiFetch2(`${API_BASE}/api/transacciones/transferir`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(undoPayload) });
+              if (resUndo.ok) {
+                Swal.fire({ icon: 'success', title: 'Ahorro restaurado', timer: 1200, showConfirmButton: false });
+              } else {
+                const data = await resUndo.json().catch(() => ({}));
+                Swal.fire({ icon: 'error', title: 'No se pudo deshacer', text: data.error || 'Intenta manualmente recrear el ahorro.' });
+              }
+            } catch {}
+          }
+          await refreshMovimientos();
+        } else {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar completamente el ahorro.' });
+        }
+      } catch (e) {
+        // apiFetch maneja 401
+      }
+      return;
+    }
+    
+    // Caso especial: pago de tarjeta agrupado
+    if ((mov?.tipo || '').toLowerCase() === 'pago_tarjeta' && mov?._pagoTarjeta) {
+      // Preparar snapshot para deshacer (recrear pago de tarjeta)
+      let undoPayload: any = null;
+      try {
+        const code = mov._pagoTarjeta.code;
+        const matchBoth = todosMovimientos.filter((m: any) => String(m.descripcion || '').includes(`[PAGO_TARJETA#${code}]`));
+        const origen = matchBoth.find((x: any) => String(x.descripcion || '').toLowerCase().includes('pago de'));
+        const destino = matchBoth.find((x: any) => String(x.descripcion || '').toLowerCase().includes('pago desde'));
+        if (origen && destino) {
+          undoPayload = {
+            origen_id: origen.cuenta_id,
+            destino_id: destino.cuenta_id,
+            monto: Number(origen.monto || 0),
+            fecha: String(origen.fecha || '').slice(0, 10),
+            descripcion: ''
+          };
+        }
+      } catch {}
+      const { origenId, destinoId } = mov._pagoTarjeta;
+      const confirmed = await Swal.fire({
+        title: '¿Eliminar pago de tarjeta?',
+        text: 'Se eliminarán ambos movimientos (origen y destino) asociados a este pago y se revertirán los saldos.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (!confirmed.isConfirmed) return;
+      try {
+        const apiFetch = (await import('../../utils/apiFetch')).default;
+        // Borrar ambos lados; si alguno falla, reportar
+        const results = await Promise.allSettled([
+          origenId ? apiFetch(`${API_BASE}/api/transacciones/${origenId}`, { method: 'DELETE' }) : Promise.resolve({ ok: true }),
+          destinoId ? apiFetch(`${API_BASE}/api/transacciones/${destinoId}`, { method: 'DELETE' }) : Promise.resolve({ ok: true })
+        ]);
+        const anyRejected = results.some(r => r.status === 'rejected');
+        const anyNotOk = results.some(r => r.status === 'fulfilled' && r.value && r.value.ok === false);
+        if (!anyRejected && !anyNotOk) {
+          // Ofrecer deshacer
+          const undo = await Swal.fire({ icon: 'success', title: 'Pago de tarjeta eliminado', text: 'Puedes deshacer esta acción.', showCancelButton: true, confirmButtonText: 'Deshacer', cancelButtonText: 'Cerrar', timer: 5000, timerProgressBar: true });
+          if (undo.isConfirmed && undoPayload) {
+            try {
+              const apiFetch2 = (await import('../../utils/apiFetch')).default;
+              const resUndo = await apiFetch2(`${API_BASE}/api/transacciones/pagar-tarjeta`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(undoPayload) });
+              if (resUndo.ok) {
+                Swal.fire({ icon: 'success', title: 'Pago de tarjeta restaurado', timer: 1200, showConfirmButton: false });
+              } else {
+                const data = await resUndo.json().catch(() => ({}));
+                Swal.fire({ icon: 'error', title: 'No se pudo deshacer', text: data.error || 'Intenta manualmente recrear el pago de tarjeta.' });
+              }
+            } catch {}
+          }
+          await refreshMovimientos();
+        } else {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar completamente el pago de tarjeta.' });
+        }
+      } catch (e) {
+        // apiFetch maneja 401
+      }
+      return;
+    }
+    
     const desc = String(mov?.descripcion || '');
     const isPagoDeuda = /pago\s*deuda/i.test(desc);
     const isAporteMeta = /aporte\s*(a\s*)?meta/i.test(desc);

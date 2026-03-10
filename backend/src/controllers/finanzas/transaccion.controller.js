@@ -60,6 +60,27 @@ exports.create = async (req, res) => {
   tipo = (tipo === undefined || tipo === null) ? tipo : String(tipo).toLowerCase();
 
   if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  
+  // Validar que no se intenten crear tipos especiales que requieren dos movimientos
+  if (tipo === 'transferencia') {
+    return res.status(400).json({ 
+      error: 'Para crear una transferencia usa el endpoint POST /api/transacciones/transferir',
+      hint: 'Las transferencias requieren cuenta origen y destino'
+    });
+  }
+  if (tipo === 'ahorro') {
+    return res.status(400).json({ 
+      error: 'Para crear un ahorro usa el endpoint POST /api/transacciones/transferir con tipo_especial=ahorro',
+      hint: 'Los ahorros requieren cuenta origen y destino'
+    });
+  }
+  if (tipo === 'pago_tarjeta') {
+    return res.status(400).json({ 
+      error: 'Para crear un pago de tarjeta usa el endpoint POST /api/transacciones/pagar-tarjeta',
+      hint: 'Los pagos de tarjeta requieren cuenta origen y tarjeta destino'
+    });
+  }
+  
   // Validación detallada de campos requeridos + logging para depurar
   const missing = [];
   if (!cuenta_id) missing.push('cuenta_id');
@@ -145,8 +166,8 @@ exports.transferir = async (req, res) => {
 
     // Insert egreso en origen
     const descEgreso = esAhorro 
-      ? `Ahorro para ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''}`
-      : `Transferencia a ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''}`;
+      ? `Ahorro para ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''} [AHORRO#${code}]`
+      : `Transferencia a ${cuentaD.nombre}${descripcion ? ' - ' + descripcion : ''} [TRANSFER#${code}]`;
     const [resEgreso] = await conn.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [usuario_id, origen_id, esAhorro ? 'ahorro' : 'egreso', monto, descEgreso, fechaStr, categoriaIdEgreso, plataforma || 'web', iconFinal, colorFinal, applied]
@@ -157,8 +178,8 @@ exports.transferir = async (req, res) => {
 
     // Insert ingreso en destino
     const descIngreso = esAhorro
-      ? `Ahorro desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''}`
-      : `Transferencia desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''}`;
+      ? `Ahorro desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''} [AHORRO#${code}]`
+      : `Transferencia desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''} [TRANSFER#${code}]`;
     const tipoDestino = esAhorro ? 'ahorro' : 'ingreso'; // Si es ahorro, ambos movimientos son tipo 'ahorro'
     const [resIngreso] = await conn.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -235,7 +256,7 @@ exports.pagarTarjeta = async (req, res) => {
 
     // CREAR DOS MOVIMIENTOS tipo 'pago_tarjeta' (como transferencias)
     // 1. Movimiento en cuenta origen (sale dinero)
-    const descOrigen = descripcion || `Pago de ${cuentaDestino.nombre} [${code}]`;
+    const descOrigen = `Pago de ${cuentaDestino.nombre}${descripcion ? ' - ' + descripcion : ''} [PAGO_TARJETA#${code}]`;
     const [resOrigen] = await conn.query(
       `INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, plataforma, icon, color, applied) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -243,7 +264,7 @@ exports.pagarTarjeta = async (req, res) => {
     );
 
     // 2. Movimiento en cuenta destino (reduce deuda)
-    const descDestino = descripcion || `Pago desde ${cuentaOrigen.nombre} [${code}]`;
+    const descDestino = `Pago desde ${cuentaOrigen.nombre}${descripcion ? ' - ' + descripcion : ''} [PAGO_TARJETA#${code}]`;
     const [resDestino] = await conn.query(
       `INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, plataforma, icon, color, applied) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -664,12 +685,23 @@ exports.importarExcel = async (req, res) => {
       }
 
       // Validaciones básicas
-      const tipoValido = ['ingreso','egreso','ahorro','transferencia'].includes(tipo);
+      const tipoValido = ['ingreso','egreso','transferencia'].includes(tipo);
       const missing = [];
       if (!cuenta_id) missing.push('cuenta');
       if (!tipoValido) missing.push('tipo');
       if (!monto || isNaN(monto)) missing.push('monto');
       if (!fecha) missing.push('fecha');
+      
+      // Validar tipos que NO se pueden importar (requieren endpoints especializados)
+      if (tipo === 'ahorro') {
+        errores.push({ fila: i + 2, error: 'Los ahorros no se pueden importar vía Excel. Usa el endpoint POST /api/transacciones/transferir con tipo_especial=ahorro' });
+        continue;
+      }
+      if (tipo === 'pago_tarjeta') {
+        errores.push({ fila: i + 2, error: 'Los pagos de tarjeta no se pueden importar vía Excel. Usa el endpoint POST /api/transacciones/pagar-tarjeta' });
+        continue;
+      }
+      
       if (missing.length) {
         errores.push({ fila: i + 2, error: 'Campos requeridos inválidos', missing });
         continue;
@@ -702,8 +734,9 @@ exports.importarExcel = async (req, res) => {
           const icon = defaultIconByTipo.transferencia;
           const color = defaultColorByTipo.transferencia;
           const code = 'T' + Date.now() + '_' + i;
-          const descEgreso = `Transferencia a ${cuentaDDef.nombre}${descripcion ? ' - ' + descripcion : ''}`;
-          const descIngreso = `Transferencia desde ${cuentaODef.nombre}${descripcion ? ' - ' + descripcion : ''}`;
+          // Añadir marcador [TRANSFER#code] para agrupación visual y eliminación pareada
+          const descEgreso = `[TRANSFER#${code}] Transferencia a ${cuentaDDef.nombre}${descripcion ? ' - ' + descripcion : ''}`;
+          const descIngreso = `[TRANSFER#${code}] Transferencia desde ${cuentaODef.nombre}${descripcion ? ' - ' + descripcion : ''}`;
           // Usar transacción por fila
           const conn = await db.getConnection();
           try {
