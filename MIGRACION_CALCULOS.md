@@ -7,22 +7,29 @@
 - **Archivo afectado**: `web/src/pages/Transacciones/Registro.tsx`
 - **Impacto**: Mejora la UX priorizando el registro de movimientos
 
-### 2. Campo `incluir_en_calculos` en Cuentas
+### 2. Nuevo Tipo: Pago de Tarjeta de Crédito
+- **Cambio**: Los pagos de tarjeta ahora son un tipo específico `pago_tarjeta` en lugar de una transferencia
+- **Propósito**: Registrar pagos de tarjeta sin inflar artificialmente los ingresos en estadísticas
+- **Comportamiento**:
+  - Crea UN SOLO movimiento (no dos como las transferencias)
+  - Actualiza saldos de cuenta origen (reduce) y destino/tarjeta (aumenta)
+  - NO se cuenta en ingresos, egresos ni ahorros
+  - NO usa categoría
+  - En exportaciones Excel aparece como "Pago Tarjeta Crédito"
+
+### 3. Campo `incluir_en_calculos` en Cuentas
 - **Cambio**: Se agregó un campo booleano `incluir_en_calculos` a la tabla `cuentas`
 - **Propósito**: Permite marcar qué cuentas deben considerarse en los cálculos de ingresos, egresos y ahorro
 - **Valor por defecto**: `TRUE` (todas las cuentas existentes se marcan automáticamente)
 
-### 3. Lógica de Ahorro
+### 4. Lógica de Ahorro
 - **Cambio**: El ahorro solo se considera como tal si proviene de una cuenta con `incluir_en_calculos = TRUE`
 - **Impacto**: Solo los ahorros desde cuentas principales (ej: cuenta sueldo) se contabilizan en estadísticas
 
-### 4. Exclusión de Transferencias
+### 5. Exclusión de Transferencias
 - **Cambio**: Las transferencias internas y pagos de tarjeta ya no se consideran como ingresos/egresos en cálculos
-- **Lógica**: Se excluyen movimientos con categoría "Transferencia Interna"
+- **Lógica**: Se excluyen movimientos con categoría "Transferencia Interna" y tipo "pago_tarjeta"
 - **Impacto**: Los cálculos de ingresos y egresos reales son más precisos
-- **Nota Importante**: Los pagos de tarjeta de crédito SIEMPRE usan "Transferencia Interna" como categoría para no inflar los ingresos
-
-### 5. Filtrado por Cuentas Marcadas
 - **Cambio**: Todos los cálculos de insights solo consideran movimientos de cuentas con `incluir_en_calculos = TRUE`
 - **Archivos afectados**: `backend/src/controllers/insights.controller.js`
 
@@ -32,22 +39,32 @@
 
 ### 1. Aplicar Migración de Base de Datos
 
-Ejecuta el siguiente script SQL en tu base de datos:
+Ejecuta los siguientes scripts SQL en tu base de datos:
 
+**a) Hablitar incluir_en_calculos en cuentas:**
 ```sql
 -- Archivo: backend/database/migrations/add_incluir_en_calculos_to_cuentas.sql
 
 ALTER TABLE cuentas ADD COLUMN incluir_en_calculos BOOLEAN DEFAULT TRUE;
-
 UPDATE cuentas SET incluir_en_calculos = TRUE WHERE incluir_en_calculos IS NULL;
 ```
+
+**b) Habilitar tipo pago_tarjeta (solo si usas ENUM):**
+
+Si tu columna `tipo` en `movimientos` es ENUM, ejecuta:
+```sql
+-- Archivo: backend/database/migrations/add_ahorro_to_movimientos.sql
+ALTER TABLE movimientos MODIFY COLUMN tipo VARCHAR(32) NOT NULL DEFAULT 'egreso';
+```
+
+Si ya es VARCHAR, **no necesitas hacer nada más**. El tipo 'pago_tarjeta' funcionará automáticamente.
 
 **Verificación:**
 ```sql
 SELECT id, nombre, incluir_en_calculos FROM cuentas;
+SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME='movimientos' AND COLUMN_NAME='tipo';
 ```
-
-Todas las cuentas deberían tener `incluir_en_calculos = 1` por defecto.
 
 ### 2. Configurar Cuentas
 
@@ -58,9 +75,21 @@ Después de la migración:
 3. Deja marcada solo tu **cuenta sueldo** o cuentas principales donde recibes ingresos reales
 
 **Ejemplo de configuración:**
--  **Cuenta Sueldo BBVA** - Incluir en cálculos: SÍ
--  **Cuenta Ahorro Separada** - Incluir en cálculos: NO
--  **Tarjeta de Crédito** - Incluir en cálculos: NO
+- ✅ **Cuenta Sueldo BBVA** - Incluir en cálculos: SÍ
+- ❌ **Cuenta Ahorro Separada** - Incluir en cálculos: NO
+- ❌ **Tarjeta de Crédito** - Incluir en cálculos: NO
+
+### 2.1 (OPCIONAL) Convertir Pagos de Tarjeta Antiguos
+
+Si tienes pagos de tarjeta registrados ANTES de esta migración que aparecen como ingresos en tus estadísticas,  puedes ejecutar el script opcional:
+
+```sql
+-- Archivo: backend/database/migrations/convert_old_credit_card_payments.sql
+```
+
+**ADVERTENCIA**: Este script elimina movimientos duplicados. Haz BACKUP primero.
+
+Este paso es **opcional**. Los nuevos pagos de tarjeta usarán automáticamente el tipo correcto.
 
 ### 3. Reiniciar Servicios
 
@@ -90,13 +119,25 @@ npm start
    - `create`: Pasa `incluir_en_calculos` al modelo
    - `update`: Pasa `incluir_en_calculos` al modelo
 
-3. **`backend/src/controllers/insights.controller.js`**
-   - Queries de ingresos, egresos y ahorro incluyen:
+3. **`backend/src/controllers/finanzas/transaccion.controller.js`**
+   - Nuevo endpoint `pagarTarjeta`: Crea un movimiento tipo 'pago_tarjeta'
+   - NO crea dos movimientos (ingreso/egreso) como transferencias
+   - Solo afecta saldos de cuentas, no estadísticas
+
+4. **`backend/src/routes/transacciones.js`**
+   - Nueva ruta `POST /api/transacciones/pagar-tarjeta`
+
+5. **`backend/src/controllers/insights.controller.js`**
+   - Queries de ingresos, egresos y ahorro excluyen tipo 'pago_tarjeta':
      ```sql
      INNER JOIN cuentas c ON m.cuenta_id = c.id
      WHERE ... AND c.incluir_en_calculos = 1
+     AND m.tipo IN ('ingreso', 'egreso', 'ahorro')
      AND (cat.nombre IS NULL OR cat.nombre != 'Transferencia Interna')
      ```
+
+6. **`backend/src/controllers/finanzas/transaccion.controller.js` (exportación)**
+   - La exportación Excel muestra "Pago Tarjeta Crédito" para tipo 'pago_tarjeta'
 
 ### Frontend
 
@@ -104,6 +145,8 @@ npm start
 
 1. **`web/src/pages/Transacciones/Registro.tsx`**
    - Invertido el orden: Formulario primero, plantillas después
+   - Tipo 'pago_tarjeta' llama a `/api/transacciones/pagar-tarjeta`
+   - NO muestra selector de categoría para pagos de tarjeta
 
 2. **`web/src/pages/Finanzas/Cuentas.tsx`**
    - Estado `form` incluye `incluirEnCalculos: true`

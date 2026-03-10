@@ -19,6 +19,8 @@ router.get('/', auth, transaccionController.getAll);
 router.post('/', auth, transaccionController.create);
 // Transferencia entre cuentas (atómica)
 router.post('/transferir', auth, transaccionController.transferir);
+// Pago de tarjeta de crédito (un solo movimiento, no cuenta en estadísticas)
+router.post('/pagar-tarjeta', auth, transaccionController.pagarTarjeta);
 router.delete('/:id', auth, transaccionController.deleteById);
 router.put('/:id', auth, transaccionController.update);
 

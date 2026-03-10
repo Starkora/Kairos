@@ -177,6 +177,90 @@ exports.transferir = async (req, res) => {
   }
 };
 
+// Pago de Tarjeta de Crédito (solo afecta saldos, no se cuenta en ingresos/egresos)
+exports.pagarTarjeta = async (req, res) => {
+  const usuario_id = req.user && req.user.id;
+  if (!usuario_id) return res.status(401).json({ error: 'Usuario no autenticado' });
+  let { origen_id, destino_id, monto, fecha, descripcion, icon, color } = req.body || {};
+  monto = Number(monto);
+  
+  if (!origen_id || !destino_id || !monto || isNaN(monto) || monto <= 0 || !fecha) {
+    return res.status(400).json({ error: 'Campos requeridos: origen_id, destino_id, monto>0, fecha' });
+  }
+  if (Number(origen_id) === Number(destino_id)) {
+    return res.status(400).json({ error: 'La cuenta origen y destino deben ser diferentes' });
+  }
+
+  const db = require('../../../config/database');
+  const conn = await db.getConnection();
+  
+  try {
+    await conn.beginTransaction();
+    
+    // Obtener plataforma del usuario
+    const [usuarios] = await conn.query('SELECT plataforma FROM usuarios WHERE id = ?', [usuario_id]);
+    if (!usuarios || usuarios.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    const plataforma = usuarios[0].plataforma;
+
+    // Validar cuentas
+    const [[cuentaOrigen]] = await conn.query('SELECT id, nombre, saldo_actual FROM cuentas WHERE id = ? AND usuario_id = ?', [origen_id, usuario_id]);
+    const [[cuentaDestino]] = await conn.query('SELECT id, nombre, tipo FROM cuentas WHERE id = ? AND usuario_id = ?', [destino_id, usuario_id]);
+    
+    if (!cuentaOrigen || !cuentaDestino) {
+      await conn.rollback();
+      return res.status(403).json({ error: 'Las cuentas deben pertenecer al usuario' });
+    }
+
+    // Determinar si aplica inmediatamente
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const fechaStr = String(fecha).slice(0, 10);
+    const applied = fechaStr <= todayStr ? 1 : 0;
+
+    // Validar saldo suficiente en origen si aplica
+    if (applied && Number(cuentaOrigen.saldo_actual) < monto) {
+      await conn.rollback();
+      return res.status(409).json({ 
+        code: 'INSUFFICIENT_FUNDS', 
+        error: 'Saldo insuficiente en la cuenta origen' 
+      });
+    }
+
+    const iconFinal = icon || 'FaCreditCard';
+    const colorFinal = color || '#ff6b6b';
+    const descFinal = descripcion || `Pago de tarjeta ${cuentaDestino.nombre} desde ${cuentaOrigen.nombre}`;
+
+    // Crear UN SOLO movimiento tipo 'pago_tarjeta'
+    // Este tipo NO se cuenta en estadísticas de ingresos/egresos/ahorros
+    const [result] = await conn.query(
+      `INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, plataforma, icon, color, applied) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [usuario_id, origen_id, 'pago_tarjeta', monto, descFinal, fechaStr, plataforma || 'web', iconFinal, colorFinal, applied]
+    );
+
+    // Actualizar saldos si aplica inmediatamente
+    if (applied) {
+      await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, origen_id]);
+      await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, destino_id]);
+    }
+
+    await conn.commit();
+    return res.status(201).json({ 
+      success: true, 
+      id: result.insertId,
+      message: 'Pago de tarjeta registrado exitosamente'
+    });
+    
+  } catch (err) {
+    try { await conn.rollback(); } catch {}
+    return res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
+  }
+};
+
 // Eliminar movimiento
 exports.deleteById = async (req, res) => {
   const id = req.params.id;
@@ -669,6 +753,7 @@ exports.exportarExcel = async (req, res) => {
       ['id', 'tipo', 'monto', 'descripcion', 'fecha', 'cuenta', 'categoria'],
       ...rows.map(r => [
         r.id, 
+        r.tipo === 'pago_tarjeta' ? 'Pago Tarjeta Crédito' : 
         r.categoria === 'Transferencia Interna' ? 'Transferencia Interna' : r.tipo, 
         r.monto, 
         r.descripcion || '', 

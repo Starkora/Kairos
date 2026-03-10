@@ -136,7 +136,7 @@ exports.list = async (req, res) => {
     // TOTALES del mes (applied=1)
     // Los ahorros NO se cuentan como ingresos ni egresos, son una categoría independiente
     // Solo considerar movimientos de cuentas marcadas con incluir_en_calculos = true
-    // Excluir transferencias internas de los cálculos
+    // Excluir transferencias internas y pagos de tarjeta de crédito de los cálculos
     let incRow = { total: 0 };
     try {
       const [[row]] = await timedQuery(

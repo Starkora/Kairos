@@ -466,9 +466,8 @@ export default function Registro() {
             })
           });
         } else if (form.tipo === 'pago_tarjeta') {
-          // Pago de tarjeta de crédito (transferencia que reduce deuda)
-          // NO enviar categoria_id para que use "Transferencia Interna" automáticamente
-          res = await apiFetch(`${API_BASE}/api/transacciones/transferir`, {
+          // Pago de tarjeta de crédito (movimiento específico que no cuenta en estadísticas)
+          res = await apiFetch(`${API_BASE}/api/transacciones/pagar-tarjeta`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -477,7 +476,6 @@ export default function Registro() {
               monto: Number(form.monto),
               fecha: form.fecha,
               descripcion: form.descripcion || 'Pago de tarjeta de crédito',
-              // No se envía categoria_id para forzar el uso de "Transferencia Interna"
               icon: form.icon,
               color: form.color
             })
