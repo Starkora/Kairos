@@ -153,7 +153,9 @@ export default function Registro() {
   // Cargar categorías desde la API según el tipo
   React.useEffect(() => {
     if (form.tipo === 'transferencia') { setCategorias([]); return; }
-    fetch(`${API_BASE}/api/categorias/${form.tipo}?plataforma=web`, {
+    // Para pagos de tarjeta, usar categorías de egreso
+    const tipoCategoria = form.tipo === 'pago_tarjeta' ? 'egreso' : form.tipo;
+    fetch(`${API_BASE}/api/categorias/${tipoCategoria}?plataforma=web`, {
       headers: {
         'Authorization': 'Bearer ' + getToken()
       }
@@ -380,7 +382,7 @@ export default function Registro() {
       Swal.fire({ icon: 'warning', title: 'Cuenta requerida', text: 'Selecciona una cuenta.' });
       return;
     }
-    if (form.tipo !== 'transferencia') {
+    if (form.tipo !== 'transferencia' && form.tipo !== 'pago_tarjeta') {
       // Para ahorros en la misma cuenta, la categoría es obligatoria
       if (form.tipo === 'ahorro' && String(form.cuenta) === String(form.cuentaDestino)) {
         if (!form.categoria) {
@@ -472,7 +474,10 @@ export default function Registro() {
               destino_id: form.cuentaDestino,
               monto: Number(form.monto),
               fecha: form.fecha,
-              descripcion: form.descripcion || 'Pago de tarjeta de crédito'
+              descripcion: form.descripcion || 'Pago de tarjeta de crédito',
+              categoria_id: form.categoria || null, // Categoría opcional para el pago
+              icon: form.icon,
+              color: form.color
             })
           });
         } else if (repetir) {
@@ -697,6 +702,11 @@ export default function Registro() {
                 <option key={cat.id} value={cat.id}>{cat.nombre}</option>
               ))}
             </select>
+            {form.tipo === 'pago_tarjeta' && (
+              <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 4 }}>
+                💡 Categoriza el pago (ej: "Deudas Bancos / Personales" o crea "Pago Tarjeta de Crédito")
+              </div>
+            )}
           </div>
         )}
         {/* Vista Previa del Saldo */}
