@@ -1,7 +1,7 @@
 import API_BASE from './apiBase';
 import { getToken } from './auth';
 
-export type CalendarFilters = { ingreso: boolean; egreso: boolean; ahorro: boolean; transferencia: boolean };
+export type CalendarFilters = { ingreso: boolean; egreso: boolean; ahorro: boolean; transferencia: boolean; pago_tarjeta: boolean };
 export type CalendarPreset = { name: string; filters: CalendarFilters };
 
 export type Preferences = {
