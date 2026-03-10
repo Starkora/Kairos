@@ -17,7 +17,8 @@ import {
   FaTrash, FaTag, FaClock, FaChartLine, FaInfoCircle, FaExchangeAlt,
   FaUniversity, FaPiggyBank, FaList, FaBan, FaEye, FaSave, FaCalendarDay, FaFolder,
   FaStepBackward, FaEdit, FaMoneyBillWave, FaWallet, FaAppleAlt, FaCar, 
-  FaCreditCard, FaBolt as FaLightning, FaGift, FaShoppingCart, FaHospital
+  FaCreditCard, FaBolt as FaLightning, FaGift, FaShoppingCart, FaHospital,
+  FaChevronDown, FaChevronRight
 } from 'react-icons/fa';
 
 type Value = Date | [Date, Date];
@@ -93,6 +94,7 @@ export default function Calendario() {
   const [draggedItem, setDraggedItem] = React.useState<any>(null);
   const [fechaInicioManual, setFechaInicioManual] = React.useState('');
   const [fechaFinManual, setFechaFinManual] = React.useState('');
+  const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
 
   // Cerrar menús al hacer click fuera o al presionar Escape
   React.useEffect(() => {
@@ -601,6 +603,57 @@ export default function Calendario() {
         text: 'No se pudo cambiar la fecha del movimiento'
       });
     }
+  };
+
+  const toggleGroupExpansion = (groupId: string) => {
+    setExpandedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupId)) {
+        newSet.delete(groupId);
+      } else {
+        newSet.add(groupId);
+      }
+      return newSet;
+    });
+  };
+
+  // Obtener movimientos individuales para un movimiento agrupado
+  const getIndividualMovements = (mov: any) => {
+    if (!mov || (!mov._ahorro && !mov._transfer && !mov._pagoTarjeta)) return [];
+    
+    const individual = [];
+    if (mov._ahorro) {
+      const { origenId, destinoId } = mov._ahorro;
+      if (origenId) {
+        const origen = todosMovimientos.find(m => m.id === origenId);
+        if (origen) individual.push(origen);
+      }
+      if (destinoId) {
+        const destino = todosMovimientos.find(m => m.id === destinoId);
+        if (destino) individual.push(destino);
+      }
+    } else if (mov._transfer) {
+      const { origenId, destinoId } = mov._transfer;
+      if (origenId) {
+        const origen = todosMovimientos.find(m => m.id === origenId);
+        if (origen) individual.push(origen);
+      }
+      if (destinoId) {
+        const destino = todosMovimientos.find(m => m.id === destinoId);
+        if (destino) individual.push(destino);
+      }
+    } else if (mov._pagoTarjeta) {
+      const { origenId, destinoId } = mov._pagoTarjeta;
+      if (origenId) {
+        const origen = todosMovimientos.find(m => m.id === origenId);
+        if (origen) individual.push(origen);
+      }
+      if (destinoId) {
+        const destino = todosMovimientos.find(m => m.id === destinoId);
+        if (destino) individual.push(destino);
+      }
+    }
+    return individual;
   };
 
   const handleEditMovimiento = async (mov) => {
@@ -1919,34 +1972,66 @@ export default function Calendario() {
                       </span>
                     </div>
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0, paddingLeft: 16 }}>
-                      {movsFiltrados.map(mov => (
-                        vistaCompacta ? (
+                      {movsFiltrados.map(mov => {
+                        const isGrouped = !!(mov._ahorro || mov._transfer || mov._pagoTarjeta);
+                        const isExpanded = expandedGroups.has(mov.id);
+                        const individualMovs = isGrouped ? getIndividualMovements(mov) : [];
+                        
+                        return vistaCompacta ? (
                           // Vista compacta
-                          <li key={mov.id} style={{
-                            marginBottom: 8,
-                            padding: '12px 16px',
-                            borderRadius: 10,
-                            background: 'var(--color-card)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            boxShadow: '0 1px 4px #0001',
-                            borderLeft: `3px solid ${mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336'}`
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-                              <span style={{ fontSize: 20 }}>{getIconForTipo(mov.tipo, mov.icon)}</span>
-                              <div>
-                                <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text)' }}>{mov.descripcion}</div>
-                                <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{mov.cuenta}</div>
+                          <React.Fragment key={mov.id}>
+                            <li style={{
+                              marginBottom: 8,
+                              padding: '12px 16px',
+                              borderRadius: 10,
+                              background: 'var(--color-card)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              boxShadow: '0 1px 4px #0001',
+                              borderLeft: `3px solid ${mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336'}`
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                                {isGrouped && (
+                                  <button onClick={() => toggleGroupExpansion(mov.id)} style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: 'var(--color-accent)',
+                                    padding: 0,
+                                    fontSize: 16,
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                  }}>
+                                    {isExpanded ? React.createElement(FaChevronDown as any) : React.createElement(FaChevronRight as any)}
+                                  </button>
+                                )}
+                                <span style={{ fontSize: 20 }}>{getIconForTipo(mov.tipo, mov.icon)}</span>
+                                <div>
+                                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text)' }}>{mov.descripcion}</div>
+                                  <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{mov.cuenta}</div>
+                                </div>
                               </div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <span style={{ fontWeight: 700, fontSize: 15, color: mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336' }}>
-                                {mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '+' : mov.tipo === 'transferencia' ? '' : '-'}S/ {Number(mov.monto).toFixed(2)}
-                              </span>
-                              {mov.tipo !== 'transferencia' && (
-                                <button onClick={() => handleEditMovimiento(mov)} style={{ 
-                                  background: 'var(--color-accent)', 
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ fontWeight: 700, fontSize: 15, color: mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336' }}>
+                                  {mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '+' : mov.tipo === 'transferencia' ? '' : '-'}S/ {Number(mov.monto).toFixed(2)}
+                                </span>
+                                {!isGrouped && (
+                                  <button onClick={() => handleEditMovimiento(mov)} style={{ 
+                                    background: 'var(--color-accent)', 
+                                    border: 'none', 
+                                    color: '#fff', 
+                                    padding: '4px 8px', 
+                                    borderRadius: 6, 
+                                    cursor: 'pointer', 
+                                    fontSize: 12,
+                                    fontWeight: 600
+                                  }}>
+                                    {React.createElement(FaEdit as any, { style: { fontSize: 12 } })}
+                                  </button>
+                                )}
+                                <button onClick={() => handleDeleteMovimiento(mov)} style={{ 
+                                  background: '#f44336', 
                                   border: 'none', 
                                   color: '#fff', 
                                   padding: '4px 8px', 
@@ -1955,58 +2040,160 @@ export default function Calendario() {
                                   fontSize: 12,
                                   fontWeight: 600
                                 }}>
-                                  {React.createElement(FaEdit as any, { style: { fontSize: 12 } })}
+                                  {React.createElement(FaTrash as any, { style: { fontSize: 12 } })}
                                 </button>
-                              )}
-                              <button onClick={() => handleDeleteMovimiento(mov)} style={{ 
-                                background: '#f44336', 
-                                border: 'none', 
-                                color: '#fff', 
-                                padding: '4px 8px', 
-                                borderRadius: 6, 
-                                cursor: 'pointer', 
-                                fontSize: 12,
-                                fontWeight: 600
+                              </div>
+                            </li>
+                            {isExpanded && individualMovs.length > 0 && (
+                              <div style={{ 
+                                marginLeft: 32, 
+                                marginBottom: 8, 
+                                padding: '8px 12px', 
+                                background: 'rgba(0,0,0,0.02)', 
+                                borderRadius: 8,
+                                borderLeft: '2px solid var(--color-accent)'
                               }}>
-                                {React.createElement(FaTrash as any, { style: { fontSize: 12 } })}
-                              </button>
-                            </div>
-                          </li>
+                                <div style={{ fontSize: 11, color: 'var(--color-muted)', marginBottom: 8, fontWeight: 700 }}>
+                                  DESGLOSE DE MOVIMIENTOS
+                                </div>
+                                {individualMovs.map((indMov, idx) => (
+                                  <div key={indMov.id} style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '6px 8px',
+                                    marginBottom: idx < individualMovs.length - 1 ? 6 : 0,
+                                    background: 'var(--color-card)',
+                                    borderRadius: 6,
+                                    fontSize: 13
+                                  }}>
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontWeight: 600, color: 'var(--color-text)' }}>{indMov.descripcion}</div>
+                                      <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>{indMov.cuenta}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <span style={{ fontWeight: 600, fontSize: 14 }}>
+                                        S/ {Number(indMov.monto).toFixed(2)}
+                                      </span>
+                                      <button onClick={() => handleEditMovimiento(indMov)} style={{
+                                        background: 'var(--color-accent)',
+                                        border: 'none',
+                                        color: '#fff',
+                                        padding: '4px 8px',
+                                        borderRadius: 4,
+                                        cursor: 'pointer',
+                                        fontSize: 11,
+                                        fontWeight: 600
+                                      }}>
+                                        {React.createElement(FaEdit as any, { style: { fontSize: 10 } })}
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </React.Fragment>
                         ) : (
                           // Vista normal dentro de categoría
-                          <li key={mov.id} style={{
-                            marginBottom: 12,
-                            padding: 18,
-                            borderRadius: 14,
-                            background: mov.color ? mov.color : (mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? 'linear-gradient(90deg, #1de9b6 0%, #43a047 100%)' : mov.tipo === 'transferencia' ? '#1976d2' : 'linear-gradient(90deg, #ff7043 0%, #c62828 100%)'),
-                            color: '#fff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            boxShadow: '0 2px 8px #0002'
-                          }}>
-                            <span style={{ fontSize: 28, marginRight: 14 }}>{getIconForTipo(mov.tipo, mov.icon)}</span>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 700, fontSize: 16 }}>{mov.descripcion}</div>
-                              <div style={{ fontSize: 13, opacity: 0.85 }}>{mov.cuenta}</div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                              <div style={{ fontWeight: 700, fontSize: 18, minWidth: 120, textAlign: 'right' }}>
-                                {mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '+' : mov.tipo === 'transferencia' ? '' : '-'}S/ {Number(mov.monto).toFixed(2)}
-                              </div>
-                              <div style={{ display: 'flex', gap: 6 }}>
-                                {mov.tipo !== 'transferencia' && (
-                                  <button onClick={() => handleEditMovimiento(mov)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-                                    {mov._recurrente || mov.frecuencia ? 'Editar serie' : 'Editar'}
-                                  </button>
-                                )}
-                                <button onClick={() => handleDeleteMovimiento(mov)} style={{ background: 'rgba(0,0,0,0.15)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-                                  {mov._recurrente || mov.frecuencia ? 'Eliminar serie' : 'Eliminar'}
+                          <React.Fragment key={mov.id}>
+                            <li style={{
+                              marginBottom: 12,
+                              padding: 18,
+                              borderRadius: 14,
+                              background: mov.color ? mov.color : (mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? 'linear-gradient(90deg, #1de9b6 0%, #43a047 100%)' : mov.tipo === 'transferencia' ? '#1976d2' : 'linear-gradient(90deg, #ff7043 0%, #c62828 100%)'),
+                              color: '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              boxShadow: '0 2px 8px #0002'
+                            }}>
+                              {isGrouped && (
+                                <button onClick={() => toggleGroupExpansion(mov.id)} style={{
+                                  background: 'rgba(255,255,255,0.2)',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#fff',
+                                  padding: '8px',
+                                  fontSize: 18,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  marginRight: 10,
+                                  borderRadius: 8
+                                }}>
+                                  {isExpanded ? React.createElement(FaChevronDown as any) : React.createElement(FaChevronRight as any)}
                                 </button>
+                              )}
+                              <span style={{ fontSize: 28, marginRight: 14 }}>{getIconForTipo(mov.tipo, mov.icon)}</span>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 700, fontSize: 16 }}>{mov.descripcion}</div>
+                                <div style={{ fontSize: 13, opacity: 0.85 }}>{mov.cuenta}</div>
                               </div>
-                            </div>
-                          </li>
-                        )
-                      ))}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ fontWeight: 700, fontSize: 18, minWidth: 120, textAlign: 'right' }}>
+                                  {mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '+' : mov.tipo === 'transferencia' ? '' : '-'}S/ {Number(mov.monto).toFixed(2)}
+                                </div>
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                  {!isGrouped && (
+                                    <button onClick={() => handleEditMovimiento(mov)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                                      {mov._recurrente || mov.frecuencia ? 'Editar serie' : 'Editar'}
+                                    </button>
+                                  )}
+                                  <button onClick={() => handleDeleteMovimiento(mov)} style={{ background: 'rgba(0,0,0,0.15)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                                    {mov._recurrente || mov.frecuencia ? 'Eliminar serie' : 'Eliminar'}
+                                  </button>
+                                </div>
+                              </div>
+                            </li>
+                            {isExpanded && individualMovs.length > 0 && (
+                              <div style={{ 
+                                marginLeft: 40, 
+                                marginBottom: 12, 
+                                padding: '12px 16px', 
+                                background: 'rgba(0,0,0,0.05)', 
+                                borderRadius: 12,
+                                borderLeft: '3px solid var(--color-accent)'
+                              }}>
+                                <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 12, fontWeight: 700 }}>
+                                  DESGLOSE DE MOVIMIENTOS
+                                </div>
+                                {individualMovs.map((indMov, idx) => (
+                                  <div key={indMov.id} style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '10px 14px',
+                                    marginBottom: idx < individualMovs.length - 1 ? 10 : 0,
+                                    background: 'var(--color-card)',
+                                    borderRadius: 10,
+                                    boxShadow: '0 1px 4px #0001'
+                                  }}>
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text)' }}>{indMov.descripcion}</div>
+                                      <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{indMov.cuenta}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                      <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--color-text)' }}>
+                                        S/ {Number(indMov.monto).toFixed(2)}
+                                      </span>
+                                      <button onClick={() => handleEditMovimiento(indMov)} style={{
+                                        background: 'var(--color-accent)',
+                                        border: 'none',
+                                        color: '#fff',
+                                        padding: '6px 10px',
+                                        borderRadius: 8,
+                                        cursor: 'pointer',
+                                        fontSize: 13,
+                                        fontWeight: 600
+                                      }}>
+                                        Editar
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                     </ul>
                   </div>
                 );
@@ -2016,34 +2203,66 @@ export default function Calendario() {
             // Vista normal sin agrupar
             <div style={{ maxHeight: 480, overflowY: 'auto', paddingRight: 4 }}>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                {movimientosFiltrados.map(mov => (
-                  vistaCompacta ? (
+                {movimientosFiltrados.map(mov => {
+                  const isGrouped = !!(mov._ahorro || mov._transfer || mov._pagoTarjeta);
+                  const isExpanded = expandedGroups.has(mov.id);
+                  const individualMovs = isGrouped ? getIndividualMovements(mov) : [];
+                  
+                  return vistaCompacta ? (
                     // Vista compacta
-                    <li key={mov.id} style={{
-                      marginBottom: 10,
-                      padding: '14px 18px',
-                      borderRadius: 12,
-                      background: 'var(--color-card)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      boxShadow: '0 2px 6px #0001',
-                      borderLeft: `4px solid ${mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336'}`
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-                        <span style={{ fontSize: 24 }}>{getIconForTipo(mov.tipo, mov.icon)}</span>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text)' }}>{mov.descripcion}</div>
-                          <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>{mov.cuenta}</div>
+                    <React.Fragment key={mov.id}>
+                      <li style={{
+                        marginBottom: 10,
+                        padding: '14px 18px',
+                        borderRadius: 12,
+                        background: 'var(--color-card)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        boxShadow: '0 2px 6px #0001',
+                        borderLeft: `4px solid ${mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336'}`
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                          {isGrouped && (
+                            <button onClick={() => toggleGroupExpansion(mov.id)} style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: 'var(--color-accent)',
+                              padding: 0,
+                              fontSize: 18,
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              {isExpanded ? React.createElement(FaChevronDown as any) : React.createElement(FaChevronRight as any)}
+                            </button>
+                          )}
+                          <span style={{ fontSize: 24 }}>{getIconForTipo(mov.tipo, mov.icon)}</span>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text)' }}>{mov.descripcion}</div>
+                            <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>{mov.cuenta}</div>
+                          </div>
                         </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ fontWeight: 800, fontSize: 17, color: mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336' }}>
-                          {mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '+' : mov.tipo === 'transferencia' ? '' : '-'}S/ {Number(mov.monto).toFixed(2)}
-                        </span>
-                        {mov.tipo !== 'transferencia' && (
-                          <button onClick={() => handleEditMovimiento(mov)} style={{ 
-                            background: 'var(--color-accent)', 
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <span style={{ fontWeight: 800, fontSize: 17, color: mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '#4caf50' : mov.tipo === 'transferencia' ? '#2196f3' : '#f44336' }}>
+                            {mov.tipo === 'ingreso' || mov.tipo === 'ahorro' ? '+' : mov.tipo === 'transferencia' ? '' : '-'}S/ {Number(mov.monto).toFixed(2)}
+                          </span>
+                          {!isGrouped && (
+                            <button onClick={() => handleEditMovimiento(mov)} style={{ 
+                              background: 'var(--color-accent)', 
+                              border: 'none', 
+                              color: '#fff', 
+                              padding: '6px 10px', 
+                              borderRadius: 8, 
+                              cursor: 'pointer', 
+                              fontSize: 13,
+                              fontWeight: 700
+                            }}>
+                              {React.createElement(FaEdit as any, { style: { fontSize: 13 } })}
+                            </button>
+                          )}
+                          <button onClick={() => handleDeleteMovimiento(mov)} style={{ 
+                            background: '#f44336', 
                             border: 'none', 
                             color: '#fff', 
                             padding: '6px 10px', 
@@ -2052,72 +2271,174 @@ export default function Calendario() {
                             fontSize: 13,
                             fontWeight: 700
                           }}>
-                            {React.createElement(FaEdit as any, { style: { fontSize: 13 } })}
+                            {React.createElement(FaTrash as any, { style: { fontSize: 13 } })}
                           </button>
-                        )}
-                        <button onClick={() => handleDeleteMovimiento(mov)} style={{ 
-                          background: '#f44336', 
-                          border: 'none', 
-                          color: '#fff', 
-                          padding: '6px 10px', 
-                          borderRadius: 8, 
-                          cursor: 'pointer', 
-                          fontSize: 13,
-                          fontWeight: 700
+                        </div>
+                      </li>
+                      {isExpanded && individualMovs.length > 0 && (
+                        <div style={{ 
+                          marginLeft: 36, 
+                          marginBottom: 10, 
+                          padding: '10px 14px', 
+                          background: 'rgba(0,0,0,0.02)', 
+                          borderRadius: 10,
+                          borderLeft: '2px solid var(--color-accent)'
                         }}>
-                          {React.createElement(FaTrash as any, { style: { fontSize: 13 } })}
-                        </button>
-                      </div>
-                    </li>
+                          <div style={{ fontSize: 11, color: 'var(--color-muted)', marginBottom: 8, fontWeight: 700 }}>
+                            DESGLOSE DE MOVIMIENTOS
+                          </div>
+                          {individualMovs.map((indMov, idx) => (
+                            <div key={indMov.id} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '8px 12px',
+                              marginBottom: idx < individualMovs.length - 1 ? 6 : 0,
+                              background: 'var(--color-card)',
+                              borderRadius: 8,
+                              fontSize: 13
+                            }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 600, color: 'var(--color-text)' }}>{indMov.descripcion}</div>
+                                <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>{indMov.cuenta}</div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontWeight: 600, fontSize: 14 }}>
+                                  S/ {Number(indMov.monto).toFixed(2)}
+                                </span>
+                                <button onClick={() => handleEditMovimiento(indMov)} style={{
+                                  background: 'var(--color-accent)',
+                                  border: 'none',
+                                  color: '#fff',
+                                  padding: '4px 8px',
+                                  borderRadius: 6,
+                                  cursor: 'pointer',
+                                  fontSize: 11,
+                                  fontWeight: 600
+                                }}>
+                                  {React.createElement(FaEdit as any, { style: { fontSize: 10 } })}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </React.Fragment>
                   ) : (
                     // Vista normal completa (original)
-                  <li key={mov.id} style={{
-                    marginBottom: 18,
-                    padding: 22,
-                    borderRadius: 18,
-                    // Normalizar tipo y tratar 'ahorro' como ingreso para la UI; 'transferencia' usa su color propio
-                    background: mov.color ? mov.color : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? 'linear-gradient(90deg, #1de9b6 0%, #43a047 100%)' : ((mov.tipo || '').toLowerCase() === 'transferencia' ? '#1976d2' : 'linear-gradient(90deg, #ff7043 0%, #c62828 100%)')),
-                    color: (mov.color || (mov.tipo || '').toLowerCase() === 'transferencia') ? '#fff' : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '#fff' : '#222'),
-                    display: 'flex',
-                    alignItems: 'center',
-                    boxShadow: '0 2px 12px #0002',
-                    position: 'relative',
-                  }}>
-                    <span style={{ fontSize: 36, marginRight: 18 }}>{getIconForTipo((mov.tipo || '').toLowerCase(), mov.icon)}</span>
-                    <div className="movimiento-main" style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--color-text)' }}>{mov.descripcion}</div>
-                        {/* Badge que muestra el tipo: Ahorro / Ingreso / Egreso */}
-                        <div style={{ fontSize: 12, padding: '4px 8px', borderRadius: 12, background: mov.tipo === 'ingreso' ? '#1de9b6' : (mov.tipo === 'ahorro' ? '#4fc3f7' : (mov.tipo === 'transferencia' ? '#90caf9' : '#ff8a80')), color: mov.tipo === 'transferencia' ? '#0d47a1' : '#222', fontWeight: 800, textTransform: 'capitalize' }}>{mov.tipo}</div>
-                      </div>
-                      <div style={{ fontSize: 15, color: 'var(--color-muted)', marginBottom: 2 }}>{mov.cuenta}</div>
-                    </div>
-                    <div className="movimiento-right" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <div className="movimiento-amount" style={{ fontWeight: 800, fontSize: 22, color: ((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro' || (mov.tipo || '').toLowerCase() === 'transferencia') ? '#fff' : '#222', minWidth: 160, textAlign: 'right' }}>
-                        {((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '+' : ((mov.tipo || '').toLowerCase() === 'transferencia' ? '' : '-')}S/ {Number(mov.monto).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </div>
-                      <div className="movimiento-actions" style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
-                        {((mov.tipo || '').toLowerCase() !== 'transferencia') && (
-                          <button onClick={() => handleEditMovimiento(mov)} style={{ background: 'rgba(255,255,255,0.14)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
-                            {mov && (mov._recurrente || mov.frecuencia) ? 'Editar serie' : 'Editar'}
+                    <React.Fragment key={mov.id}>
+                      <li style={{
+                        marginBottom: 18,
+                        padding: 22,
+                        borderRadius: 18,
+                        // Normalizar tipo y tratar 'ahorro' como ingreso para la UI; 'transferencia' usa su color propio
+                        background: mov.color ? mov.color : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? 'linear-gradient(90deg, #1de9b6 0%, #43a047 100%)' : ((mov.tipo || '').toLowerCase() === 'transferencia' ? '#1976d2' : 'linear-gradient(90deg, #ff7043 0%, #c62828 100%)')),
+                        color: (mov.color || (mov.tipo || '').toLowerCase() === 'transferencia') ? '#fff' : (((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '#fff' : '#222'),
+                        display: 'flex',
+                        alignItems: 'center',
+                        boxShadow: '0 2px 12px #0002',
+                        position: 'relative',
+                      }}>
+                        {isGrouped && (
+                          <button onClick={() => toggleGroupExpansion(mov.id)} style={{
+                            background: 'rgba(255,255,255,0.2)',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#fff',
+                            padding: '10px',
+                            fontSize: 20,
+                            display: 'flex',
+                            alignItems: 'center',
+                            marginRight: 10,
+                            borderRadius: 10
+                          }}>
+                            {isExpanded ? React.createElement(FaChevronDown as any) : React.createElement(FaChevronRight as any)}
                           </button>
                         )}
-                        {mov && (mov._recurrente || mov.frecuencia) && (
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                            <button onClick={() => aplicarRecurrenteHoy(mov)} style={{ background: 'rgba(255,255,255,0.14)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Aplicar hoy</button>
-                            <button onClick={() => saltarRecurrenteHoy(mov)} style={{ background: 'rgba(0,0,0,0.18)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Saltar hoy</button>
-                            <button onClick={() => posponerRecurrente(mov, 7)} style={{ background: 'rgba(0,0,0,0.18)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>+1 semana</button>
-                            <button onClick={() => posponerRecurrente(mov, 30)} style={{ background: 'rgba(0,0,0,0.18)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>+1 mes</button>
+                        <span style={{ fontSize: 36, marginRight: 18 }}>{getIconForTipo((mov.tipo || '').toLowerCase(), mov.icon)}</span>
+                        <div className="movimiento-main" style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--color-text)' }}>{mov.descripcion}</div>
+                            {/* Badge que muestra el tipo: Ahorro / Ingreso / Egreso */}
+                            <div style={{ fontSize: 12, padding: '4px 8px', borderRadius: 12, background: mov.tipo === 'ingreso' ? '#1de9b6' : (mov.tipo === 'ahorro' ? '#4fc3f7' : (mov.tipo === 'transferencia' ? '#90caf9' : '#ff8a80')), color: mov.tipo === 'transferencia' ? '#0d47a1' : '#222', fontWeight: 800, textTransform: 'capitalize' }}>{mov.tipo}</div>
                           </div>
-                        )}
-                        <button onClick={() => handleDeleteMovimiento(mov)} style={{ background: 'rgba(0,0,0,0.08)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
-                          {mov && (mov._recurrente || mov.frecuencia) ? 'Eliminar serie' : 'Eliminar'}
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                  )
-                ))}
+                          <div style={{ fontSize: 15, color: 'var(--color-muted)', marginBottom: 2 }}>{mov.cuenta}</div>
+                        </div>
+                        <div className="movimiento-right" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                          <div className="movimiento-amount" style={{ fontWeight: 800, fontSize: 22, color: ((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro' || (mov.tipo || '').toLowerCase() === 'transferencia') ? '#fff' : '#222', minWidth: 160, textAlign: 'right' }}>
+                            {((mov.tipo || '').toLowerCase() === 'ingreso' || (mov.tipo || '').toLowerCase() === 'ahorro') ? '+' : ((mov.tipo || '').toLowerCase() === 'transferencia' ? '' : '-')}S/ {Number(mov.monto).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </div>
+                          <div className="movimiento-actions" style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                            {!isGrouped && (
+                              <button onClick={() => handleEditMovimiento(mov)} style={{ background: 'rgba(255,255,255,0.14)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
+                                {mov && (mov._recurrente || mov.frecuencia) ? 'Editar serie' : 'Editar'}
+                              </button>
+                            )}
+                            {mov && (mov._recurrente || mov.frecuencia) && (
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                <button onClick={() => aplicarRecurrenteHoy(mov)} style={{ background: 'rgba(255,255,255,0.14)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Aplicar hoy</button>
+                                <button onClick={() => saltarRecurrenteHoy(mov)} style={{ background: 'rgba(0,0,0,0.18)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Saltar hoy</button>
+                                <button onClick={() => posponerRecurrente(mov, 7)} style={{ background: 'rgba(0,0,0,0.18)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>+1 semana</button>
+                                <button onClick={() => posponerRecurrente(mov, 30)} style={{ background: 'rgba(0,0,0,0.18)', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>+1 mes</button>
+                              </div>
+                            )}
+                            <button onClick={() => handleDeleteMovimiento(mov)} style={{ background: 'rgba(0,0,0,0.08)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
+                              {mov && (mov._recurrente || mov.frecuencia) ? 'Eliminar serie' : 'Eliminar'}
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                      {isExpanded && individualMovs.length > 0 && (
+                        <div style={{ 
+                          marginLeft: 60, 
+                          marginBottom: 18, 
+                          padding: '16px 20px', 
+                          background: 'rgba(0,0,0,0.04)', 
+                          borderRadius: 14,
+                          borderLeft: '4px solid var(--color-accent)'
+                        }}>
+                          <div style={{ fontSize: 13, color: 'var(--color-muted)', marginBottom: 14, fontWeight: 700 }}>
+                            DESGLOSE DE MOVIMIENTOS
+                          </div>
+                          {individualMovs.map((indMov, idx) => (
+                            <div key={indMov.id} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '14px 18px',
+                              marginBottom: idx < individualMovs.length - 1 ? 12 : 0,
+                              background: 'var(--color-card)',
+                              borderRadius: 12,
+                              boxShadow: '0 2px 6px #0001'
+                            }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--color-text)' }}>{indMov.descripcion}</div>
+                                <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>{indMov.cuenta}</div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <span style={{ fontWeight: 800, fontSize: 18, color: 'var(--color-text)' }}>
+                                  S/ {Number(indMov.monto).toFixed(2)}
+                                </span>
+                                <button onClick={() => handleEditMovimiento(indMov)} style={{
+                                  background: 'var(--color-accent)',
+                                  border: 'none',
+                                  color: '#fff',
+                                  padding: '8px 14px',
+                                  borderRadius: 10,
+                                  cursor: 'pointer',
+                                  fontSize: 14,
+                                  fontWeight: 700
+                                }}>
+                                  Editar
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </ul>
             </div>
           )}

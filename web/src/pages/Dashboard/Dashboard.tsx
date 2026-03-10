@@ -185,10 +185,10 @@ export default function Dashboard() {
   // Calcular totales
   const totalIngreso = filteredMovs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
   const totalEgreso = filteredMovs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto), 0);
-  // Ahorro: contar solo el lado del ORIGEN (descripción contiene "ahorro para") para no duplicar
+  // Ahorro: contar solo el lado del DESTINO (descripción contiene "ahorro desde") para no duplicar
   // Usar visibleMovimientos (no filteredMovs) porque los ahorros tienen marcador [AHORRO#] y se excluyen en filteredMovs
   const totalAhorro = visibleMovimientos
-    .filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro para'))
+    .filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde'))
     .reduce((acc, m) => acc + Number(m.monto), 0);
 
   // Indicadores
@@ -274,8 +274,8 @@ export default function Dashboard() {
     const movs = allMovs.filter(m => !esMovimientoInterno(m));
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
-    // Ahorro: contar solo el lado del ORIGEN (descripción contiene "ahorro para") para no duplicar
-    const ahorro = allMovs.filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro para')).reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    // Ahorro: contar solo el lado del DESTINO (descripción contiene "ahorro desde") para no duplicar
+    const ahorro = allMovs.filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde')).reduce((acc, m) => acc + parseMonto(m.monto), 0);
     return { ingreso, gasto, ahorro };
   };
 
@@ -288,8 +288,8 @@ export default function Dashboard() {
     const movs = allMovs.filter(m => !esMovimientoInterno(m));
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
-    // Ahorro: contar solo el lado del ORIGEN (descripción contiene "ahorro para") para no duplicar
-    const ahorro = allMovs.filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro para')).reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    // Ahorro: contar solo el lado del DESTINO (descripción contiene "ahorro desde") para no duplicar
+    const ahorro = allMovs.filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde')).reduce((acc, m) => acc + parseMonto(m.monto), 0);
     return { ingreso, gasto, ahorro };
   };
 
