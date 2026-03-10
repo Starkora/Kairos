@@ -159,9 +159,10 @@ exports.transferir = async (req, res) => {
     const descIngreso = esAhorro
       ? `Ahorro desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''}`
       : `Transferencia desde ${cuentaO.nombre}${descripcion ? ' - ' + descripcion : ''}`;
+    const tipoDestino = esAhorro ? 'ahorro' : 'ingreso'; // Si es ahorro, ambos movimientos son tipo 'ahorro'
     const [resIngreso] = await conn.query(
       'INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, categoria_id, plataforma, icon, color, applied) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [usuario_id, destino_id, 'ingreso', monto, descIngreso, fechaStr, categoriaIdIngreso, plataforma || 'web', iconFinal, colorFinal, applied]
+      [usuario_id, destino_id, tipoDestino, monto, descIngreso, fechaStr, categoriaIdIngreso, plataforma || 'web', iconFinal, colorFinal, applied]
     );
     if (applied) {
       await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, destino_id]);
@@ -206,8 +207,8 @@ exports.pagarTarjeta = async (req, res) => {
     const plataforma = usuarios[0].plataforma;
 
     // Validar cuentas
-    const [[cuentaOrigen]] = await conn.query('SELECT id, nombre, saldo_actual FROM cuentas WHERE id = ? AND usuario_id = ?', [origen_id, usuario_id]);
-    const [[cuentaDestino]] = await conn.query('SELECT id, nombre, tipo FROM cuentas WHERE id = ? AND usuario_id = ?', [destino_id, usuario_id]);
+    const [[cuentaOrigen]] = await conn.query('SELECT id, nombre, saldo_actual, tipo FROM cuentas WHERE id = ? AND usuario_id = ?', [origen_id, usuario_id]);
+    const [[cuentaDestino]] = await conn.query('SELECT id, nombre, tipo, deuda_actual, limite_credito FROM cuentas WHERE id = ? AND usuario_id = ?', [destino_id, usuario_id]);
     
     if (!cuentaOrigen || !cuentaDestino) {
       await conn.rollback();
@@ -230,26 +231,56 @@ exports.pagarTarjeta = async (req, res) => {
 
     const iconFinal = icon || 'FaCreditCard';
     const colorFinal = color || '#ff6b6b';
-    const descFinal = descripcion || `Pago de tarjeta ${cuentaDestino.nombre} desde ${cuentaOrigen.nombre}`;
+    const code = 'PT' + Date.now(); // Código único para vincular ambos movimientos
 
-    // Crear UN SOLO movimiento tipo 'pago_tarjeta'
-    // Este tipo NO se cuenta en estadísticas de ingresos/egresos/ahorros
-    const [result] = await conn.query(
+    // CREAR DOS MOVIMIENTOS tipo 'pago_tarjeta' (como transferencias)
+    // 1. Movimiento en cuenta origen (sale dinero)
+    const descOrigen = descripcion || `Pago de ${cuentaDestino.nombre} [${code}]`;
+    const [resOrigen] = await conn.query(
       `INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, plataforma, icon, color, applied) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [usuario_id, origen_id, 'pago_tarjeta', monto, descFinal, fechaStr, plataforma || 'web', iconFinal, colorFinal, applied]
+      [usuario_id, origen_id, 'pago_tarjeta', monto, descOrigen, fechaStr, plataforma || 'web', iconFinal, colorFinal, applied]
+    );
+
+    // 2. Movimiento en cuenta destino (reduce deuda)
+    const descDestino = descripcion || `Pago desde ${cuentaOrigen.nombre} [${code}]`;
+    const [resDestino] = await conn.query(
+      `INSERT INTO movimientos (usuario_id, cuenta_id, tipo, monto, descripcion, fecha, plataforma, icon, color, applied) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [usuario_id, destino_id, 'pago_tarjeta', monto, descDestino, fechaStr, plataforma || 'web', iconFinal, colorFinal, applied]
     );
 
     // Actualizar saldos si aplica inmediatamente
     if (applied) {
-      await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, origen_id]);
-      await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, destino_id]);
+      // 1. Reducir saldo de cuenta origen
+      const tipoOrigen = (cuentaOrigen.tipo || '').toLowerCase();
+      const esOrigenTarjeta = tipoOrigen.includes('tarjeta') || tipoOrigen.includes('crédito');
+      
+      if (!esOrigenTarjeta) {
+        await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual - ? WHERE id = ?', [monto, origen_id]);
+      }
+      
+      // 2. Reducir deuda de tarjeta destino
+      const tipoDestino = (cuentaDestino.tipo || '').toLowerCase();
+      const esDestinoTarjeta = tipoDestino.includes('tarjeta') || tipoDestino.includes('crédito');
+      
+      if (esDestinoTarjeta) {
+        await conn.query(
+          'UPDATE cuentas SET deuda_actual = GREATEST(0, deuda_actual - ?), saldo_disponible = limite_credito - GREATEST(0, deuda_actual - ?) WHERE id = ?',
+          [monto, monto, destino_id]
+        );
+      } else {
+        // Si destino no es tarjeta (caso raro), aumentar su saldo
+        await conn.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, destino_id]);
+      }
     }
 
     await conn.commit();
     return res.status(201).json({ 
       success: true, 
-      id: result.insertId,
+      origenId: resOrigen.insertId,
+      destinoId: resDestino.insertId,
+      code,
       message: 'Pago de tarjeta registrado exitosamente'
     });
     

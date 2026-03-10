@@ -89,11 +89,24 @@ const Transaccion = {
     if (applied) {
       const isTarjeta = await esTarjetaCredito(cuenta_id);
       const wasIngreso = tipoNorm === 'ingreso' || tipoNorm === 'ahorro';
-      const wasPagoTarjeta = tipoNorm === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'));
+      const wasPagoTarjeta = tipoNorm === 'pago_tarjeta';
       
-      if (isTarjeta) {
-        if (wasPagoTarjeta) {
-          // Revertir pago: aumenta deuda de nuevo
+      if (wasPagoTarjeta) {
+        // Revertir pago de tarjeta
+        if (isTarjeta) {
+          // Si la cuenta es tarjeta: aumentar deuda de nuevo (se le había pagado)
+          await db.query(
+            'UPDATE cuentas SET deuda_actual = deuda_actual + ?, saldo_disponible = limite_credito - (deuda_actual + ?) WHERE id = ?',
+            [monto, monto, cuenta_id]
+          );
+        } else {
+          // Si la cuenta es normal: devolver el dinero (se había restado)
+          await db.query('UPDATE cuentas SET saldo_actual = saldo_actual + ? WHERE id = ?', [monto, cuenta_id]);
+        }
+      } else if (isTarjeta) {
+        const wasPagoTarjetaOld = tipoNorm === 'transferencia' && (desc.includes('pago') || desc.includes('tarjeta'));
+        if (wasPagoTarjetaOld) {
+          // Revertir pago antigua forma: aumenta deuda de nuevo
           await db.query(
             'UPDATE cuentas SET deuda_actual = deuda_actual + ?, saldo_disponible = limite_credito - (deuda_actual + ?) WHERE id = ?',
             [monto, monto, cuenta_id]
