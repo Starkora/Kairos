@@ -1408,34 +1408,87 @@ export default function Calendario() {
               if (!dato) return null;
               
               const tieneIngreso = dato.tipos.has('ingreso');
-              const tieneEgreso = dato.tipos.has('egreso') || dato.tipos.has('ahorro');
+              const tieneEgreso = dato.tipos.has('egreso');
+              const tieneAhorro = dato.tipos.has('ahorro');
               const tieneTransferencia = dato.tipos.has('transferencia');
+              const tienePagoTarjeta = dato.tipos.has('pago_tarjeta');
               
               return (
                 <div style={{ 
                   position: 'absolute', 
                   bottom: 2, 
-                  right: 2, 
+                  left: 0,
+                  right: 0,
                   display: 'flex', 
-                  gap: 2,
-                  flexDirection: 'column',
-                  alignItems: 'flex-end'
+                  justifyContent: 'center',
+                  gap: 3,
+                  pointerEvents: 'none'
                 }}>
-                  <div style={{ 
-                    fontSize: 9, 
-                    fontWeight: 700, 
-                    background: 'rgba(0,0,0,0.6)', 
-                    color: '#fff',
-                    padding: '1px 4px',
-                    borderRadius: 3
-                  }}>
-                    {dato.cantidad}
-                  </div>
-                  <div style={{ display: 'flex', gap: 2 }}>
-                    {tieneIngreso && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4caf50' }} title="Ingreso" />}
-                    {tieneEgreso && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f44336' }} title="Egreso" />}
-                    {tieneTransferencia && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2196f3' }} title="Transferencia" />}
-                  </div>
+                  {tieneIngreso && (
+                    <div 
+                      style={{ 
+                        width: 8, 
+                        height: 8, 
+                        borderRadius: '50%', 
+                        background: '#4caf50',
+                        border: '1px solid rgba(255,255,255,0.8)',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                      }} 
+                      title="Ingreso" 
+                    />
+                  )}
+                  {tieneEgreso && (
+                    <div 
+                      style={{ 
+                        width: 8, 
+                        height: 8, 
+                        borderRadius: '50%', 
+                        background: '#f44336',
+                        border: '1px solid rgba(255,255,255,0.8)',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                      }} 
+                      title="Egreso" 
+                    />
+                  )}
+                  {tieneAhorro && (
+                    <div 
+                      style={{ 
+                        width: 8, 
+                        height: 8, 
+                        borderRadius: '50%', 
+                        background: '#9c27b0',
+                        border: '1px solid rgba(255,255,255,0.8)',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                      }} 
+                      title="Ahorro" 
+                    />
+                  )}
+                  {tieneTransferencia && (
+                    <div 
+                      style={{ 
+                        width: 8, 
+                        height: 8, 
+                        borderRadius: '50%', 
+                        background: '#2196f3',
+                        border: '1px solid rgba(255,255,255,0.8)',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                      }} 
+                      title="Transferencia" 
+                    />
+                  )}
+                  {tienePagoTarjeta && (
+                    <div 
+                      style={{ 
+                        width: 8, 
+                        height: 8, 
+                        borderRadius: '50%', 
+                        background: '#ff6b6b',
+                        border: '1px solid rgba(255,255,255,0.8)',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                      }} 
+                      title="Pago Tarjeta" 
+                    />
+                  )}
                 </div>
               );
             }}
