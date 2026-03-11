@@ -368,18 +368,21 @@ export default function Dashboard() {
       subtitle3: variacion ? variacion.text : '',
       subtitle3Color: variacion ? variacion.color : undefined,
       isAmount: true,
+      detalle: true,
     },
     {
       IconComponent: FaArrowDown,
       color: '#ff9800',
       titulo: 'Indicadores Egresos',
       valor: filteredMovs.filter(m => m.tipo === 'egreso').length,
+      detalle: true,
     },
     {
       IconComponent: FaArrowUp,
       color: '#388e3c',
       titulo: 'Indicadores Ingresos',
       valor: filteredMovs.filter(m => m.tipo === 'ingreso').length,
+      detalle: true,
     },
     {
       IconComponent: FaUniversity,
@@ -921,7 +924,18 @@ export default function Dashboard() {
                 transition: esClickeable ? 'box-shadow 0.18s, transform 0.15s' : undefined,
                 position: 'relative',
               }}
-              onClick={esClickeable ? () => { setModalDetalle({ tipo: item.titulo === 'Gastos' ? 'egreso' : item.titulo === 'Ingreso' ? 'ingreso' : 'ahorro', titulo: item.titulo, color: item.color }); setModalBusqueda(''); } : undefined}
+              onClick={esClickeable ? () => {
+                const mapTipo = (t: string) => {
+                  if (t === 'Gastos') return 'egreso';
+                  if (t === 'Ingreso') return 'ingreso';
+                  if (t === 'Ahorro') return 'ahorro';
+                  if (t === 'Indicadores Egresos') return 'indicador_egreso';
+                  if (t === 'Indicadores Ingresos') return 'indicador_ingreso';
+                  return 'saldo';
+                };
+                setModalDetalle({ tipo: mapTipo(item.titulo), titulo: item.titulo, color: item.color });
+                setModalBusqueda('');
+              } : undefined}
               onMouseEnter={esClickeable ? (e) => { (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 20px ${item.color}44`; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; } : undefined}
               onMouseLeave={esClickeable ? (e) => { (e.currentTarget as HTMLElement).style.boxShadow = ''; (e.currentTarget as HTMLElement).style.transform = ''; } : undefined}
             >
@@ -1645,17 +1659,100 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Modal de detalle: Ingreso / Gastos / Ahorro */}
+      {/* Modal de detalle: Saldo / Indicadores / Ingreso / Gastos / Ahorro */}
       {modalDetalle && (() => {
-        const tipoKey = modalDetalle.tipo; // 'ingreso' | 'egreso' | 'ahorro'
-        const movsDetalle = tipoKey === 'ahorro'
+        const tipoKey = modalDetalle.tipo;
+        const colorModal = modalDetalle.color;
+
+        // ── Modal especial: Saldo total ───────────────────────────────────────
+        if (tipoKey === 'saldo') {
+          const cuentasOrdenadas = [...cuentas].sort((a, b) => {
+            const sa = parseMonto(a.saldo_actual ?? a.saldo ?? 0);
+            const sb = parseMonto(b.saldo_actual ?? b.saldo ?? 0);
+            return sb - sa;
+          });
+          const q = modalBusqueda.trim().toLowerCase();
+          const cuentasFiltradas = q ? cuentasOrdenadas.filter(c => String(c.nombre || '').toLowerCase().includes(q) || String(c.tipo || '').toLowerCase().includes(q)) : cuentasOrdenadas;
+          const totalSaldo = cuentasFiltradas.reduce((acc, c) => acc + parseMonto(c.saldo_actual ?? c.saldo ?? 0), 0);
+          return (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+              onClick={() => setModalDetalle(null)}>
+              <div style={{ background: 'var(--color-card)', borderRadius: 18, width: '100%', maxWidth: 700, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.4)', borderTop: `4px solid ${colorModal}`, overflow: 'hidden' }}
+                onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div style={{ padding: '20px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-input-border)', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: colorModal }} />
+                    <div>
+                      <h3 style={{ margin: 0, color: 'var(--color-text)', fontSize: 18 }}>{modalDetalle.titulo}</h3>
+                      <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                        {cuentasFiltradas.length} cuenta{cuentasFiltradas.length !== 1 ? 's' : ''} — Total: <strong style={{ color: colorModal }}>S/ {totalSaldo.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={() => setModalDetalle(null)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--color-text-secondary)', lineHeight: 1 }}>×</button>
+                </div>
+                {/* Buscador */}
+                <div style={{ padding: '12px 24px', flexShrink: 0, borderBottom: '1px solid var(--color-input-border)' }}>
+                  <input value={modalBusqueda} onChange={e => setModalBusqueda(e.target.value)} placeholder="Buscar cuenta..." autoFocus
+                    style={{ width: '100%', padding: '8px 14px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14, boxSizing: 'border-box' }} />
+                </div>
+                {/* Tabla */}
+                <div style={{ overflowY: 'auto', flex: 1 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: 'var(--color-input-bg)', position: 'sticky', top: 0, zIndex: 1 }}>
+                        <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Cuenta</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Tipo</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)' }}>En cálculos</th>
+                        <th style={{ padding: '10px 24px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>Saldo actual</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cuentasFiltradas.map((c, i) => {
+                        const saldo = parseMonto(c.saldo_actual ?? c.saldo ?? 0);
+                        const incluida = c.incluir_en_calculos !== false && c.incluir_en_calculos !== 0;
+                        return (
+                          <tr key={i} style={{ borderBottom: '1px solid var(--color-input-border)', transition: 'background 0.12s' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--color-input-bg)'}
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
+                            <td style={{ padding: '10px 24px', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{c.nombre || 'Sin nombre'}</td>
+                            <td style={{ padding: '10px 12px', fontSize: 12 }}>
+                              <span style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-input-border)', borderRadius: 20, padding: '2px 10px', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>{c.tipo || '—'}</span>
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'center', fontSize: 12 }}>
+                              {incluida
+                                ? <span style={{ background: '#2e7d3222', color: '#2e7d32', borderRadius: 20, padding: '2px 10px', fontWeight: 600 }}>✓ Sí</span>
+                                : <span style={{ background: '#e5393522', color: '#e53935', borderRadius: 20, padding: '2px 10px', fontWeight: 600 }}>✕ No</span>}
+                            </td>
+                            <td style={{ padding: '10px 24px', fontSize: 14, fontWeight: 700, textAlign: 'right', color: saldo < 0 ? '#e53935' : colorModal, whiteSpace: 'nowrap' }}>S/ {saldo.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: 'var(--color-input-bg)', borderTop: `2px solid ${colorModal}` }}>
+                        <td colSpan={3} style={{ padding: '10px 24px', fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)' }}>Total ({cuentasFiltradas.length} cuentas)</td>
+                        <td style={{ padding: '10px 24px', fontSize: 15, fontWeight: 800, color: totalSaldo < 0 ? '#e53935' : colorModal, textAlign: 'right' }}>S/ {totalSaldo.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // ── Movimientos (ingreso/egreso/ahorro/indicador_egreso/indicador_ingreso) ──
+        const resolvedTipo = tipoKey === 'indicador_egreso' ? 'egreso' : tipoKey === 'indicador_ingreso' ? 'ingreso' : tipoKey;
+        const movsDetalle = resolvedTipo === 'ahorro'
           ? visibleMovimientos.filter(m => {
               if (!(m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde'))) return false;
               const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
               if (cuentasExcluidasCalculo.has(cid)) return false;
               return true;
             })
-          : filteredMovs.filter(m => m.tipo === tipoKey);
+          : filteredMovs.filter(m => m.tipo === resolvedTipo);
         const q = modalBusqueda.trim().toLowerCase();
         const movsFiltrados = q
           ? movsDetalle.filter(m =>
@@ -1666,7 +1763,6 @@ export default function Dashboard() {
           : movsDetalle;
         const movsSorted = [...movsFiltrados].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
         const totalModal = movsSorted.reduce((acc, m) => acc + Number(m.monto), 0);
-        const colorModal = modalDetalle.color;
         // Agrupar por categoría
         const porCategoria: Record<string, number> = {};
         movsSorted.forEach(m => { const c = m.categoria || 'Sin categoría'; porCategoria[c] = (porCategoria[c] || 0) + Number(m.monto); });
