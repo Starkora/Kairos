@@ -57,6 +57,8 @@ export default function Dashboard() {
   // Permitir selección múltiple de segmentos
   const [segmentos, setSegmentos] = React.useState({ Ahorro: true, Gasto: true, Ingreso: true });
   const [categoriaModal, setCategoriaModal] = React.useState<any>(null);
+  const [modalDetalle, setModalDetalle] = React.useState<{ tipo: string; titulo: string; color: string } | null>(null);
+  const [modalBusqueda, setModalBusqueda] = React.useState('');
 
   const handleSegmentoChange = (e) => {
     const { name, checked } = e.target;
@@ -347,6 +349,7 @@ export default function Dashboard() {
       subtitle3: trend.ingreso.text,
       subtitle3Color: trend.ingreso.color,
       isAmount: true,
+      detalle: true,
     },
     {
       IconComponent: FaMoneyBillWave,
@@ -356,6 +359,7 @@ export default function Dashboard() {
       subtitle3: trend.gasto.text,
       subtitle3Color: trend.gasto.color,
       isAmount: true,
+      detalle: true,
     },
     {
       IconComponent: FaPiggyBank,
@@ -365,6 +369,7 @@ export default function Dashboard() {
       subtitle3: trend.ahorro.text,
       subtitle3Color: trend.ahorro.color,
       isAmount: true,
+      detalle: true,
     },
   ];
 
@@ -864,8 +869,25 @@ export default function Dashboard() {
       <div style={{ display: 'flex', gap: 24, margin: '24px 0 32px 0', justifyContent: 'space-between', flexWrap: 'wrap' }}>
         {indicadores.map((item, idx) => {
           const Icon = item.IconComponent as IconType;
+          const esClickeable = (item as any).detalle === true;
           return (
-            <div key={idx} className="card" style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center', borderLeft: `4px solid ${item.color}` }}>
+            <div
+              key={idx}
+              className="card"
+              style={{
+                flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center',
+                borderLeft: `4px solid ${item.color}`,
+                cursor: esClickeable ? 'pointer' : 'default',
+                transition: esClickeable ? 'box-shadow 0.18s, transform 0.15s' : undefined,
+                position: 'relative',
+              }}
+              onClick={esClickeable ? () => { setModalDetalle({ tipo: item.titulo === 'Gastos' ? 'egreso' : item.titulo === 'Ingreso' ? 'ingreso' : 'ahorro', titulo: item.titulo, color: item.color }); setModalBusqueda(''); } : undefined}
+              onMouseEnter={esClickeable ? (e) => { (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 20px ${item.color}44`; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; } : undefined}
+              onMouseLeave={esClickeable ? (e) => { (e.currentTarget as HTMLElement).style.boxShadow = ''; (e.currentTarget as HTMLElement).style.transform = ''; } : undefined}
+            >
+              {esClickeable && (
+                <div style={{ position: 'absolute', top: 8, right: 10, fontSize: 10, color: item.color, fontWeight: 700, opacity: 0.7, letterSpacing: 0.5 }}>VER DETALLE ▸</div>
+              )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {React.createElement(Icon as any, { size: 28, color: item.color })}
                 <div>
@@ -1582,6 +1604,123 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Modal de detalle: Ingreso / Gastos / Ahorro */}
+      {modalDetalle && (() => {
+        const tipoKey = modalDetalle.tipo; // 'ingreso' | 'egreso' | 'ahorro'
+        const movsDetalle = tipoKey === 'ahorro'
+          ? visibleMovimientos.filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde'))
+          : filteredMovs.filter(m => m.tipo === tipoKey);
+        const q = modalBusqueda.trim().toLowerCase();
+        const movsFiltrados = q
+          ? movsDetalle.filter(m =>
+              String(m.descripcion || '').toLowerCase().includes(q) ||
+              String(m.categoria || '').toLowerCase().includes(q) ||
+              String(m.monto || '').includes(q)
+            )
+          : movsDetalle;
+        const movsSorted = [...movsFiltrados].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+        const totalModal = movsSorted.reduce((acc, m) => acc + Number(m.monto), 0);
+        const colorModal = modalDetalle.color;
+        // Agrupar por categoría
+        const porCategoria: Record<string, number> = {};
+        movsSorted.forEach(m => { const c = m.categoria || 'Sin categoría'; porCategoria[c] = (porCategoria[c] || 0) + Number(m.monto); });
+        const topCats = Object.entries(porCategoria).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        return (
+          <div
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+            onClick={() => setModalDetalle(null)}
+          >
+            <div
+              style={{ background: 'var(--color-card)', borderRadius: 18, width: '100%', maxWidth: 680, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: `0 20px 60px rgba(0,0,0,0.4)`, borderTop: `4px solid ${colorModal}`, overflow: 'hidden' }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div style={{ padding: '20px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-input-border)', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: colorModal, flexShrink: 0 }} />
+                  <div>
+                    <h3 style={{ margin: 0, color: 'var(--color-text)', fontSize: 18 }}>{modalDetalle.titulo}</h3>
+                    <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                      {movsSorted.length} movimiento{movsSorted.length !== 1 ? 's' : ''} — Total: <strong style={{ color: colorModal }}>S/ {totalModal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                    </div>
+                  </div>
+                </div>
+                <button onClick={() => setModalDetalle(null)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--color-text-secondary)', lineHeight: 1 }}>✕</button>
+              </div>
+
+              {/* Top categorías */}
+              {topCats.length > 0 && !q && (
+                <div style={{ padding: '12px 24px', display: 'flex', gap: 8, flexWrap: 'wrap', borderBottom: '1px solid var(--color-input-border)', flexShrink: 0 }}>
+                  {topCats.map(([cat, monto]) => (
+                    <div key={cat} style={{ background: 'var(--color-input-bg)', borderRadius: 20, padding: '4px 12px', fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span style={{ color: 'var(--color-text-secondary)' }}>{cat}</span>
+                      <span style={{ fontWeight: 700, color: colorModal }}>S/ {Number(monto).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Buscador */}
+              <div style={{ padding: '12px 24px', flexShrink: 0, borderBottom: '1px solid var(--color-input-border)' }}>
+                <input
+                  value={modalBusqueda}
+                  onChange={e => setModalBusqueda(e.target.value)}
+                  placeholder="Buscar por descripción, categoría o monto..."
+                  autoFocus
+                  style={{ width: '100%', padding: '8px 14px', borderRadius: 10, border: '1px solid var(--color-input-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)', fontSize: 14, boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {/* Lista */}
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+                {movsSorted.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-secondary)' }}>No hay movimientos{q ? ' que coincidan con la búsqueda' : ''}.</div>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: 'var(--color-input-bg)', position: 'sticky', top: 0, zIndex: 1 }}>
+                        <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>Fecha</th>
+                        <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Descripción</th>
+                        <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>Categoría</th>
+                        <th style={{ padding: '10px 24px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>Monto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {movsSorted.map((m, i) => {
+                        const fecha = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
+                        const fechaStr = isNaN(fecha.getTime()) ? m.fecha : fecha.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+                        const desc = String(m.descripcion || 'Sin descripción').replace(/\[.*?\]/g, '').trim();
+                        return (
+                          <tr key={i} style={{ borderBottom: '1px solid var(--color-input-border)', transition: 'background 0.12s' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--color-input-bg)'}
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}
+                          >
+                            <td style={{ padding: '10px 24px', fontSize: 13, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>{fechaStr}</td>
+                            <td style={{ padding: '10px 16px', fontSize: 13, color: 'var(--color-text)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={desc}>{desc || 'Sin descripción'}</td>
+                            <td style={{ padding: '10px 16px', fontSize: 12 }}>
+                              {m.categoria ? (
+                                <span style={{ background: `${colorModal}22`, color: colorModal, borderRadius: 20, padding: '2px 10px', fontWeight: 600, whiteSpace: 'nowrap' }}>{m.categoria}</span>
+                              ) : <span style={{ color: 'var(--color-text-secondary)', fontSize: 11 }}>—</span>}
+                            </td>
+                            <td style={{ padding: '10px 24px', fontSize: 14, fontWeight: 700, color: colorModal, textAlign: 'right', whiteSpace: 'nowrap' }}>S/ {Number(m.monto).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: 'var(--color-input-bg)', borderTop: `2px solid ${colorModal}` }}>
+                        <td colSpan={3} style={{ padding: '10px 24px', fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)' }}>Total ({movsSorted.length} mov.)</td>
+                        <td style={{ padding: '10px 24px', fontSize: 15, fontWeight: 800, color: colorModal, textAlign: 'right' }}>S/ {totalModal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
