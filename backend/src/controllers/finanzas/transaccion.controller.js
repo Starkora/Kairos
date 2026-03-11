@@ -800,7 +800,7 @@ exports.exportarExcel = async (req, res) => {
       FROM movimientos m
       JOIN cuentas c ON m.cuenta_id = c.id
       LEFT JOIN categorias cat ON m.categoria_id = cat.id
-      WHERE m.usuario_id = ? AND m.plataforma = ? AND DATE(m.fecha) BETWEEN ? AND ?
+      WHERE m.usuario_id = ? AND m.plataforma = ? AND m.estado = 'activo' AND c.estado = 'activo' AND DATE(m.fecha) BETWEEN ? AND ?
     `;
     const params = [usuario_id, plataforma, start, end];
     
