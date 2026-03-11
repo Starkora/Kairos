@@ -1680,10 +1680,11 @@ export default function Dashboard() {
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ background: 'var(--color-input-bg)', position: 'sticky', top: 0, zIndex: 1 }}>
-                        <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>Fecha</th>
-                        <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Descripción</th>
-                        <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>Categoría</th>
-                        <th style={{ padding: '10px 24px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>Monto</th>
+                        <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>Fecha</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Descripción</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>Categoría</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>Cuenta</th>
+                        <th style={{ padding: '10px 16px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>Monto</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1691,27 +1692,32 @@ export default function Dashboard() {
                         const fecha = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
                         const fechaStr = isNaN(fecha.getTime()) ? m.fecha : fecha.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
                         const desc = String(m.descripcion || 'Sin descripción').replace(/\[.*?\]/g, '').trim();
+                        const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
+                        const cuentaNombre = cuentas.find(c => Number(c.id) === cid)?.nombre || '—';
                         return (
                           <tr key={i} style={{ borderBottom: '1px solid var(--color-input-border)', transition: 'background 0.12s' }}
                             onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--color-input-bg)'}
                             onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}
                           >
-                            <td style={{ padding: '10px 24px', fontSize: 13, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>{fechaStr}</td>
-                            <td style={{ padding: '10px 16px', fontSize: 13, color: 'var(--color-text)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={desc}>{desc || 'Sin descripción'}</td>
-                            <td style={{ padding: '10px 16px', fontSize: 12 }}>
+                            <td style={{ padding: '10px 16px', fontSize: 13, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>{fechaStr}</td>
+                            <td style={{ padding: '10px 12px', fontSize: 13, color: 'var(--color-text)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={desc}>{desc || 'Sin descripción'}</td>
+                            <td style={{ padding: '10px 12px', fontSize: 12 }}>
                               {m.categoria ? (
                                 <span style={{ background: `${colorModal}22`, color: colorModal, borderRadius: 20, padding: '2px 10px', fontWeight: 600, whiteSpace: 'nowrap' }}>{m.categoria}</span>
                               ) : <span style={{ color: 'var(--color-text-secondary)', fontSize: 11 }}>—</span>}
                             </td>
-                            <td style={{ padding: '10px 24px', fontSize: 14, fontWeight: 700, color: colorModal, textAlign: 'right', whiteSpace: 'nowrap' }}>S/ {Number(m.monto).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td style={{ padding: '10px 12px', fontSize: 12, whiteSpace: 'nowrap' }}>
+                              <span style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-input-border)', color: 'var(--color-text)', borderRadius: 20, padding: '2px 10px', fontWeight: 500 }}>{cuentaNombre}</span>
+                            </td>
+                            <td style={{ padding: '10px 16px', fontSize: 14, fontWeight: 700, color: colorModal, textAlign: 'right', whiteSpace: 'nowrap' }}>S/ {Number(m.monto).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                           </tr>
                         );
                       })}
                     </tbody>
                     <tfoot>
                       <tr style={{ background: 'var(--color-input-bg)', borderTop: `2px solid ${colorModal}` }}>
-                        <td colSpan={3} style={{ padding: '10px 24px', fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)' }}>Total ({movsSorted.length} mov.)</td>
-                        <td style={{ padding: '10px 24px', fontSize: 15, fontWeight: 800, color: colorModal, textAlign: 'right' }}>S/ {totalModal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td colSpan={4} style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)' }}>Total ({movsSorted.length} mov.)</td>
+                        <td style={{ padding: '10px 16px', fontSize: 15, fontWeight: 800, color: colorModal, textAlign: 'right' }}>S/ {totalModal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                       </tr>
                     </tfoot>
                   </table>
