@@ -134,7 +134,7 @@ export default function Dashboard() {
       try {
         // Filtrar por año
         if (!m.fecha) return false;
-        const movDate = new Date(m.fecha);
+        const movDate = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
         
         // Validar que la fecha es válida
         if (isNaN(movDate.getTime())) return false;
@@ -309,7 +309,7 @@ export default function Dashboard() {
   const getCurrentMonthData = () => {
     const allMovs = movimientos.filter(m => {
       if (!m.fecha) return false;
-      const d = new Date(m.fecha);
+      const d = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
       return d.getFullYear() === comparisonCurrentYear && d.getMonth() === comparisonCurrentMonth;
     });
     const movs = allMovs.filter(m => {
@@ -332,7 +332,7 @@ export default function Dashboard() {
   const getPreviousMonthData = () => {
     const allMovs = movimientos.filter(m => {
       if (!m.fecha) return false;
-      const d = new Date(m.fecha);
+      const d = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
       return d.getFullYear() === comparisonPreviousYear && d.getMonth() === comparisonPreviousMonth;
     });
     const movs = allMovs.filter(m => {
@@ -454,7 +454,7 @@ export default function Dashboard() {
     const endOfMonth = new Date(projYear, projMonth + 1, 0);
     const pendientes = movimientos.filter(m => {
       if (!m.fecha) return false;
-      const d = new Date(m.fecha);
+      const d = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
       if (d > endOfMonth) return false;
       if (typeof m.applied !== 'undefined' && m.applied !== null) {
         return Number(m.applied) === 0;
@@ -542,7 +542,7 @@ export default function Dashboard() {
         return Number(m.applied) === 0;
       }
       if (!m.fecha) return false;
-      const d = new Date(m.fecha);
+      const d = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
       return d <= new Date() && d > today;
     }).length;
 
@@ -572,7 +572,7 @@ export default function Dashboard() {
 
     const movsEstaSemana = movimientos.filter(m => {
       if (!m.fecha) return false;
-      const d = new Date(m.fecha);
+      const d = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
       return d >= inicioSemana && d <= finSemana;
     });
 
@@ -583,7 +583,7 @@ export default function Dashboard() {
 
     const movsSemanaAnterior = movimientos.filter(m => {
       if (!m.fecha) return false;
-      const d = new Date(m.fecha);
+      const d = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
       return d >= inicioSemanaAnterior && d <= finSemanaAnterior;
     });
 
@@ -607,7 +607,7 @@ export default function Dashboard() {
     // Filtrar movimientos de este mes
   const movsMes = filteredMovs.filter(m => {
       if (!m.fecha) return false;
-      let fecha = new Date(m.fecha);
+      let fecha = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
       // Si la fecha es inválida, forzar mes 0 (enero)
       if (isNaN(fecha.getTime())) return idx === 0;
       return fecha.getMonth() === idx;
@@ -628,7 +628,7 @@ export default function Dashboard() {
     // Agregar años de los movimientos existentes
     movimientos.forEach(m => {
       if (m.fecha) {
-        const d = new Date(m.fecha);
+        const d = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
         set.add(d.getFullYear());
       }
     });
@@ -1309,7 +1309,7 @@ export default function Dashboard() {
                   return Number(m.applied) === 0;
                 }
                 if (!m.fecha) return false;
-                const movDate = new Date(m.fecha);
+                const movDate = new Date((m.fecha || '').slice(0, 10) + 'T00:00:00');
                 movDate.setHours(0, 0, 0, 0);
                 return movDate.getTime() > today.getTime();
               } catch (e) {
@@ -1353,7 +1353,7 @@ export default function Dashboard() {
               const peruDate = new Date(utc + peruOffset * 60000);
               peruDate.setHours(0, 0, 0, 0);
               // Fecha del movimiento (solo año, mes, día)
-              const movDate = new Date(m.fecha);
+              const movDate = new Date((m.fecha || '').slice(0, 10) + 'T00:00:00');
               movDate.setHours(0, 0, 0, 0);
               return movDate.getTime() > peruDate.getTime();
             } catch (e) {
