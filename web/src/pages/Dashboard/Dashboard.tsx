@@ -604,18 +604,26 @@ export default function Dashboard() {
   const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   // Normalizar fechas y asegurar que todos los meses estén presentes
   const data = meses.map((nombreMes, idx) => {
-    // Filtrar movimientos de este mes
-  const movsMes = filteredMovs.filter(m => {
+    // Filtrar movimientos de este mes (ingresos/gastos desde filteredMovs, ahorros desde visibleMovimientos)
+    const movsMes = filteredMovs.filter(m => {
       if (!m.fecha) return false;
-      let fecha = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
-      // Si la fecha es inválida, forzar mes 0 (enero)
+      const fecha = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
       if (isNaN(fecha.getTime())) return idx === 0;
       return fecha.getMonth() === idx;
     });
     const Ingreso = movsMes.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
     const Gasto = movsMes.filter(m => esGasto(m)).reduce((acc, m) => acc + Number(m.monto), 0);
-    // Ahorro por mes: sumar movimientos de tipo 'ahorro' en ese mes
-    const Ahorro = movsMes.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + Number(m.monto), 0);
+    // Ahorro: usar visibleMovimientos porque filteredMovs excluye los [AHORRO#]
+    // Contar solo el lado destino ("ahorro desde") para no duplicar, igual que totalAhorro
+    const Ahorro = visibleMovimientos.filter(m => {
+      if (!(m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde'))) return false;
+      const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
+      if (cuentasExcluidasCalculo.has(cid)) return false;
+      if (!m.fecha) return false;
+      const fecha = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
+      if (isNaN(fecha.getTime())) return idx === 0;
+      return fecha.getMonth() === idx;
+    }).reduce((acc, m) => acc + Number(m.monto), 0);
     return { mes: nombreMes, Ingreso, Gasto, Ahorro };
   });
 
