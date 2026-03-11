@@ -180,17 +180,39 @@ export default function Dashboard() {
     );
   }, []);
 
+  // Set de IDs de cuentas que NO deben incluirse en cálculos (incluir_en_calculos === false o 0)
+  const cuentasExcluidasCalculo = React.useMemo(() => {
+    const ids = new Set<number>();
+    cuentas.forEach(c => {
+      if (c.incluir_en_calculos === false || c.incluir_en_calculos === 0) {
+        ids.add(Number(c.id));
+      }
+    });
+    return ids;
+  }, [cuentas]);
+
   const filteredMovs = React.useMemo(() => {
-    return visibleMovimientos.filter(m => !esMovimientoInterno(m));
-  }, [visibleMovimientos, esMovimientoInterno]);
+    return visibleMovimientos.filter(m => {
+      if (esMovimientoInterno(m)) return false;
+      const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
+      if (cuentasExcluidasCalculo.has(cid)) return false;
+      return true;
+    });
+  }, [visibleMovimientos, esMovimientoInterno, cuentasExcluidasCalculo]);
 
   // Calcular totales
   const totalIngreso = filteredMovs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
   const totalEgreso = filteredMovs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto), 0);
   // Ahorro: contar solo el lado del DESTINO (descripción contiene "ahorro desde") para no duplicar
   // Usar visibleMovimientos (no filteredMovs) porque los ahorros tienen marcador [AHORRO#] y se excluyen en filteredMovs
+  // También excluir cuentas con incluir_en_calculos=false
   const totalAhorro = visibleMovimientos
-    .filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde'))
+    .filter(m => {
+      if (!(m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde'))) return false;
+      const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
+      if (cuentasExcluidasCalculo.has(cid)) return false;
+      return true;
+    })
     .reduce((acc, m) => acc + Number(m.monto), 0);
 
   // Indicadores
@@ -273,11 +295,20 @@ export default function Dashboard() {
       const d = new Date(m.fecha);
       return d.getFullYear() === comparisonCurrentYear && d.getMonth() === comparisonCurrentMonth;
     });
-    const movs = allMovs.filter(m => !esMovimientoInterno(m));
+    const movs = allMovs.filter(m => {
+      if (esMovimientoInterno(m)) return false;
+      const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
+      if (cuentasExcluidasCalculo.has(cid)) return false;
+      return true;
+    });
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
-    // Ahorro: contar solo el lado del DESTINO (descripción contiene "ahorro desde") para no duplicar
-    const ahorro = allMovs.filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde')).reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const ahorro = allMovs.filter(m => {
+      if (!(m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde'))) return false;
+      const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
+      if (cuentasExcluidasCalculo.has(cid)) return false;
+      return true;
+    }).reduce((acc, m) => acc + parseMonto(m.monto), 0);
     return { ingreso, gasto, ahorro };
   };
 
@@ -287,11 +318,20 @@ export default function Dashboard() {
       const d = new Date(m.fecha);
       return d.getFullYear() === comparisonPreviousYear && d.getMonth() === comparisonPreviousMonth;
     });
-    const movs = allMovs.filter(m => !esMovimientoInterno(m));
+    const movs = allMovs.filter(m => {
+      if (esMovimientoInterno(m)) return false;
+      const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
+      if (cuentasExcluidasCalculo.has(cid)) return false;
+      return true;
+    });
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
-    // Ahorro: contar solo el lado del DESTINO (descripción contiene "ahorro desde") para no duplicar
-    const ahorro = allMovs.filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde')).reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const ahorro = allMovs.filter(m => {
+      if (!(m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde'))) return false;
+      const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
+      if (cuentasExcluidasCalculo.has(cid)) return false;
+      return true;
+    }).reduce((acc, m) => acc + parseMonto(m.monto), 0);
     return { ingreso, gasto, ahorro };
   };
 
@@ -1609,7 +1649,12 @@ export default function Dashboard() {
       {modalDetalle && (() => {
         const tipoKey = modalDetalle.tipo; // 'ingreso' | 'egreso' | 'ahorro'
         const movsDetalle = tipoKey === 'ahorro'
-          ? visibleMovimientos.filter(m => m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde'))
+          ? visibleMovimientos.filter(m => {
+              if (!(m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde'))) return false;
+              const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
+              if (cuentasExcluidasCalculo.has(cid)) return false;
+              return true;
+            })
           : filteredMovs.filter(m => m.tipo === tipoKey);
         const q = modalBusqueda.trim().toLowerCase();
         const movsFiltrados = q
@@ -1632,7 +1677,7 @@ export default function Dashboard() {
             onClick={() => setModalDetalle(null)}
           >
             <div
-              style={{ background: 'var(--color-card)', borderRadius: 18, width: '100%', maxWidth: 680, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: `0 20px 60px rgba(0,0,0,0.4)`, borderTop: `4px solid ${colorModal}`, overflow: 'hidden' }}
+              style={{ background: 'var(--color-card)', borderRadius: 18, width: '100%', maxWidth: 940, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: `0 20px 60px rgba(0,0,0,0.4)`, borderTop: `4px solid ${colorModal}`, overflow: 'hidden' }}
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
