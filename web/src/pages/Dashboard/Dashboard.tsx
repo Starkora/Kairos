@@ -205,9 +205,21 @@ export default function Dashboard() {
     });
   }, [visibleMovimientos, esMovimientoInterno, cuentasExcluidasCalculo]);
 
+  // Helper: un movimiento cuenta como "gasto" si es egreso normal,
+  // O si es el lado ORIGEN de un pago de tarjeta (dinero real que sale de una cuenta incluida)
+  const esGasto = React.useCallback((m: any): boolean => {
+    if (m.tipo === 'egreso') return true;
+    if (m.tipo === 'pago_tarjeta') {
+      const desc = String(m.descripcion || '').toLowerCase();
+      // Lado origen: "pago de [tarjeta]..." — NO contiene "pago desde"
+      return !desc.includes('pago desde ');
+    }
+    return false;
+  }, []);
+
   // Calcular totales
   const totalIngreso = filteredMovs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
-  const totalEgreso = filteredMovs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto), 0);
+  const totalEgreso = filteredMovs.filter(m => esGasto(m)).reduce((acc, m) => acc + Number(m.monto), 0);
   // Ahorro: contar solo el lado del DESTINO (descripción contiene "ahorro desde") para no duplicar
   // Usar visibleMovimientos (no filteredMovs) porque los ahorros tienen marcador [AHORRO#] y se excluyen en filteredMovs
   // También excluir cuentas con incluir_en_calculos=false
@@ -273,7 +285,7 @@ export default function Dashboard() {
 
   // Top egresos por categoría
   const egresosPorCategoria = {};
-  filteredMovs.filter(m => m.tipo === 'egreso').forEach(m => {
+  filteredMovs.filter(m => esGasto(m)).forEach(m => {
     const cat = m.categoria || 'Sin categoría';
     egresosPorCategoria[cat] = (egresosPorCategoria[cat] || 0) + Number(m.monto);
   });
@@ -307,7 +319,7 @@ export default function Dashboard() {
       return true;
     });
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
-    const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const gasto = movs.filter(m => esGasto(m)).reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const ahorro = allMovs.filter(m => {
       if (!(m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde'))) return false;
       const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
@@ -330,7 +342,7 @@ export default function Dashboard() {
       return true;
     });
     const ingreso = movs.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
-    const gasto = movs.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const gasto = movs.filter(m => esGasto(m)).reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const ahorro = allMovs.filter(m => {
       if (!(m.tipo === 'ahorro' && String(m.descripcion || '').toLowerCase().includes('ahorro desde'))) return false;
       const cid = Number(m.cuenta_id || m.cuentaId || m.cuentaID);
@@ -379,7 +391,7 @@ export default function Dashboard() {
       IconComponent: FaArrowDown,
       color: '#ff9800',
       titulo: 'Indicadores Egresos',
-      valor: filteredMovs.filter(m => m.tipo === 'egreso').length,
+      valor: filteredMovs.filter(m => esGasto(m)).length,
       detalle: true,
     },
     {
@@ -464,7 +476,7 @@ export default function Dashboard() {
     presupuestos.forEach(p => {
       if (p.limite && p.limite > 0) {
         const gastado = filteredMovs
-          .filter(m => m.tipo === 'egreso' && m.categoria === p.categoria)
+          .filter(m => esGasto(m) && m.categoria === p.categoria)
           .reduce((acc, m) => acc + parseMonto(m.monto), 0);
         const porcentaje = (gastado / p.limite) * 100;
         if (porcentaje >= 85 && porcentaje < 100) {
@@ -575,8 +587,8 @@ export default function Dashboard() {
       return d >= inicioSemanaAnterior && d <= finSemanaAnterior;
     });
 
-    const gastosEstaSemana = movsEstaSemana.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
-    const gastosSemanaAnterior = movsSemanaAnterior.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const gastosEstaSemana = movsEstaSemana.filter(m => esGasto(m)).reduce((acc, m) => acc + parseMonto(m.monto), 0);
+    const gastosSemanaAnterior = movsSemanaAnterior.filter(m => esGasto(m)).reduce((acc, m) => acc + parseMonto(m.monto), 0);
     const promedioDiario = gastosEstaSemana / 7;
 
     const cambioSemanal = gastosSemanaAnterior > 0 
@@ -601,7 +613,7 @@ export default function Dashboard() {
       return fecha.getMonth() === idx;
     });
     const Ingreso = movsMes.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + Number(m.monto), 0);
-    const Gasto = movsMes.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + Number(m.monto), 0);
+    const Gasto = movsMes.filter(m => esGasto(m)).reduce((acc, m) => acc + Number(m.monto), 0);
     // Ahorro por mes: sumar movimientos de tipo 'ahorro' en ese mes
     const Ahorro = movsMes.filter(m => m.tipo === 'ahorro').reduce((acc, m) => acc + Number(m.monto), 0);
     return { mes: nombreMes, Ingreso, Gasto, Ahorro };
@@ -1210,7 +1222,7 @@ export default function Dashboard() {
                   onClick={(data) => {
                     if (data && data.name) {
                       const gastosCategoria = filteredMovs
-                        .filter(m => m.tipo === 'egreso' && (m.categoria || 'Sin categoría') === data.name)
+                        .filter(m => esGasto(m) && (m.categoria || 'Sin categoría') === data.name)
                         .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
                       
                       setCategoriaModal({
@@ -1757,7 +1769,7 @@ export default function Dashboard() {
               if (cuentasExcluidasCalculo.has(cid)) return false;
               return true;
             })
-          : filteredMovs.filter(m => m.tipo === resolvedTipo);
+          : filteredMovs.filter(m => resolvedTipo === 'egreso' ? esGasto(m) : m.tipo === resolvedTipo);
         const q = modalBusqueda.trim().toLowerCase();
         const movsFiltrados = q
           ? movsDetalle.filter(m =>
