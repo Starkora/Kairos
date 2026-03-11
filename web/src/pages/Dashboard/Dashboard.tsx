@@ -167,17 +167,22 @@ export default function Dashboard() {
   }, [movimientos, year, month, cuentaSeleccionada, today]);
   
   // Función helper para identificar movimientos internos que NO deben contarse en indicadores de ingreso/egreso
-  // (transferencias, ahorros, pagos de tarjeta, pagos de deudas, aportes a metas)
   const esMovimientoInterno = React.useCallback((mov: any): boolean => {
     const desc = String(mov.descripcion || '').toLowerCase();
-    // Verificar marcadores - TODOS los lados de transferencias, ahorros y pagos de tarjeta están marcados
-    return (
+    // Transferencias, ahorros, deudas, metas: excluir ambos lados siempre
+    if (
       /\[transfer#/i.test(desc) ||
       /\[ahorro#/i.test(desc) ||
-      /\[pago_tarjeta#/i.test(desc) ||
       desc.includes('[deuda#') ||
       desc.includes('[meta#')
-    );
+    ) return true;
+    // Pago de tarjeta: excluir SOLO el lado destino ("pago desde ...") para no duplicar.
+    // El lado origen ("pago de [tarjeta]...") pasa al filtro de cuenta:
+    // si la cuenta origen tiene incluir_en_calculos=true → cuenta como gasto real.
+    if (/\[pago_tarjeta#/i.test(desc)) {
+      return desc.includes('pago desde '); // destino = siempre excluir
+    }
+    return false;
   }, []);
 
   // Set de IDs de cuentas que NO deben incluirse en cálculos (incluir_en_calculos === false o 0)
