@@ -95,6 +95,8 @@ export default function Calendario() {
   const [fechaInicioManual, setFechaInicioManual] = React.useState('');
   const [fechaFinManual, setFechaFinManual] = React.useState('');
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
+  const [verListaCuenta, setVerListaCuenta] = React.useState(false);
+  const [listaBusqueda, setListaBusqueda] = React.useState('');
 
   // Cerrar menús al hacer click fuera o al presionar Escape
   React.useEffect(() => {
@@ -1649,6 +1651,15 @@ export default function Calendario() {
             <option key={c.id} value={c.id}>{c.nombre}</option>
           ))}
         </select>
+        <button
+          className="btn"
+          title="Ver todos los movimientos en lista"
+          onClick={() => { setVerListaCuenta(true); setListaBusqueda(''); }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+        >
+          {React.createElement(FaList as any, { style: { fontSize: 13 } })}
+          Lista
+        </button>
 
         {/* Rangos de fecha predefinidos */}
         <div style={{ position: 'relative' }}>
@@ -2579,8 +2590,184 @@ export default function Calendario() {
           )}
         </div>
       </div>
+
+      {/* ── Modal/Drawer: Lista completa de movimientos ── */}
+      {verListaCuenta && (() => {
+        const cuentaActual = cuentaFiltro !== 'all' ? cuentas.find(c => c.id === Number(cuentaFiltro)) : null;
+        const titulo = cuentaActual ? `${cuentaActual.nombre}` : 'Todos los movimientos';
+        const lq = listaBusqueda.trim().toLowerCase();
+        const movsFiltrados = todosMovimientos
+          .filter((m: any) => {
+            if (cuentaFiltro !== 'all' && m.cuenta_id !== Number(cuentaFiltro)) return false;
+            if (!lq) return true;
+            return `${m.descripcion || ''} ${m.cuenta || ''} ${m.categoria || ''}`.toLowerCase().includes(lq);
+          })
+          .sort((a: any, b: any) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+        // Agrupar por mes
+        const porMes = new Map<string, any[]>();
+        movsFiltrados.forEach((m: any) => {
+          const mes = (m.fecha || '').slice(0, 7); // YYYY-MM
+          if (!porMes.has(mes)) porMes.set(mes, []);
+          porMes.get(mes)!.push(m);
+        });
+
+        const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+        return (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            display: 'flex', alignItems: 'stretch', justifyContent: 'flex-end'
+          }}>
+            {/* Overlay */}
+            <div onClick={() => setVerListaCuenta(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} />
+            {/* Drawer */}
+            <div style={{
+              position: 'relative', zIndex: 1,
+              width: '100%', maxWidth: 560,
+              background: 'var(--color-bg)',
+              display: 'flex', flexDirection: 'column',
+              boxShadow: '-4px 0 24px rgba(0,0,0,0.25)',
+              overflowY: 'hidden'
+            }}>
+              {/* Header */}
+              <div style={{
+                padding: '20px 24px 16px',
+                borderBottom: '1px solid var(--color-input-border)',
+                display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: 'var(--color-muted)', fontWeight: 600, marginBottom: 2 }}>MOVIMIENTOS</div>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-text)', margin: 0 }}>{titulo}</h2>
+                  <div style={{ fontSize: 13, color: 'var(--color-muted)', marginTop: 2 }}>
+                    {movsFiltrados.length} movimiento{movsFiltrados.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+                {/* Selector de cuenta dentro del drawer */}
+                <select
+                  value={cuentaFiltro}
+                  onChange={e => setCuentaFiltro(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                  style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontWeight: 500, fontSize: 13 }}
+                >
+                  <option value="all">Todas las cuentas</option>
+                  {cuentas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+                <button onClick={() => setVerListaCuenta(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-muted)', fontSize: 22, display: 'flex', alignItems: 'center', padding: 4 }}>
+                  {React.createElement(FaTimes as any)}
+                </button>
+              </div>
+
+              {/* Buscador */}
+              <div style={{ padding: '12px 24px', borderBottom: '1px solid var(--color-input-border)', flexShrink: 0, position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 34, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-muted)', fontSize: 13, display: 'flex', pointerEvents: 'none' }}>
+                  {React.createElement(FaSearch as any)}
+                </span>
+                <input
+                  value={listaBusqueda}
+                  onChange={e => setListaBusqueda(e.target.value)}
+                  placeholder="Buscar en esta lista..."
+                  style={{ width: '100%', padding: '8px 32px 8px 32px', borderRadius: 8, border: '1px solid var(--color-input-border)', background: 'var(--color-card)', color: 'var(--color-text)', fontSize: 14, boxSizing: 'border-box' }}
+                />
+                {listaBusqueda && (
+                  <button onClick={() => setListaBusqueda('')} style={{ position: 'absolute', right: 34, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-muted)', fontSize: 14, display: 'flex' }}>
+                    {React.createElement(FaTimes as any)}
+                  </button>
+                )}
+              </div>
+
+              {/* Lista */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
+                {movsFiltrados.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: 'var(--color-muted)', padding: '48px 0', fontSize: 16 }}>
+                    No se encontraron movimientos.
+                  </div>
+                ) : (
+                  Array.from(porMes.entries()).map(([mesKey, movs]) => {
+                    const [anio, mesNum] = mesKey.split('-');
+                    const mesNombre = meses[parseInt(mesNum) - 1];
+                    const totalMes = movs.reduce((sum, m) => {
+                      const s = (m.tipo === 'ingreso' || m.tipo === 'ahorro') ? 1 : (m.tipo === 'transferencia' ? 0 : -1);
+                      return sum + Number(m.monto || 0) * s;
+                    }, 0);
+                    return (
+                      <div key={mesKey} style={{ marginBottom: 24 }}>
+                        {/* Cabecera de mes */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-accent)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                            {mesNombre} {anio}
+                          </span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: totalMes >= 0 ? '#4caf50' : '#f44336' }}>
+                            {totalMes >= 0 ? '+' : ''}S/ {totalMes.toFixed(2)}
+                          </span>
+                        </div>
+                        {/* Movimientos del mes */}
+                        {movs.map((m: any) => {
+                          const colorTipo = m.tipo === 'ingreso' ? '#4caf50' : m.tipo === 'ahorro' ? '#26a69a' : m.tipo === 'transferencia' ? '#2196f3' : m.tipo === 'pago_tarjeta' ? '#ff6b6b' : '#f44336';
+                          const signo = (m.tipo === 'ingreso' || m.tipo === 'ahorro') ? '+' : m.tipo === 'transferencia' ? '' : '-';
+                          const descLimpia = String(m.descripcion || '').replace(/\[(TRANSFER|AHORRO|PAGO_TARJETA)#[^\]]+\]/gi, '').trim();
+                          const dia = (m.fecha || '').slice(8, 10);
+                          const lqh = listaBusqueda.trim();
+                          const idx = lqh ? descLimpia.toLowerCase().indexOf(lqh.toLowerCase()) : -1;
+                          const highlighted = idx >= 0
+                            ? <>{descLimpia.slice(0, idx)}<mark style={{ background: '#ffe082', borderRadius: 2, padding: '0 2px', color: '#222' }}>{descLimpia.slice(idx, idx + lqh.length)}</mark>{descLimpia.slice(idx + lqh.length)}</>
+                            : descLimpia;
+                          return (
+                            <div
+                              key={m.id}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 12,
+                                padding: '10px 14px', marginBottom: 6,
+                                background: 'var(--color-card)', borderRadius: 10,
+                                borderLeft: `3px solid ${colorTipo}`,
+                                boxShadow: '0 1px 4px #0001'
+                              }}
+                            >
+                              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-muted)', minWidth: 22, textAlign: 'center' }}>{dia}</div>
+                              <span style={{ fontSize: 18 }}>{getIconForTipo(m.tipo, m.icon)}</span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{highlighted}</div>
+                                <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{m.cuenta}</div>
+                              </div>
+                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                <div style={{ fontWeight: 700, fontSize: 15, color: colorTipo }}>{signo}S/ {Number(m.monto).toFixed(2)}</div>
+                                <div style={{ fontSize: 11, color: 'var(--color-muted)', textTransform: 'capitalize' }}>{m.tipo}</div>
+                              </div>
+                              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                <button
+                                  onClick={() => {
+                                    setVerListaCuenta(false);
+                                    const fecha = new Date((m.fecha || '').slice(0, 10) + 'T12:00:00');
+                                    setValue(fecha);
+                                    setTimeout(() => handleEditMovimiento(m, true), 100);
+                                  }}
+                                  style={{ background: 'var(--color-accent)', border: 'none', color: '#fff', padding: '5px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
+                                  title="Editar"
+                                >
+                                  {React.createElement(FaEdit as any, { style: { fontSize: 11 } })}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteMovimiento(m)}
+                                  style={{ background: '#f44336', border: 'none', color: '#fff', padding: '5px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
+                                  title="Eliminar"
+                                >
+                                  {React.createElement(FaTrash as any, { style: { fontSize: 11 } })}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       <style>{`
-        .toolbar .btn { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--color-input-border); background: var(--color-card); color: var(--color-text); font-weight: 700; cursor: pointer; }
+        .toolbar .btn {
         .toolbar .btn:hover { filter: brightness(1.02); }
   .toolbar .btn-primary { background: var(--color-accent); color: #fff; border: none; }
         .toolbar .btn-ghost { background: transparent; border: 1px solid var(--color-input-border); }
